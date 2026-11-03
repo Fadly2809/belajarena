@@ -662,10 +662,11 @@
        ========================================================================= -->
   <div
     v-if="showCreateModal"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in"
     @click.self="showCreateModal = false"
   >
-    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-6 space-y-5 animate-scale-up text-slate-800">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-xl w-full p-6 space-y-4 animate-scale-up text-slate-800 max-h-[92vh] overflow-y-auto custom-scroll">
+      <!-- Modal Header -->
       <div class="flex items-center justify-between pb-3 border-b border-slate-100">
         <div>
           <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
@@ -673,25 +674,37 @@
           </h3>
           <p class="text-[11px] text-slate-500">Koneksi otomatis ke Bank Soal dan Daftar Siswa Kelas Real</p>
         </div>
-        <button @click="showCreateModal = false" class="text-slate-400 hover:text-slate-600 text-lg cursor-pointer">✕</button>
+        <button
+          @click="showCreateModal = false"
+          class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-sm font-bold transition cursor-pointer"
+        >
+          ✕
+        </button>
       </div>
 
       <form @submit.prevent="launchNewSession" class="space-y-4 text-xs">
+        <!-- Judul Aktivitas Game -->
         <div>
           <label class="label font-bold text-slate-700 block mb-1">Judul Aktivitas Game Ulangan Harian</label>
           <input
             v-model="newSession.title"
             type="text"
-            class="input text-xs w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#0c2b3d]"
+            class="input text-xs w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#0c2b3d] outline-none"
             placeholder="Contoh: Kuis Cepat Berpikir Komputasional"
             required
           />
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
+        <!-- Target Kelas Rombel & Mata Pelajaran -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label class="label font-bold text-slate-700 block mb-1">Target Kelas Rombel</label>
-            <select v-model="newSession.classroomId" class="input text-xs font-bold w-full p-2.5 rounded-xl border border-slate-300" required @change="onClassChange">
+            <select
+              v-model="newSession.classroomId"
+              class="input text-xs font-bold w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#0c2b3d] outline-none"
+              required
+              @change="onClassChange"
+            >
               <option v-for="c in classrooms" :key="c.id" :value="c.id">
                 {{ formatClassLabel(c) }}
               </option>
@@ -699,7 +712,12 @@
           </div>
           <div>
             <label class="label font-bold text-slate-700 block mb-1">Mata Pelajaran</label>
-            <select v-model="newSession.subject" class="input text-xs font-semibold w-full p-2.5 rounded-xl border border-slate-300" required @change="updateQuestionsCount">
+            <select
+              v-model="newSession.subject"
+              class="input text-xs font-semibold w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#0c2b3d] outline-none"
+              required
+              @change="updateQuestionsCount"
+            >
               <option v-for="s in availableSubjects" :key="s.id" :value="s.name">
                 {{ s.name }}
               </option>
@@ -707,19 +725,102 @@
           </div>
         </div>
 
+        <!-- KHUSUS UNTUK FINAL BOSS BATTLE: PEMILIHAN KARAKTER BOSS -->
+        <div v-if="newSession.templateId === 'boss_battle'" class="space-y-2 pt-1 pb-1">
+          <div class="flex items-center justify-between">
+            <label class="label font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+              <span>👾</span>
+              <span>Pilih Karakter Boss Utama (Final Boss Battle):</span>
+            </label>
+            <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-violet-100 text-violet-700">
+              {{ selectedBoss.difficulty }}
+            </span>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div
+              v-for="b in BOSS_CATALOG"
+              :key="b.id"
+              @click="selectedBossId = b.id"
+              class="p-2.5 rounded-2xl border-2 transition-all flex flex-col justify-between cursor-pointer group text-left relative overflow-hidden"
+              :class="selectedBossId === b.id
+                ? 'border-violet-600 bg-violet-50/70 shadow-md ring-2 ring-violet-400/50'
+                : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'"
+            >
+              <!-- Check Badge -->
+              <div v-if="selectedBossId === b.id" class="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-violet-600 text-white flex items-center justify-center text-[9px] font-black shadow-xs">
+                ✓
+              </div>
+
+              <!-- Sprite Visual Thumbnail -->
+              <div
+                class="h-16 rounded-xl flex items-center justify-center overflow-hidden mb-1.5 relative shadow-inner"
+                :style="{ background: `radial-gradient(circle at 50% 50%, ${b.accent}33 0%, #0d0922 100%)` }"
+              >
+                <div class="scale-[0.32] origin-center pointer-events-none select-none">
+                  <BossSprite
+                    :name="b.name"
+                    :boss-id="b.id"
+                    :color="b.color"
+                    :accent="b.accent"
+                    pose="idle"
+                  />
+                </div>
+              </div>
+
+              <!-- Boss Details -->
+              <div class="space-y-0.5">
+                <p class="font-black text-slate-900 text-[11px] leading-tight truncate">{{ b.name }}</p>
+                <p class="text-[9px] text-slate-500 truncate">{{ b.topic }}</p>
+              </div>
+
+              <div class="mt-1 pt-1 border-t border-slate-100 flex items-center justify-between text-[9px]">
+                <span
+                  class="font-bold uppercase tracking-wider"
+                  :class="b.difficulty === 'mudah' ? 'text-emerald-600' : (b.difficulty === 'sulit' ? 'text-rose-600' : 'text-amber-600')"
+                >
+                  {{ b.difficulty }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Jumlah Soal & Waktu per Soal -->
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="label font-bold text-slate-700 block mb-1">Jumlah Soal / Babak</label>
-            <select v-model.number="newSession.questionCount" class="input text-xs w-full p-2.5 rounded-xl border border-slate-300">
+            <select
+              v-if="manualSelectedQuestions.length === 0"
+              v-model.number="newSession.questionCount"
+              class="input text-xs w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#0c2b3d] outline-none"
+            >
               <option :value="5">5 Butir Soal</option>
               <option :value="10">10 Butir Soal</option>
               <option :value="15">15 Butir Soal</option>
               <option :value="20">20 Butir Soal</option>
             </select>
+            <div
+              v-else
+              class="p-2.5 rounded-xl bg-violet-50 border border-violet-200 text-violet-900 font-extrabold text-xs flex items-center justify-between"
+            >
+              <span>{{ manualSelectedQuestions.length }} Butir Terpilih Manual</span>
+              <button
+                type="button"
+                @click="resetToAutoQuestions"
+                class="text-[10px] text-rose-600 hover:underline font-bold"
+                title="Ganti ke mode jumlah soal otomatis"
+              >
+                Reset
+              </button>
+            </div>
           </div>
           <div>
             <label class="label font-bold text-slate-700 block mb-1">Waktu per Soal (Detik)</label>
-            <select v-model.number="newSession.timePerQuestion" class="input text-xs w-full p-2.5 rounded-xl border border-slate-300">
+            <select
+              v-model.number="newSession.timePerQuestion"
+              class="input text-xs w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#0c2b3d] outline-none"
+            >
               <option :value="10">10 Detik (Sangat Cepat)</option>
               <option :value="15">15 Detik (Standar)</option>
               <option :value="20">20 Detik</option>
@@ -728,40 +829,267 @@
           </div>
         </div>
 
-        <!-- Live Real Data Indicator -->
-        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 text-[11px]">
+        <!-- Live Real Data Indicator & Tombol Memilih Soal -->
+        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5 text-[11px]">
           <div class="flex items-center justify-between text-slate-700">
-            <span class="flex items-center gap-1.5">
+            <span class="flex items-center gap-1.5 font-medium">
               <span>👥</span> Siswa Terdaftar di Kelas:
             </span>
-            <strong class="text-[#0c2b3d]">{{ classStudentCount }} Siswa</strong>
+            <strong class="text-[#0c2b3d] font-bold text-xs">{{ classStudentCount }} Siswa</strong>
           </div>
           <div class="flex items-center justify-between text-slate-700">
-            <span class="flex items-center gap-1.5">
+            <span class="flex items-center gap-1.5 font-medium">
               <span>📚</span> Butir Soal di Bank Soal Real:
             </span>
-            <strong class="text-emerald-700">{{ bankQuestionCount }} Soal Siap</strong>
+            <strong class="text-emerald-700 font-bold text-xs">{{ bankQuestionCount }} Soal Siap</strong>
+          </div>
+
+          <!-- Status Seleksi Soal -->
+          <div
+            v-if="manualSelectedQuestions.length > 0"
+            class="p-2 rounded-xl bg-violet-100/70 border border-violet-200 text-violet-900 flex items-center justify-between"
+          >
+            <span class="font-bold flex items-center gap-1.5 text-[10px] sm:text-[11px]">
+              <span>🎯</span>
+              <span>Paket Soal: <strong>{{ manualSelectedQuestions.length }} Butir Terpilih Manual</strong></span>
+            </span>
+            <button
+              type="button"
+              @click="resetToAutoQuestions"
+              class="text-[10px] text-rose-600 hover:text-rose-700 font-bold underline cursor-pointer"
+            >
+              ↺ Reset ke Otomatis
+            </button>
+          </div>
+          <div v-else class="text-[10px] text-slate-500 flex items-center gap-1.5">
+            <span>🎯</span>
+            <span>Mode Soal: Mengambil otomatis {{ newSession.questionCount }} butir dari Bank Soal {{ newSession.subject }}.</span>
+          </div>
+
+          <!-- Tombol Aksi Memilih Soal Manual dari Bank Soal -->
+          <div class="pt-1">
+            <button
+              type="button"
+              @click="openQuestionPicker"
+              class="w-full py-2.5 px-4 rounded-xl border border-violet-300 bg-violet-50 hover:bg-violet-100 text-violet-900 font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow-xs active:scale-98"
+            >
+              <span>📚</span>
+              <span>Pilih Butir Soal dari Bank Soal</span>
+              <span
+                v-if="manualSelectedQuestions.length > 0"
+                class="px-2 py-0.5 rounded-full bg-violet-600 text-white text-[10px] font-black"
+              >
+                {{ manualSelectedQuestions.length }} Terpilih
+              </span>
+            </button>
           </div>
         </div>
 
-        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+        <!-- Form Footer Buttons -->
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
           <button
             type="button"
             @click="showCreateModal = false"
-            class="px-4 py-2 rounded-xl border border-slate-300 text-slate-600 font-bold text-xs hover:bg-slate-100 transition cursor-pointer"
+            class="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-600 font-bold text-xs hover:bg-slate-100 transition cursor-pointer"
           >
             Batal
           </button>
           <button
             type="submit"
-            class="px-5 py-2 rounded-xl bg-[#0c2b3d] text-white font-black text-xs hover:bg-[#082231] shadow-md transition cursor-pointer"
+            class="px-6 py-2.5 rounded-xl bg-[#0c2b3d] text-white font-black text-xs hover:bg-[#082231] shadow-md transition cursor-pointer flex items-center gap-1.5 active:scale-95"
           >
-            🚀 Buka Ruang Permainan
+            <span>🚀</span>
+            <span>Buka Ruang Permainan</span>
           </button>
         </div>
       </form>
     </div>
   </div>
+
+  <!-- =========================================================================
+       MODAL PEMILIH SOAL DARI BANK SOAL (UNTUK SEMUA EDU-GAMES)
+       ========================================================================= -->
+  <Teleport to="body">
+    <div
+      v-if="showQuestionPickerModal"
+      class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 animate-fade-in"
+      @click.self="showQuestionPickerModal = false"
+    >
+      <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden animate-scale-up text-slate-800">
+        <!-- Modal Header -->
+        <div class="p-4 sm:px-6 py-4 border-b border-slate-100 bg-slate-50/80 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-violet-100 text-violet-700 flex items-center justify-center text-xl shadow-xs">
+              📚
+            </div>
+            <div>
+              <h3 class="font-extrabold text-slate-900 text-sm sm:text-base leading-snug">
+                Pilih Butir Soal Bank Soal — {{ newSession.subject }}
+              </h3>
+              <p class="text-xs text-slate-500">
+                Pilih butir-butir soal yang akan dimasukkan ke sesi {{ activeTemplate?.name }}
+              </p>
+            </div>
+          </div>
+          <button
+            @click="showQuestionPickerModal = false"
+            class="w-8 h-8 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-600 flex items-center justify-center text-sm font-bold transition cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+
+        <!-- Toolbar Search & Filter -->
+        <div class="p-4 border-b border-slate-100 bg-white space-y-3 text-xs">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <!-- Search Input -->
+            <div class="sm:col-span-2 relative">
+              <input
+                v-model="pickerSearch"
+                type="text"
+                placeholder="Cari teks pertanyaan, materi, atau kata kunci..."
+                class="w-full pl-8 pr-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-[#0c2b3d] outline-none"
+              />
+              <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+            </div>
+
+            <!-- Difficulty Filter -->
+            <div>
+              <select
+                v-model="pickerDifficultyFilter"
+                class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-[#0c2b3d] outline-none"
+              >
+                <option value="">Semua Tingkat Kesulitan</option>
+                <option value="easy">Mudah</option>
+                <option value="medium">Sedang</option>
+                <option value="hard">Sulit</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Select All Toolbar -->
+          <div class="flex items-center justify-between pt-1 text-[11px] text-slate-600">
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                :checked="isAllVisibleSelected"
+                @change="toggleSelectAllVisible"
+                class="rounded border-slate-300 text-violet-600 focus:ring-violet-500 w-4 h-4 cursor-pointer"
+              />
+              <span class="font-bold text-slate-800">
+                Pilih Semua yang Ditampilkan ({{ filteredBankQuestions.length }} Soal)
+              </span>
+            </label>
+
+            <div class="flex items-center gap-2">
+              <span
+                v-if="tempSelectedQuestionIds.length > 0"
+                class="font-black text-violet-800 bg-violet-100 px-2.5 py-1 rounded-lg border border-violet-200"
+              >
+                ✓ {{ tempSelectedQuestionIds.length }} Soal Dicentang
+              </span>
+              <span class="text-slate-400">
+                Total Bank: {{ rawBankQuestions.length }} butir
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Question List (Scrollable) -->
+        <div class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3 bg-slate-50/50 text-xs custom-scroll">
+          <!-- Empty State -->
+          <div v-if="filteredBankQuestions.length === 0" class="py-10 text-center space-y-2 bg-white rounded-2xl border border-slate-200 p-6">
+            <p class="text-3xl">🔍</p>
+            <p class="font-bold text-slate-800 text-sm">Tidak ada butir soal yang sesuai filter</p>
+            <p class="text-slate-500 text-xs max-w-sm mx-auto">
+              Coba ubah kata kunci pencarian atau reset filter untuk melihat seluruh soal di Bank Soal.
+            </p>
+          </div>
+
+          <!-- Question Cards -->
+          <div
+            v-for="(q, idx) in filteredBankQuestions"
+            :key="q.id || idx"
+            @click="toggleQuestionSelection(q.id)"
+            class="p-4 rounded-2xl border transition-all cursor-pointer bg-white hover:border-violet-300 space-y-2.5 shadow-xs"
+            :class="tempSelectedQuestionIds.includes(q.id)
+              ? 'border-violet-500 bg-violet-50/30 ring-2 ring-violet-200'
+              : 'border-slate-200'"
+          >
+            <div class="flex items-start gap-3">
+              <input
+                type="checkbox"
+                :checked="tempSelectedQuestionIds.includes(q.id)"
+                @click.stop="toggleQuestionSelection(q.id)"
+                class="rounded border-slate-300 text-violet-600 focus:ring-violet-500 w-4 h-4 mt-0.5 cursor-pointer flex-shrink-0"
+              />
+              <div class="flex-1 space-y-1.5">
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span class="w-5 h-5 rounded-md bg-slate-100 text-slate-700 font-bold text-[10px] flex items-center justify-center">
+                    #{{ idx + 1 }}
+                  </span>
+                  <span class="px-2 py-0.5 rounded-full bg-violet-100 text-violet-800 font-bold text-[9px]">
+                    {{ q.subject_name || newSession.subject }}
+                  </span>
+                  <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold text-[9px] capitalize">
+                    {{ formatDifficulty(q.difficulty) }}
+                  </span>
+                  <span v-if="q.topic" class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-semibold text-[9px]">
+                    {{ q.topic }}
+                  </span>
+                </div>
+                <p class="font-bold text-slate-900 text-xs leading-relaxed">
+                  {{ stripHtml(q.content || q.text) }}
+                </p>
+
+                <!-- Option choices preview -->
+                <div v-if="Array.isArray(q.options) && q.options.length > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1">
+                  <div
+                    v-for="(opt, optIdx) in q.options"
+                    :key="optIdx"
+                    class="px-2.5 py-1 rounded-lg text-[10px] font-medium border flex items-center gap-1.5"
+                    :class="(typeof opt === 'object' && opt.is_correct)
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-800 font-bold'
+                      : 'bg-slate-50 border-slate-200 text-slate-600'"
+                  >
+                    <span class="font-bold">{{ ['A', 'B', 'C', 'D', 'E'][optIdx] }}.</span>
+                    <span class="truncate">{{ typeof opt === 'string' ? opt : (opt.text || opt.content) }}</span>
+                    <span v-if="typeof opt === 'object' && opt.is_correct" class="ml-auto text-emerald-600 font-black">✓</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="p-4 border-t border-slate-100 bg-white flex items-center justify-between gap-3">
+          <div class="text-xs">
+            <span class="font-bold text-slate-800">{{ tempSelectedQuestionIds.length }} Soal Dipilih</span>
+            <span class="text-slate-400 ml-1">dari total {{ filteredBankQuestions.length }} butir</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              @click="showQuestionPickerModal = false"
+              class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-100 transition cursor-pointer"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              @click="applyQuestionSelection"
+              class="px-5 py-2 rounded-xl bg-[#0c2b3d] hover:bg-[#082231] text-white font-black text-xs shadow-md transition cursor-pointer flex items-center gap-1.5"
+            >
+              <span>✓</span>
+              <span>Terapkan Pilihan Soal ({{ tempSelectedQuestionIds.length }} Butir)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -770,9 +1098,15 @@ import { useRouter } from 'vue-router'
 import {
   useClassrooms,
   getSubjectNameForClass,
+  getSubjectIdForClass,
   getAvailableSubjectsForClass
 } from '@/composables/useClassrooms'
-import { useBossBattleSession } from '@/modules/games/bossBattle/sessionStore'
+import {
+  useBossBattleSession,
+  convertBankToBattleQuestions,
+  registerStudentPool
+} from '@/modules/games/bossBattle/sessionStore'
+import { BOSS_CATALOG } from '@/modules/games/bossBattle/types'
 import api from '@/services/api'
 
 // Visual Components for Hero View
@@ -784,7 +1118,7 @@ import TowerDefenseHeroVisual from '@/modules/games/hero/TowerDefenseHeroVisual.
 
 const router = useRouter()
 const { classrooms, fetchClassrooms, formatClassLabel, getClassName } = useClassrooms()
-const { getActiveSession, restoreSession, stopActiveSession, clearActiveSession } = useBossBattleSession()
+const { getActiveSession, restoreSession, stopActiveSession, clearActiveSession, draft, beginBattle } = useBossBattleSession()
 
 // View State: 'hero' (Fullscreen Hero Product Page) or 'catalog' (Old grid & history)
 const currentView = ref<'hero' | 'catalog'>('hero')
@@ -794,6 +1128,98 @@ const activeTemplate = ref<any>(null)
 const classStudentCount = ref(0)
 const bankQuestionCount = ref(0)
 const reducedMotion = ref(false)
+
+// Boss Character Selection for Final Boss Battle
+const selectedBossId = ref<string>('robot-glitch')
+const selectedBoss = computed(() => BOSS_CATALOG.find(b => b.id === selectedBossId.value) || BOSS_CATALOG[0])
+
+// Question Picker States (Untuk Semua Game)
+const showQuestionPickerModal = ref(false)
+const rawBankQuestions = ref<any[]>([])
+const manualSelectedQuestions = ref<any[]>([])
+const tempSelectedQuestionIds = ref<string[]>([])
+const pickerSearch = ref('')
+const pickerDifficultyFilter = ref('')
+
+const filteredBankQuestions = computed(() => {
+  let list = rawBankQuestions.value
+  if (pickerSearch.value.trim()) {
+    const q = pickerSearch.value.toLowerCase().trim()
+    list = list.filter(item => {
+      const text = (item.content || item.text || item.topic || '').toLowerCase()
+      return text.includes(q)
+    })
+  }
+  if (pickerDifficultyFilter.value) {
+    list = list.filter(item => item.difficulty === pickerDifficultyFilter.value)
+  }
+  return list
+})
+
+const isAllVisibleSelected = computed(() => {
+  if (filteredBankQuestions.value.length === 0) return false
+  return filteredBankQuestions.value.every(q => tempSelectedQuestionIds.value.includes(q.id))
+})
+
+function openQuestionPicker() {
+  if (manualSelectedQuestions.value.length > 0) {
+    tempSelectedQuestionIds.value = manualSelectedQuestions.value.map(q => q.id)
+  } else if (rawBankQuestions.value.length > 0) {
+    tempSelectedQuestionIds.value = rawBankQuestions.value
+      .slice(0, Math.min(newSession.value.questionCount || 5, rawBankQuestions.value.length))
+      .map(q => q.id)
+  } else {
+    tempSelectedQuestionIds.value = []
+  }
+  pickerSearch.value = ''
+  pickerDifficultyFilter.value = ''
+  showQuestionPickerModal.value = true
+}
+
+function toggleQuestionSelection(id: string) {
+  const idx = tempSelectedQuestionIds.value.indexOf(id)
+  if (idx === -1) {
+    tempSelectedQuestionIds.value.push(id)
+  } else {
+    tempSelectedQuestionIds.value.splice(idx, 1)
+  }
+}
+
+function toggleSelectAllVisible() {
+  if (isAllVisibleSelected.value) {
+    const visibleIds = new Set(filteredBankQuestions.value.map(q => q.id))
+    tempSelectedQuestionIds.value = tempSelectedQuestionIds.value.filter(id => !visibleIds.has(id))
+  } else {
+    const current = new Set(tempSelectedQuestionIds.value)
+    filteredBankQuestions.value.forEach(q => current.add(q.id))
+    tempSelectedQuestionIds.value = Array.from(current)
+  }
+}
+
+function applyQuestionSelection() {
+  const chosen = rawBankQuestions.value.filter(q => tempSelectedQuestionIds.value.includes(q.id))
+  manualSelectedQuestions.value = chosen
+  if (chosen.length > 0) {
+    newSession.value.questionCount = chosen.length
+  }
+  showQuestionPickerModal.value = false
+}
+
+function resetToAutoQuestions() {
+  manualSelectedQuestions.value = []
+  newSession.value.questionCount = Math.min(5, bankQuestionCount.value || 5)
+}
+
+function formatDifficulty(diff?: string) {
+  if (diff === 'easy') return 'Mudah'
+  if (diff === 'hard') return 'Sulit'
+  return 'Sedang'
+}
+
+function stripHtml(html?: string) {
+  if (!html) return ''
+  return html.replace(/<[^>]*>?/gm, '').trim()
+}
 
 // ---------------------------------------------------------------------------
 // 5 PEMETAAN GAME EDU-GAMES (Source of Truth Tunggal Katalog Game)
@@ -1076,15 +1502,13 @@ function launchCurrentGame() {
 }
 
 function selectTemplate(tpl: any) {
-  if (tpl.id === 'boss_battle') {
-    // Mode Final Boss Battle (Direct to setup/settings page)
-    router.push('/games/ulangan-harian')
-    return
-  }
-
   activeTemplate.value = tpl
   newSession.value.templateId = tpl.id
   newSession.value.title = `${tpl.name} — ${newSession.value.classroom}`
+  manualSelectedQuestions.value = []
+  if (tpl.id === 'boss_battle' && !selectedBossId.value) {
+    selectedBossId.value = 'robot-glitch'
+  }
   showCreateModal.value = true
   updateCounts()
 }
@@ -1106,10 +1530,12 @@ async function onClassChange() {
   const c = classrooms.value.find(cl => cl.id === newSession.value.classroomId)
   if (c) newSession.value.classroom = c.name
   newSession.value.subject = getSubjectNameForClass(newSession.value.classroomId)
+  manualSelectedQuestions.value = []
   await updateCounts()
 }
 
 async function updateQuestionsCount() {
+  manualSelectedQuestions.value = []
   await updateCounts()
 }
 
@@ -1125,9 +1551,22 @@ async function updateCounts() {
   try {
     const qRes = await api.get('/questions', { params: { subject_name: newSession.value.subject } })
     const qList = qRes.data?.data || []
-    bankQuestionCount.value = qList.length
+    if (Array.isArray(qList) && qList.length > 0) {
+      bankQuestionCount.value = qList.length
+      rawBankQuestions.value = qList
+    } else {
+      // Fallback: ambil seluruh butir soal bank dan filter berdasarkan mapel
+      const allQRes = await api.get('/questions')
+      const allQ = allQRes.data?.data || []
+      const filtered = allQ.filter((q: any) =>
+        (q.subject_name || '').toLowerCase().includes(newSession.value.subject.toLowerCase().substring(0, 3))
+      )
+      rawBankQuestions.value = filtered.length > 0 ? filtered : allQ
+      bankQuestionCount.value = rawBankQuestions.value.length
+    }
   } catch {
     bankQuestionCount.value = 0
+    rawBankQuestions.value = []
   }
 }
 
@@ -1277,14 +1716,61 @@ async function launchNewSession() {
     realStudents = sRes.data?.data || []
   } catch {}
 
-  // 2. Ambil butir soal real dari Bank Soal
-  let realQuestions: any[] = []
-  try {
-    const qRes = await api.get('/questions', { params: { subject_name: newSession.value.subject } })
-    const allQ = qRes.data?.data || []
-    realQuestions = allQ.slice(0, newSession.value.questionCount)
-  } catch {}
+  // 2. Tentukan butir soal yang digunakan (pilihan manual guru ATAU dari bank soal)
+  let questionsToUse: any[] = []
+  if (manualSelectedQuestions.value.length > 0) {
+    questionsToUse = manualSelectedQuestions.value
+  } else if (rawBankQuestions.value.length > 0) {
+    questionsToUse = rawBankQuestions.value.slice(0, newSession.value.questionCount)
+  } else {
+    try {
+      const qRes = await api.get('/questions', { params: { subject_name: newSession.value.subject } })
+      const allQ = qRes.data?.data || []
+      questionsToUse = allQ.slice(0, newSession.value.questionCount)
+    } catch {}
+  }
 
+  // KHUSUS FINAL BOSS BATTLE
+  if (newSession.value.templateId === 'boss_battle') {
+    const bossConfig = BOSS_CATALOG.find(b => b.id === selectedBossId.value) || BOSS_CATALOG[0]
+    draft.bossId = bossConfig.id
+    draft.bossName = bossConfig.name
+    draft.topic = bossConfig.topic
+    draft.title = newSession.value.title
+    draft.settings.classroomId = newSession.value.classroomId
+    draft.settings.classroomName = newSession.value.classroom
+    draft.subjectName = newSession.value.subject
+    draft.subjectId = getSubjectIdForClass(newSession.value.classroomId)
+    draft.settings.officialParticipantIds = realStudents.map(s => s.id)
+    draft.settings.questionCount = questionsToUse.length
+    draft.settings.durationMinutes = Math.max(5, Math.ceil((newSession.value.timePerQuestion * questionsToUse.length) / 60))
+
+    registerStudentPool(realStudents)
+    const battleQuestions = convertBankToBattleQuestions(questionsToUse)
+    const s = beginBattle(battleQuestions)
+
+    try {
+      await api.post('/ulangan-gamifikasi/sessions/active', {
+        session_id: s.sessionId,
+        title: newSession.value.title,
+        topic: bossConfig.topic,
+        subject: newSession.value.subject,
+        subject_id: getSubjectIdForClass(newSession.value.classroomId),
+        classroom_id: newSession.value.classroomId,
+        classroom_name: newSession.value.classroom,
+        participant_ids: realStudents.map(s => s.id),
+        boss_id: bossConfig.id,
+        boss_name: bossConfig.name,
+      })
+    } catch (err) {
+      console.warn('Could not register active boss session:', err)
+    }
+
+    router.push(`/games/ulangan-harian/arena/${s.sessionId}`)
+    return
+  }
+
+  // UNTUK 4 GAME LAINNYA (Class Race, Tower Defense, Fast Quiz, Memory Match)
   const isClassRaceMode = newSession.value.templateId === 'class_race' || newSession.value.templateId === 'class-race'
   const isTdMode = newSession.value.templateId === 'tower_defense' || newSession.value.templateId === 'tower-defense'
   const sessionPayload: any = {
@@ -1298,14 +1784,14 @@ async function launchNewSession() {
     classroom_id: newSession.value.classroomId,
     classroom_name: newSession.value.classroom,
     subject: newSession.value.subject,
-    question_count: newSession.value.questionCount,
+    question_count: questionsToUse.length,
     time_per_question: newSession.value.timePerQuestion,
     race_length: isClassRaceMode ? 500 : undefined,
     per_question_seconds: isClassRaceMode ? (newSession.value.timePerQuestion || 15) : undefined,
     initial_coins: isTdMode ? 60 : undefined,
     status: (isClassRaceMode || isTdMode) ? 'lobby' : 'active',
     outcome: 'ongoing',
-    questions: realQuestions,
+    questions: questionsToUse,
     participants: realStudents.map(s => ({
       id: s.id,
       name: s.name,
