@@ -1,0 +1,122 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: agd-postgres
+    environment:
+      POSTGRES_DB: akademi_guru_digital
+      POSTGRES_USER: agd_user
+      POSTGRES_PASSWORD: agd_password_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agd_user -d akademi_guru_digital"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache & Queue
+  redis:
+    image: redis:7-alpine
+    container_name: agd-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # PHP Laravel Backend
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: ../../infrastructure/docker/api/Dockerfile
+    container_name: agd-api
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_KEY: ""
+      APP_URL: http://localhost:8000
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: akademi_guru_digital
+      DB_USERNAME: agd_user
+      DB_PASSWORD: agd_password_dev
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      QUEUE_CONNECTION: redis
+      CACHE_DRIVER: redis
+      SESSION_DRIVER: database
+      SANCTUM_STATEFUL_DOMAINS: localhost:5173
+      FRONTEND_URL: http://localhost:5173
+    volumes:
+      - ./apps/api:/var/www/html
+      - api_storage:/var/www/html/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "
+        composer install --no-interaction &&
+        php artisan key:generate --ansi &&
+        php artisan migrate --force &&
+        php artisan db:seed --force &&
+        php artisan serve --host=0.0.0.0 --port=8000
+      "
+
+  # Queue Worker
+  queue-worker:
+    build:
+      context: ./apps/api
+      dockerfile: ../../infrastructure/docker/api/Dockerfile
+    container_name: agd-queue
+    environment:
+      APP_ENV: local
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: akademi_guru_digital
+      DB_USERNAME: agd_user
+      DB_PASSWORD: agd_password_dev
+      REDIS_HOST: redis
+      QUEUE_CONNECTION: redis
+    volumes:
+      - ./apps/api:/var/www/html
+    depends_on:
+      - api
+    command: php artisan queue:work --sleep=3 --tries=3
+
+  # Vue.js Frontend Dev Server
+  web:
+    image: node:20-alpine
+    container_name: agd-web
+    working_dir: /app
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:8000
+    volumes:
+      - ./apps/web:/app
+    command: >
+      sh -c "
+        npm install &&
+        npm run dev -- --host 0.0.0.0
+      "
+
+volumes:
+  postgres_data:
+  redis_data:
+  api_storage:

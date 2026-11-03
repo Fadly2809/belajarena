@@ -1,0 +1,22 @@
+{
+  "appId": "id.sch.smpn6kendari.siswa",
+  "appName": "SMPN 6 Kendari Siswa",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true,
+    "buildOptions": {
+      "keystorePath": "",
+      "releaseType": "APK"
+    }
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#1e1b4b"
+    }
+  }
+}

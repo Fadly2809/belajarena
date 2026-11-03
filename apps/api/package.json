@@ -1,0 +1,13 @@
+{
+  "name": "belajarena-api",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Backend API Belajarena (Node.js monolith)",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3"
+  }
+}

@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="880" viewBox="0 0 200 220">
+
+  <defs>
+    <!-- Shared Filters -->
+    <filter id="eyeGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3.5" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <!-- 1. ROBOT GLITCH GRADIENTS -->
+    <linearGradient id="robotArmorGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="40%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#082f49" />
+    </linearGradient>
+    <linearGradient id="robotMetalGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#94a3b8" />
+      <stop offset="50%" stop-color="#475569" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <radialGradient id="robotCoreGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="35%" stop-color="#38bdf8" />
+      <stop offset="80%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#082f49" />
+    </radialGradient>
+
+    <!-- 2. RAKUS MAXIMUS GRADIENTS -->
+    <radialGradient id="rakusBodyGrad" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#c084fc" />
+      <stop offset="60%" stop-color="#7c3aed" />
+      <stop offset="100%" stop-color="#1e1035" />
+    </radialGradient>
+    <linearGradient id="rakusHornGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="50%" stop-color="#eab308" />
+      <stop offset="100%" stop-color="#713f12" />
+    </linearGradient>
+    <linearGradient id="rakusArmorGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#475569" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+
+    <!-- 3. VIRUS LAMBDA GRADIENTS -->
+    <radialGradient id="virusCoreGrad" cx="45%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#6ee7b7" />
+      <stop offset="55%" stop-color="#059669" />
+      <stop offset="100%" stop-color="#022c22" />
+    </radialGradient>
+    <linearGradient id="virusTentacleGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#059669" />
+      <stop offset="100%" stop-color="#022c22" />
+    </linearGradient>
+    <radialGradient id="virusEyeGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="40%" stop-color="#a3e635" />
+      <stop offset="85%" stop-color="#15803d" />
+      <stop offset="100%" stop-color="#052e16" />
+    </radialGradient>
+
+    <!-- 4. BUGZILLA COMPILER GRADIENTS -->
+    <linearGradient id="bugShellGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fcd34d" />
+      <stop offset="45%" stop-color="#d97706" />
+      <stop offset="100%" stop-color="#451a03" />
+    </linearGradient>
+    <linearGradient id="bugMandibleGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fef3c7" />
+      <stop offset="50%" stop-color="#b45309" />
+      <stop offset="100%" stop-color="#292524" />
+    </linearGradient>
+    <radialGradient id="bugEyeGrad" cx="45%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="40%" stop-color="#ef4444" />
+      <stop offset="85%" stop-color="#991b1b" />
+      <stop offset="100%" stop-color="#450a0a" />
+    </radialGradient>
+  </defs>
+
+
+    <g class="boss-character char-virus">
+      <!-- Radiating Spikes (Peplomers) -->
+      <g class="virus-spikes">
+        <line x1="65" y1="65" x2="40" y2="40" stroke="#047857" stroke-width="5" stroke-linecap="round" />
+        <circle cx="36" cy="36" r="8" fill="#6ee7b7" filter="url(#eyeGlow)" />
+        <line x1="135" y1="65" x2="160" y2="40" stroke="#047857" stroke-width="5" stroke-linecap="round" />
+        <circle cx="164" cy="36" r="8" fill="#6ee7b7" filter="url(#eyeGlow)" />
+        <line x1="45" y1="100" x2="18" y2="95" stroke="#047857" stroke-width="5" stroke-linecap="round" />
+        <circle cx="14" cy="95" r="7.5" fill="#6ee7b7" filter="url(#eyeGlow)" />
+        <line x1="155" y1="100" x2="182" y2="95" stroke="#047857" stroke-width="5" stroke-linecap="round" />
+        <circle cx="186" cy="95" r="7.5" fill="#6ee7b7" filter="url(#eyeGlow)" />
+        <line x1="52" y1="132" x2="28" y2="150" stroke="#047857" stroke-width="4.5" stroke-linecap="round" />
+        <circle cx="24" cy="154" r="6.5" fill="#6ee7b7" filter="url(#eyeGlow)" />
+        <line x1="148" y1="132" x2="172" y2="150" stroke="#047857" stroke-width="4.5" stroke-linecap="round" />
+        <circle cx="176" cy="154" r="6.5" fill="#6ee7b7" filter="url(#eyeGlow)" />
+      </g>
+
+      <!-- Undulating Bio-Tentacles -->
+      <g class="virus-tentacles">
+        <path d="M 68 140 C 50 160, 42 185, 48 200 C 52 205, 62 200, 56 185 C 52 175, 65 158, 76 145 Z" fill="url(#virusTentacleGrad)" stroke="#022c22" stroke-width="1.5" />
+        <circle cx="50" cy="190" r="3" fill="#a3e635" />
+        <path d="M 82 148 C 72 172, 70 192, 76 205 C 80 208, 88 202, 84 190 C 80 178, 88 165, 92 150 Z" fill="url(#virusTentacleGrad)" stroke="#022c22" stroke-width="1.5" />
+        <circle cx="78" cy="195" r="3" fill="#a3e635" />
+        <path d="M 96 150 C 94 175, 102 195, 100 208 C 98 212, 106 212, 108 202 C 110 188, 104 172, 104 150 Z" fill="url(#virusTentacleGrad)" stroke="#022c22" stroke-width="1.5" />
+        <circle cx="102" cy="198" r="3.5" fill="#a3e635" />
+        <path d="M 118 148 C 128 172, 130 192, 124 205 C 120 208, 112 202, 116 190 C 120 178, 112 165, 108 150 Z" fill="url(#virusTentacleGrad)" stroke="#022c22" stroke-width="1.5" />
+        <circle cx="122" cy="195" r="3" fill="#a3e635" />
+        <path d="M 132 140 C 150 160, 158 185, 152 200 C 148 205, 138 200, 144 185 C 148 175, 135 158, 124 145 Z" fill="url(#virusTentacleGrad)" stroke="#022c22" stroke-width="1.5" />
+        <circle cx="150" cy="190" r="3" fill="#a3e635" />
+      </g>
+
+      <!-- Spherical Viral Capsid Core -->
+      <g class="virus-body">
+        <circle cx="100" cy="100" r="54" fill="url(#virusCoreGrad)" stroke="#022c22" stroke-width="3" />
+        <polygon points="100,52 135,70 100,90 65,70" fill="#10b981" opacity="0.35" stroke="#34d399" stroke-width="1" />
+        <polygon points="65,70 100,90 75,130 48,110" fill="#047857" opacity="0.4" stroke="#34d399" stroke-width="1" />
+        <polygon points="135,70 100,90 125,130 152,110" fill="#047857" opacity="0.4" stroke="#34d399" stroke-width="1" />
+        <polygon points="75,130 100,90 125,130 100,148" fill="#065f46" opacity="0.5" stroke="#34d399" stroke-width="1" />
+
+        <!-- Lambda Crest -->
+        <g class="virus-crest">
+          <path d="M 100 24 L 88 50 M 96 34 L 112 50" fill="none" stroke="#6ee7b7" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#eyeGlow)" />
+          <circle cx="100" cy="22" r="3.5" fill="#a3e635" filter="url(#eyeGlow)" />
+        </g>
+        
+      <circle cx="100" cy="100" r="22" fill="#022c22" stroke="#ef4444" stroke-width="2.5" />
+      <circle cx="100" cy="100" r="16" fill="url(#virusEyeGrad)" filter="url(#eyeGlow)" />
+      <polygon points="100,86 104,100 100,114 96,100" fill="#dc2626" />
+      <circle cx="102" cy="98" r="2.5" fill="#ffffff" />
+      <circle cx="74" cy="92" r="7" fill="#022c22" stroke="#ef4444" stroke-width="1.5" />
+      <circle cx="74" cy="92" r="4.5" fill="#f87171" filter="url(#eyeGlow)" />
+      <circle cx="126" cy="92" r="7" fill="#022c22" stroke="#ef4444" stroke-width="1.5" />
+      <circle cx="126" cy="92" r="4.5" fill="#f87171" filter="url(#eyeGlow)" />
+      <path d="M 88 126 Q 100 138 112 126" stroke="#022c22" stroke-width="3" fill="#450a0a" stroke-linecap="round" />
+    
+      </g>
+      <!-- Orbiting Mini Spores -->
+      <circle cx="32" cy="120" r="7" fill="#10b981" stroke="#047857" stroke-width="1.5" />
+      <circle cx="32" cy="120" r="3" fill="#6ee7b7" />
+      <circle cx="170" cy="122" r="6" fill="#10b981" stroke="#047857" stroke-width="1.5" />
+      <circle cx="170" cy="122" r="2.5" fill="#6ee7b7" />
+    </g>
+  
+</svg>

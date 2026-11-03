@@ -1,0 +1,16 @@
+{
+  "short_name": "Siswa SMPN6",
+  "name": "Portal Siswa Digital SMP Negeri 6 Kendari",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ],
+  "start_url": "/student",
+  "background_color": "#1e1b4b",
+  "theme_color": "#1e1b4b",
+  "display": "standalone",
+  "orientation": "portrait"
+}

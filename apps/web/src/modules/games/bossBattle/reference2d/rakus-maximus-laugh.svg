@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="880" viewBox="0 0 200 220">
+
+  <defs>
+    <!-- Shared Filters -->
+    <filter id="eyeGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3.5" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <!-- 1. ROBOT GLITCH GRADIENTS -->
+    <linearGradient id="robotArmorGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="40%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#082f49" />
+    </linearGradient>
+    <linearGradient id="robotMetalGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#94a3b8" />
+      <stop offset="50%" stop-color="#475569" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <radialGradient id="robotCoreGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="35%" stop-color="#38bdf8" />
+      <stop offset="80%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#082f49" />
+    </radialGradient>
+
+    <!-- 2. RAKUS MAXIMUS GRADIENTS -->
+    <radialGradient id="rakusBodyGrad" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#c084fc" />
+      <stop offset="60%" stop-color="#7c3aed" />
+      <stop offset="100%" stop-color="#1e1035" />
+    </radialGradient>
+    <linearGradient id="rakusHornGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="50%" stop-color="#eab308" />
+      <stop offset="100%" stop-color="#713f12" />
+    </linearGradient>
+    <linearGradient id="rakusArmorGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#475569" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+
+    <!-- 3. VIRUS LAMBDA GRADIENTS -->
+    <radialGradient id="virusCoreGrad" cx="45%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#6ee7b7" />
+      <stop offset="55%" stop-color="#059669" />
+      <stop offset="100%" stop-color="#022c22" />
+    </radialGradient>
+    <linearGradient id="virusTentacleGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#059669" />
+      <stop offset="100%" stop-color="#022c22" />
+    </linearGradient>
+    <radialGradient id="virusEyeGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="40%" stop-color="#a3e635" />
+      <stop offset="85%" stop-color="#15803d" />
+      <stop offset="100%" stop-color="#052e16" />
+    </radialGradient>
+
+    <!-- 4. BUGZILLA COMPILER GRADIENTS -->
+    <linearGradient id="bugShellGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fcd34d" />
+      <stop offset="45%" stop-color="#d97706" />
+      <stop offset="100%" stop-color="#451a03" />
+    </linearGradient>
+    <linearGradient id="bugMandibleGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fef3c7" />
+      <stop offset="50%" stop-color="#b45309" />
+      <stop offset="100%" stop-color="#292524" />
+    </linearGradient>
+    <radialGradient id="bugEyeGrad" cx="45%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="40%" stop-color="#ef4444" />
+      <stop offset="85%" stop-color="#991b1b" />
+      <stop offset="100%" stop-color="#450a0a" />
+    </radialGradient>
+  </defs>
+
+
+    <g class="boss-character char-rakus rakus-standing">
+      <!-- Horns -->
+      <g class="horns">
+        <path d="M 58 72 C 32 46, 12 18, 28 4 C 46 16, 62 44, 72 68 Z" fill="url(#rakusHornGrad)" stroke="#713f12" stroke-width="2" />
+        <path d="M 36 24 Q 46 32 54 28" stroke="#fef08a" stroke-width="2" fill="none" opacity="0.8" />
+        <path d="M 44 42 Q 54 48 62 44" stroke="#fef08a" stroke-width="2" fill="none" opacity="0.8" />
+        <path d="M 52 58 Q 62 62 68 58" stroke="#fef08a" stroke-width="2" fill="none" opacity="0.8" />
+
+        <path d="M 142 72 C 168 46, 188 18, 172 4 C 154 16, 138 44, 128 68 Z" fill="url(#rakusHornGrad)" stroke="#713f12" stroke-width="2" />
+        <path d="M 164 24 Q 154 32 146 28" stroke="#fef08a" stroke-width="2" fill="none" opacity="0.8" />
+        <path d="M 156 42 Q 146 48 138 44" stroke="#fef08a" stroke-width="2" fill="none" opacity="0.8" />
+        <path d="M 148 58 Q 138 62 132 58" stroke="#fef08a" stroke-width="2" fill="none" opacity="0.8" />
+      </g>
+
+      <!-- Torso -->
+      <path d="M 46 76 C 35 48, 165 48, 154 76 C 182 110, 185 168, 160 194 C 125 204, 75 204, 40 194 C 15 168, 18 110, 46 76 Z" fill="url(#rakusBodyGrad)" stroke="#1e1035" stroke-width="2.5" />
+      <path d="M 70 60 Q 82 56 94 60" stroke="#c084fc" stroke-width="2" fill="none" opacity="0.5" />
+      <path d="M 106 60 Q 118 56 130 60" stroke="#c084fc" stroke-width="2" fill="none" opacity="0.5" />
+      <ellipse cx="46" cy="115" rx="6" ry="4" fill="#581c87" opacity="0.6" />
+      <ellipse cx="154" cy="115" rx="6" ry="4" fill="#581c87" opacity="0.6" />
+
+      <!-- Pauldrons -->
+      <path d="M 28 82 L 64 70 L 58 108 L 22 98 Z" fill="url(#rakusArmorGrad)" stroke="#facc15" stroke-width="2" />
+      <polygon points="26,80 14,66 34,74" fill="#eab308" stroke="#713f12" stroke-width="1" />
+      <circle cx="36" cy="94" r="2.5" fill="#fde047" />
+      <circle cx="50" cy="90" r="2.5" fill="#fde047" />
+      <path d="M 172 82 L 136 70 L 142 108 L 178 98 Z" fill="url(#rakusArmorGrad)" stroke="#facc15" stroke-width="2" />
+      <polygon points="174,80 186,66 166,74" fill="#eab308" stroke="#713f12" stroke-width="1" />
+      <circle cx="164" cy="94" r="2.5" fill="#fde047" />
+      <circle cx="150" cy="90" r="2.5" fill="#fde047" />
+
+      <!-- Chest Plate & Core -->
+      <path d="M 68 116 L 100 102 L 132 116 L 122 154 L 100 164 L 78 154 Z" fill="#1e1b4b" stroke="#eab308" stroke-width="2.5" />
+      <circle cx="78" cy="120" r="2" fill="#facc15" />
+      <circle cx="122" cy="120" r="2" fill="#facc15" />
+      <circle cx="100" cy="158" r="2" fill="#facc15" />
+      <polygon points="100,118 114,134 100,150 86,134" fill="#f43f5e" filter="url(#eyeGlow)" />
+
+      <!-- Front Paws & Claws -->
+      <g class="front-paws">
+        <path d="M 45 106 C 28 120, 22 152, 34 182 C 45 186, 62 186, 68 174 C 72 158, 62 128, 54 112 Z" fill="url(#rakusBodyGrad)" stroke="#1e1035" stroke-width="2" />
+        <circle cx="36" cy="180" r="5" fill="#facc15" stroke="#713f12" stroke-width="1" />
+        <circle cx="48" cy="184" r="5.5" fill="#facc15" stroke="#713f12" stroke-width="1" />
+        <circle cx="60" cy="182" r="5" fill="#facc15" stroke="#713f12" stroke-width="1" />
+        <path d="M 155 106 C 172 120, 178 152, 166 182 C 155 186, 138 186, 132 174 C 128 158, 138 128, 146 112 Z" fill="url(#rakusBodyGrad)" stroke="#1e1035" stroke-width="2" />
+        <circle cx="164" cy="180" r="5" fill="#facc15" stroke="#713f12" stroke-width="1" />
+        <circle cx="152" cy="184" r="5.5" fill="#facc15" stroke="#713f12" stroke-width="1" />
+        <circle cx="140" cy="182" r="5" fill="#facc15" stroke="#713f12" stroke-width="1" />
+      </g>
+
+      <!-- Face -->
+      <g class="face">
+        <path d="M 64 78 Q 100 86 136 78" stroke="#1e1035" stroke-width="3" fill="none" />
+        <ellipse cx="78" cy="85" rx="14" ry="11" fill="#0f0728" />
+        <polygon points="68,80 88,84 86,92 66,88" fill="#ea580c" />
+        <circle cx="78" cy="86" r="4.5" fill="#fef08a" filter="url(#eyeGlow)" />
+        <circle cx="79" cy="85" r="1.5" fill="#ffffff" />
+        <ellipse cx="122" cy="85" rx="14" ry="11" fill="#0f0728" />
+        <polygon points="132,80 112,84 114,92 134,88" fill="#ea580c" />
+        <circle cx="122" cy="86" r="4.5" fill="#fef08a" filter="url(#eyeGlow)" />
+        <circle cx="121" cy="85" r="1.5" fill="#ffffff" />
+        
+      <path d="M 68 98 Q 100 134 132 98 Z" fill="#450a0a" stroke="#1e1035" stroke-width="2.5" />
+      <polygon points="76,100 80,109 85,100" fill="#ffffff" />
+      <polygon points="90,102 95,112 100,102" fill="#ffffff" />
+      <polygon points="105,102 110,112 115,102" fill="#ffffff" />
+      <polygon points="120,100 124,109 128,100" fill="#ffffff" />
+      <polygon points="74,115 80,98 86,115" fill="#fef08a" stroke="#713f12" stroke-width="1" />
+      <polygon points="114,115 120,98 126,115" fill="#fef08a" stroke="#713f12" stroke-width="1" />
+      <ellipse cx="100" cy="122" rx="14" ry="7" fill="#f43f5e" />
+    
+      </g>
+    </g>
+  
+</svg>
