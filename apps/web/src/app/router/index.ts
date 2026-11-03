@@ -301,7 +301,7 @@ const router = createRouter({
           path: '',
           name: 'games',
           component: () => import('@/modules/games/GamesPage.vue'),
-          meta: { title: 'Games Pembelajaran' }
+          meta: { title: 'Games Pembelajaran', layout: 'blank' }
         },
         {
           path: 'session/:id',

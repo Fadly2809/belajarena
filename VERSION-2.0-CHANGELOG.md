@@ -77,6 +77,27 @@ Menyelaraskan tema antarmuka di mode Guru dan Siswa mengikuti panduan desain mod
 
 ---
 
+### E. Transformasi Menu Edu-Games — Fullscreen Hero Showcase Page (100dvh)
+- **Tampilan Satu Layar Penuh (100dvh Desktop / Proyektor)**:
+  - Mengonfigurasi `layout: 'blank'` pada route `/games` di `apps/web/src/app/router/index.ts` sehingga halaman dapat memanfaatkan seluruh layar tanpa scroll.
+  - Latar bertema radial gradient dinamis yang berganti halus saat memilih game.
+  - Efek kata raksasa condensed di tengah layar (`BOSS`, `KILAT`, `INGAT`, `BALAP`, `TAHAN`) di belakang visual utama.
+- **Pemetaan 5 Game Edu-Games**:
+  1. **Final Boss Battle**: Kata "BOSS", warna Crimson Fury (`#E11D48`), visual Robot Glitch asli dari `BossSprite.vue` (tanpa redesain karakter).
+  2. **Fast Quiz**: Kata "KILAT", warna Electric Blaze (`#F97316`), visual `FastQuizHeroVisual.vue` (kartu soal 3D tilt, petir energi tinggi `⚡`, dial timer).
+  3. **Memory Match**: Kata "INGAT", warna Royal Mystic (`#7C3AED`), visual `MemoryMatchHeroVisual.vue` (sepasang kartu memori mengambang `🧠` dan `✨` bergelombang sinergi).
+  4. **Class Race**: Kata "BALAP", warna Emerald Nitro (`#16A34A`), visual `ClassRaceHeroVisual.vue` (kendaraan sirkuit aerodinamis, garis kecepatan, bendera finis `🏁`).
+  5. **Tower Defense Kelas**: Kata "TAHAN", warna Sapphire Shield (`#2563EB`), visual `TowerDefenseHeroVisual.vue` (citadel kristal energi, cincin pelindung pertahanan, 5 gelombang).
+- **Elemen Navigasi & Kontrol**:
+  - **Tombol "Kembali ke Dashboard" (Kanan Atas Wajib)**: Selalu terlihat dengan kontras tinggi di atas seluruh kelima warna tema dan semua resolusi layar (desktop, tablet, HP) mengarah ke `/dashboard`.
+  - **Header Ramping**: Logo Belajarena di kiri, navigasi guru di tengah.
+  - **Pilih Game & Chip Spesifikasi**: Selector 5 titik warna dengan active ring, nama game aktif, dan pill info (Pemain, Format/Soal, Mode).
+  - **Strip Bawah**: 5 kartu mini, panah navigasi (`‹` / `›`), keyboard navigation (`ArrowLeft`, `ArrowRight`, `Enter`), dan persistensi `sessionStorage`.
+  - **Dukungan Aksesibilitas**: Toggle Mode Ringan & `prefers-reduced-motion` otomatis mematikan partikel splatter dan mereduksi animasi.
+  - **Tampilan Sekunder ("Lihat Semua Game")**: Membuka grid katalog klasik dan riwayat sesi game lengkap tanpa kehilangan fungsi apa pun.
+
+---
+
 ## 3. Hasil Pengujian & Verifikasi
 
 - **TypeScript / Vue Compiler (`vue-tsc -b`)**: `0 errors, 0 warnings`.
@@ -91,3 +112,4 @@ Menyelaraskan tema antarmuka di mode Guru dan Siswa mengikuti panduan desain mod
 - **Source Code Archive**: `belajarena-v2-stable-backup.zip` (Arsip bersih bebas `node_modules`, `dist`, dan berkas sementara).
 - **Database Snapshot**: `apps/api/database/database.backup-v2-stable.json`.
 - **Git Repository Snapshot**: Tag `v2.0-stable` diinisialisasi pada branch utama.
+
