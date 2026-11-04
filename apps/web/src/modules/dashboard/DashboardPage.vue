@@ -21,6 +21,77 @@
       </div>
     </div>
 
+    <!-- FITUR UTAMA BELAJARENA: 2 KARTU PINTASAN BESAR TERATAS -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <!-- Card 1: Mulai Edu-Games (Ungu–Oranye Permainan) -->
+      <RouterLink
+        to="/games"
+        class="group relative overflow-hidden rounded-[26px] bg-gradient-to-br from-[#4c1d95] via-[#6d28d9] to-[#d97706] p-6 text-white shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border border-white/20 flex flex-col justify-between min-h-[170px]"
+      >
+        <div class="absolute -right-8 -bottom-8 w-36 h-36 bg-amber-400/20 rounded-full blur-2xl pointer-events-none transition-transform group-hover:scale-125"></div>
+
+        <div>
+          <div class="flex items-center justify-between gap-3 mb-2">
+            <div class="flex items-center gap-2.5">
+              <div class="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shadow-inner ring-1 ring-white/30">
+                🎮
+              </div>
+              <div>
+                <span class="text-[10px] font-black uppercase tracking-wider text-amber-300">Fitur Utama</span>
+                <h3 class="text-xl font-black text-white tracking-tight leading-none">Mulai Edu-Games</h3>
+              </div>
+            </div>
+            <span class="px-2.5 py-1 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1">
+              <span>⭐</span> Unggulan
+            </span>
+          </div>
+
+          <p class="text-xs text-purple-100 font-medium leading-relaxed mt-2 max-w-md">
+            Mainkan game belajar bersama kelas — Boss Battle 3D, Ulangan Gamifikasi, Tower Defense & Balapan Cepat.
+          </p>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-white/20 flex items-center justify-between text-xs font-extrabold text-amber-200 group-hover:text-white transition">
+          <span>Buka Arena Edu-Games</span>
+          <span class="text-sm font-black transition-transform group-hover:translate-x-1.5">→</span>
+        </div>
+      </RouterLink>
+
+      <!-- Card 2: Mulai Live Presentasi (Biru–Sian Teknologi) -->
+      <RouterLink
+        to="/presentations"
+        class="group relative overflow-hidden rounded-[26px] bg-gradient-to-br from-[#0369a1] via-[#0284c7] to-[#0d9488] p-6 text-white shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border border-white/20 flex flex-col justify-between min-h-[170px]"
+      >
+        <div class="absolute -right-8 -bottom-8 w-36 h-36 bg-cyan-300/20 rounded-full blur-2xl pointer-events-none transition-transform group-hover:scale-125"></div>
+
+        <div>
+          <div class="flex items-center justify-between gap-3 mb-2">
+            <div class="flex items-center gap-2.5">
+              <div class="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shadow-inner ring-1 ring-white/30">
+                📡
+              </div>
+              <div>
+                <span class="text-[10px] font-black uppercase tracking-wider text-cyan-200">Fitur Utama</span>
+                <h3 class="text-xl font-black text-white tracking-tight leading-none">Mulai Live Presentasi</h3>
+              </div>
+            </div>
+            <span class="px-2.5 py-1 rounded-full bg-cyan-300 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1">
+              <span>⭐</span> Unggulan
+            </span>
+          </div>
+
+          <p class="text-xs text-sky-100 font-medium leading-relaxed mt-2 max-w-md">
+            Presentasikan slide langsung ke HP siswa dengan sinkronisasi cermin proyektor real-time di kelas.
+          </p>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-white/20 flex items-center justify-between text-xs font-extrabold text-cyan-200 group-hover:text-white transition">
+          <span>Buka Studio Presentasi</span>
+          <span class="text-sm font-black transition-transform group-hover:translate-x-1.5">→</span>
+        </div>
+      </RouterLink>
+    </div>
+
     <!-- 2. TOP 4 STAT CARDS ROW (Reference Modern Dashboard) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
       <!-- Card 1: Jadwal Mengajar (Deep Petrol) -->

@@ -24,6 +24,76 @@
       </div>
     </div>
 
+    <!-- Tab Switcher: Live Presentasi Studio vs Pustaka Materi Ajar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-2 sm:p-2.5 rounded-[22px] border border-slate-200/80 shadow-xs">
+      <div class="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-100">
+        <button
+          @click="switchTab('studio')"
+          class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2"
+          :class="activeTab === 'studio' ? 'bg-[#0c2b3d] text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+        >
+          <span>📡</span>
+          <span>Studio Live Presentasi</span>
+          <span v-if="activeSession" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        </button>
+        <button
+          @click="switchTab('library')"
+          class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2"
+          :class="activeTab === 'library' ? 'bg-[#0c2b3d] text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+        >
+          <span>📚</span>
+          <span>Pustaka Materi Ajar (File & Slide)</span>
+          <span class="text-[10px] px-1.5 py-0.5 rounded-full" :class="activeTab === 'library' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'">
+            {{ presentations.length }}
+          </span>
+        </button>
+      </div>
+
+      <div class="text-xs text-slate-500 font-medium px-2">
+        <span v-if="activeTab === 'studio'">⚡ Fokus: Pemaparan cermin proyektor & mirroring HP siswa</span>
+        <span v-else>📁 Fokus: Arsip file slide PPTX, PDF & materi pembelajaran</span>
+      </div>
+    </div>
+
+    <!-- Student PIN Entry Card (Tampil jika role siswa atau di mode live) -->
+    <div
+      v-if="isStudent"
+      class="p-6 rounded-[24px] bg-gradient-to-br from-[#0c2b3d] to-[#164e63] text-white shadow-xl border-2 border-cyan-400/40 relative overflow-hidden"
+    >
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 rounded-2xl bg-cyan-400 text-slate-950 flex items-center justify-center text-3xl font-black shadow-lg">
+            📱
+          </div>
+          <div>
+            <span class="px-2.5 py-0.5 rounded-full bg-cyan-400/20 text-cyan-300 border border-cyan-400/30 text-[10px] font-bold uppercase tracking-wider">
+              Portal Siswa
+            </span>
+            <h2 class="text-lg font-black text-white mt-1">Gabung Sesi Live Presentasi</h2>
+            <p class="text-xs text-slate-300 mt-0.5">
+              Masukkan 6 digit kode PIN yang ditampilkan oleh guru di layar proyektor kelas.
+            </p>
+          </div>
+        </div>
+
+        <form @submit.prevent="joinStudentSession()" class="flex items-center gap-2">
+          <input
+            v-model="studentJoinPin"
+            type="text"
+            maxlength="10"
+            placeholder="Contoh: 849201"
+            class="px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white font-mono font-bold tracking-widest text-center text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 placeholder:text-slate-400 uppercase"
+          />
+          <button
+            type="submit"
+            class="px-5 py-2.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-black text-xs shadow-md transition whitespace-nowrap"
+          >
+            Masuk Sesi 🚀
+          </button>
+        </form>
+      </div>
+    </div>
+
     <!-- 2. Top 4 Stat Cards Row (Matching Dashboard Theme) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
       <!-- Card 1: Total Modul Presentasi (Deep Petrol) -->
@@ -963,11 +1033,45 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
 
 const router = useRouter()
+const route = useRoute()
+const authStore = useAuthStore()
+const isStudent = computed(() => authStore.hasRole('student'))
+
+const activeTab = ref<'studio' | 'library'>(route.query.tab === 'library' ? 'library' : 'studio')
+
+watch(() => route.query.tab, (newTab) => {
+  if (newTab === 'library') {
+    activeTab.value = 'library'
+  } else if (newTab === 'studio') {
+    activeTab.value = 'studio'
+  }
+})
+
+function switchTab(tab: 'studio' | 'library') {
+  activeTab.value = tab
+  router.replace({
+    query: {
+      ...route.query,
+      tab
+    }
+  })
+}
+
+const studentJoinPin = ref('')
+function joinStudentSession(pin?: string) {
+  const code = (pin || studentJoinPin.value).trim()
+  if (!code) {
+    alert('Silakan masukkan PIN sesi presentasi terlebih dahulu.')
+    return
+  }
+  router.push(`/presentation-live/${code}`)
+}
 
 const loading = ref(false)
 const filterSubject = ref('all')

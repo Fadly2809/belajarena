@@ -1,8 +1,8 @@
 <template>
   <div class="min-h-screen flex bg-[#e8edf2] text-slate-800 font-sans">
-    <!-- Deep Petrol Sidebar (Reference Modern Dashboard) -->
+    <!-- Deep Petrol Sidebar (Desktop & Tablet) -->
     <aside
-      class="fixed inset-y-0 left-0 z-30 flex flex-col bg-[#0c2b3d] transition-all duration-300"
+      class="fixed inset-y-0 left-0 z-30 hidden md:flex flex-col bg-[#0c2b3d] transition-all duration-300"
       :class="sidebarOpen ? 'w-64' : 'w-20'"
     >
       <!-- Top Brand Logo -->
@@ -39,46 +39,241 @@
         </div>
       </div>
 
-      <!-- Navigation Links with Sliding Carved Indicator -->
-      <nav
-        ref="navContainerRef"
-        class="relative flex-1 overflow-y-auto pt-2 pb-4 space-y-1 custom-sidebar-scroll"
-      >
-        <!-- Floating Sliding Active Pill -->
-        <div
-          v-if="indicatorReady"
-          class="nav-sliding-pill"
-          :style="indicatorStyle"
-        ></div>
-
-        <template v-for="item in navItems" :key="item.name">
-          <!-- Section Divider Header -->
-          <div
-            v-if="item.section && sidebarOpen"
-            class="pt-3 pb-1 px-4 text-[10px] font-bold tracking-wider uppercase text-slate-400/80"
-          >
-            {{ item.section }}
-          </div>
-          <div v-else-if="item.section && !sidebarOpen" class="my-2 border-t border-white/10"></div>
-
+      <!-- Navigation Links (Struktur Baru Belajarena) -->
+      <nav class="relative flex-1 overflow-y-auto pt-1 pb-4 px-2 space-y-2.5 custom-sidebar-scroll">
+        <!-- 1. BERANDA / DASHBOARD -->
+        <div>
           <RouterLink
-            :to="item.to"
-            :ref="(el) => setNavItemRef(item.to, el)"
-            class="nav-item-link group"
-            :class="{ 'active-text': isActive(item.to) }"
-            :title="!sidebarOpen ? item.label : undefined"
-            @click="handleNavClick(item.to)"
+            to="/dashboard"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150"
+            :class="isRouteActive('/dashboard') ? 'bg-white text-[#0c2b3d] font-bold shadow-md' : 'text-slate-300/80 hover:text-white hover:bg-white/10'"
+            :title="!sidebarOpen ? 'Dashboard' : undefined"
           >
-            <span
-              class="w-5 h-5 flex-shrink-0 transition-colors duration-200"
-              :class="isActive(item.to) ? 'text-[#0c2b3d]' : 'text-slate-300/80 group-hover:text-white'"
-              v-html="item.icon"
-            ></span>
-            <span v-if="sidebarOpen" class="truncate text-sm tracking-wide transition-colors duration-200">
-              {{ item.label }}
+            <span class="w-5 h-5 flex-shrink-0 flex items-center justify-center">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+              </svg>
+            </span>
+            <span v-if="sidebarOpen" class="truncate tracking-wide text-sm">
+              Dashboard
             </span>
           </RouterLink>
-        </template>
+        </div>
+
+        <!-- 2. FITUR UTAMA (DUA KARTU MENONJOL: EDU-GAMES & LIVE PRESENTASI) -->
+        <div class="space-y-2">
+          <div v-if="sidebarOpen" class="px-2 pt-1 text-[10px] font-extrabold tracking-wider uppercase text-amber-300/90 flex items-center justify-between">
+            <span class="flex items-center gap-1">⭐ FITUR UTAMA</span>
+            <span class="text-[9px] bg-amber-400/20 text-amber-300 px-1.5 py-0.2 rounded font-mono font-bold">UNGGULAN</span>
+          </div>
+          <div v-else class="my-1 border-t border-white/10"></div>
+
+          <!-- KARTU 1: EDU-GAMES -->
+          <RouterLink
+            to="/games"
+            class="block rounded-2xl transition-all duration-200 group relative overflow-hidden"
+            :class="[
+              sidebarOpen
+                ? 'p-3 bg-gradient-to-br from-[#4c1d95] via-[#6d28d9] to-[#d97706] text-white shadow-md border border-white/20 hover:shadow-xl hover:scale-[1.02]'
+                : 'p-2 flex items-center justify-center bg-gradient-to-br from-[#4c1d95] to-[#d97706] text-white mx-auto w-11 h-11',
+              isRouteActive('/games') ? 'ring-2 ring-amber-400 shadow-amber-500/30' : ''
+            ]"
+            :title="!sidebarOpen ? 'Edu-Games (Unggulan)' : undefined"
+          >
+            <div v-if="sidebarOpen">
+              <div class="flex items-center justify-between gap-1.5">
+                <div class="flex items-center gap-2">
+                  <span class="text-base">🎮</span>
+                  <span class="text-xs font-black text-white tracking-tight leading-none">Edu-Games</span>
+                </div>
+                <span class="px-1.5 py-0.5 rounded-md bg-amber-400 text-slate-950 text-[9px] font-black uppercase tracking-wider shadow-2xs">
+                  Unggulan
+                </span>
+              </div>
+              <p class="text-[10px] text-purple-100/90 leading-tight mt-1.5 font-medium line-clamp-1">
+                Mainkan game belajar bersama kelas
+              </p>
+            </div>
+            <div v-else class="text-lg">
+              🎮
+            </div>
+          </RouterLink>
+
+          <!-- KARTU 2: LIVE PRESENTASI -->
+          <RouterLink
+            to="/presentations"
+            class="block rounded-2xl transition-all duration-200 group relative overflow-hidden"
+            :class="[
+              sidebarOpen
+                ? 'p-3 bg-gradient-to-br from-[#0369a1] via-[#0284c7] to-[#0d9488] text-white shadow-md border border-white/20 hover:shadow-xl hover:scale-[1.02]'
+                : 'p-2 flex items-center justify-center bg-gradient-to-br from-[#0369a1] to-[#0d9488] text-white mx-auto w-11 h-11',
+              isRouteActive('/presentations') ? 'ring-2 ring-cyan-300 shadow-cyan-500/30' : ''
+            ]"
+            :title="!sidebarOpen ? 'Live Presentasi (Unggulan)' : undefined"
+          >
+            <div v-if="sidebarOpen">
+              <div class="flex items-center justify-between gap-1.5">
+                <div class="flex items-center gap-2">
+                  <span class="text-base">📡</span>
+                  <span class="text-xs font-black text-white tracking-tight leading-none">Live Presentasi</span>
+                </div>
+                <span class="px-1.5 py-0.5 rounded-md bg-cyan-300 text-slate-950 text-[9px] font-black uppercase tracking-wider shadow-2xs">
+                  Unggulan
+                </span>
+              </div>
+              <p class="text-[10px] text-sky-100/90 leading-tight mt-1.5 font-medium line-clamp-1">
+                {{ isStudent ? 'Gabung sesi live presentasi guru' : 'Presentasikan slide langsung ke HP siswa' }}
+              </p>
+            </div>
+            <div v-else class="text-lg">
+              📡
+            </div>
+          </RouterLink>
+        </div>
+
+        <!-- 3. AKADEMIK (SATU MENU GABUNGAN: ACCORDION & PUSAT HUB) -->
+        <div class="pt-1">
+          <div v-if="sidebarOpen" class="space-y-1">
+            <!-- Accordion Header -->
+            <div
+              class="flex items-center justify-between px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition select-none group"
+              :class="{ 'bg-white/10 text-white font-semibold': isCurrentRouteInAkademik() }"
+            >
+              <div
+                class="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer"
+                @click="isAkademikOpen = !isAkademikOpen"
+              >
+                <span class="text-base">📁</span>
+                <span class="text-sm font-bold tracking-wide truncate">Akademik</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-white/15 text-slate-300 font-mono font-bold">
+                  {{ visibleAkademikCount }}
+                </span>
+              </div>
+
+              <div class="flex items-center gap-1">
+                <!-- Direct Hub Page Shortcut -->
+                <RouterLink
+                  to="/academic"
+                  class="p-1 rounded-lg hover:bg-white/20 text-slate-300 hover:text-white transition"
+                  title="Buka Pusat Akademik (Halaman Hub)"
+                >
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  </svg>
+                </RouterLink>
+
+                <!-- Chevron Toggle -->
+                <button
+                  type="button"
+                  @click="isAkademikOpen = !isAkademikOpen"
+                  class="p-1 rounded-lg hover:bg-white/20 text-slate-400 group-hover:text-white transition"
+                  :aria-label="isAkademikOpen ? 'Tutup Akademik' : 'Buka Akademik'"
+                >
+                  <svg
+                    class="w-4 h-4 transition-transform duration-200"
+                    :class="{ 'rotate-180': isAkademikOpen }"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Accordion Content: 3 Sub-kelompok -->
+            <div
+              v-show="isAkademikOpen"
+              class="ml-3 pl-2.5 border-l border-white/15 space-y-2 pt-1 pb-1 transition-all"
+            >
+              <!-- Sub-group 1: Kelas & Siswa -->
+              <div v-if="filteredKelasSiswa.length" class="space-y-0.5">
+                <div class="px-2 pt-1 text-[9px] font-extrabold uppercase tracking-wider text-slate-400/90">
+                  Kelas & Siswa
+                </div>
+                <RouterLink
+                  v-for="item in filteredKelasSiswa"
+                  :key="item.to"
+                  :to="item.to"
+                  class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-medium transition"
+                  :class="isRouteActive(item.to) ? 'bg-white text-[#0c2b3d] font-bold shadow-xs' : 'text-slate-300 hover:text-white hover:bg-white/10'"
+                >
+                  <span class="w-3.5 h-3.5 shrink-0" v-html="item.icon"></span>
+                  <span class="truncate">{{ item.label }}</span>
+                </RouterLink>
+              </div>
+
+              <!-- Sub-group 2: Penilaian & Tugas -->
+              <div v-if="filteredPenilaianTugas.length" class="space-y-0.5">
+                <div class="px-2 pt-1 text-[9px] font-extrabold uppercase tracking-wider text-slate-400/90">
+                  Penilaian & Tugas
+                </div>
+                <RouterLink
+                  v-for="item in filteredPenilaianTugas"
+                  :key="item.to"
+                  :to="item.to"
+                  class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-medium transition"
+                  :class="isRouteActive(item.to) ? 'bg-white text-[#0c2b3d] font-bold shadow-xs' : 'text-slate-300 hover:text-white hover:bg-white/10'"
+                >
+                  <span class="w-3.5 h-3.5 shrink-0" v-html="item.icon"></span>
+                  <span class="truncate">{{ item.label }}</span>
+                </RouterLink>
+              </div>
+
+              <!-- Sub-group 3: Laporan & Materi -->
+              <div v-if="filteredLaporanMateri.length" class="space-y-0.5">
+                <div class="px-2 pt-1 text-[9px] font-extrabold uppercase tracking-wider text-slate-400/90">
+                  Laporan & Materi
+                </div>
+                <RouterLink
+                  v-for="item in filteredLaporanMateri"
+                  :key="item.to"
+                  :to="item.to"
+                  class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-medium transition"
+                  :class="isRouteActive(item.to) ? 'bg-white text-[#0c2b3d] font-bold shadow-xs' : 'text-slate-300 hover:text-white hover:bg-white/10'"
+                >
+                  <span class="w-3.5 h-3.5 shrink-0" v-html="item.icon"></span>
+                  <span class="truncate">{{ item.label }}</span>
+                </RouterLink>
+              </div>
+            </div>
+          </div>
+
+          <!-- When collapsed: Single Hub Icon -->
+          <div v-else class="flex flex-col items-center py-1">
+            <RouterLink
+              to="/academic"
+              class="w-11 h-11 rounded-2xl flex items-center justify-center transition"
+              :class="isCurrentRouteInAkademik() ? 'bg-white text-[#0c2b3d] font-bold shadow-md' : 'text-slate-300 hover:text-white hover:bg-white/10'"
+              title="Pusat Akademik"
+            >
+              <span class="text-xl">📁</span>
+            </RouterLink>
+          </div>
+        </div>
+
+        <!-- 4. PENGATURAN (TETAP DI BAGIAN BAWAH) -->
+        <div class="pt-1">
+          <div v-if="sidebarOpen" class="px-2 pb-1 text-[10px] font-extrabold tracking-wider uppercase text-slate-400/80">
+            PENGATURAN
+          </div>
+          <div v-else class="my-1 border-t border-white/10"></div>
+
+          <div class="space-y-0.5">
+            <RouterLink
+              v-for="item in filteredPengaturan"
+              :key="item.to"
+              :to="item.to"
+              class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition"
+              :class="isRouteActive(item.to) ? 'bg-white text-[#0c2b3d] font-bold shadow-xs' : 'text-slate-300/80 hover:text-white hover:bg-white/10'"
+              :title="!sidebarOpen ? item.label : undefined"
+            >
+              <span class="w-4 h-4 shrink-0" v-html="item.icon"></span>
+              <span v-if="sidebarOpen" class="truncate">{{ item.label }}</span>
+            </RouterLink>
+          </div>
+        </div>
       </nav>
 
       <!-- Bottom Mini Calendar Widget (Reference Dashboard Style) -->
@@ -143,7 +338,7 @@
     <!-- Main Content Area -->
     <div
       class="flex-1 flex flex-col min-w-0 transition-all duration-300"
-      :style="{ marginLeft: sidebarOpen ? '255px' : '79px', paddingLeft: '1px' }"
+      :style="mainContentStyle"
     >
       <!-- Top Header Navbar -->
       <header class="sticky top-0 z-20 h-20 bg-white/85 backdrop-blur-md border-b border-slate-200/60 flex items-center justify-between px-8 shadow-xs">
@@ -327,7 +522,7 @@
       </header>
 
       <!-- Page Main Content Slot -->
-      <main class="flex-1 p-6 lg:p-8">
+      <main class="flex-1 p-4 sm:p-6 lg:p-8 pb-24 md:pb-8">
         <slot>
           <RouterView v-slot="{ Component }">
             <Transition name="fade" mode="out-in">
@@ -338,7 +533,7 @@
       </main>
 
       <!-- Belajarena Footer -->
-      <footer class="px-8 py-5 border-t border-slate-200/60 bg-white/60 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-2">
+      <footer class="px-8 py-5 border-t border-slate-200/60 bg-white/60 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-2 mb-16 md:mb-0">
         <p>© 2026 Belajarena · SMP Negeri 6 Kendari · Muhammad Fadly Akbar Arsandi, S.Pd. (NIP: 199509282020121003)</p>
         <p class="font-medium text-slate-500">Informatika & KKA · Versi 2.5.0</p>
       </footer>
@@ -346,6 +541,50 @@
       <!-- Global AI Pedagogical Assistant Modal -->
       <AiAssistantModal />
     </div>
+
+    <!-- Mobile Bottom Navigation Bar (Bilah Bawah HP: Tepat 4 Tombol Sesuai Spesifikasi) -->
+    <nav class="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#0c2b3d]/95 backdrop-blur-lg border-t border-white/10 px-2 py-1.5 flex items-center justify-around shadow-2xl">
+      <!-- 1. Dashboard -->
+      <RouterLink
+        to="/dashboard"
+        class="flex flex-col items-center justify-center gap-1 py-1 px-2.5 rounded-xl transition text-center min-w-[64px]"
+        :class="isRouteActive('/dashboard') ? 'text-white font-bold bg-white/15' : 'text-slate-400 hover:text-slate-200'"
+      >
+        <span class="text-lg leading-none">🏠</span>
+        <span class="text-[10px] tracking-tight">Dashboard</span>
+      </RouterLink>
+
+      <!-- 2. Edu-Games -->
+      <RouterLink
+        to="/games"
+        class="flex flex-col items-center justify-center gap-1 py-1 px-2.5 rounded-xl transition text-center min-w-[64px] relative"
+        :class="isRouteActive('/games') ? 'text-amber-300 font-bold bg-white/15 ring-1 ring-amber-400/50' : 'text-slate-300 hover:text-white'"
+      >
+        <span class="text-lg leading-none">🎮</span>
+        <span class="text-[10px] tracking-tight">Edu-Games</span>
+        <span class="absolute top-0.5 right-2 w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+      </RouterLink>
+
+      <!-- 3. Live Presentasi -->
+      <RouterLink
+        to="/presentations"
+        class="flex flex-col items-center justify-center gap-1 py-1 px-2.5 rounded-xl transition text-center min-w-[64px] relative"
+        :class="isRouteActive('/presentations') ? 'text-cyan-300 font-bold bg-white/15 ring-1 ring-cyan-400/50' : 'text-slate-300 hover:text-white'"
+      >
+        <span class="text-lg leading-none">📡</span>
+        <span class="text-[10px] tracking-tight">Live Presentasi</span>
+      </RouterLink>
+
+      <!-- 4. Akademik -->
+      <RouterLink
+        to="/academic"
+        class="flex flex-col items-center justify-center gap-1 py-1 px-2.5 rounded-xl transition text-center min-w-[64px]"
+        :class="isRouteActive('/academic') || isCurrentRouteInAkademik() ? 'text-white font-bold bg-white/15 ring-1 ring-blue-400/40' : 'text-slate-400 hover:text-slate-200'"
+      >
+        <span class="text-lg leading-none">📁</span>
+        <span class="text-[10px] tracking-tight">Akademik</span>
+      </RouterLink>
+    </nav>
   </div>
 </template>
 
@@ -494,14 +733,30 @@ function updateClock() {
   liveClock.value = `${h}:${m} WIB`
 }
 
+// Responsive Mobile Detection & Main Content Offset
+const isMobile = ref(false)
+function checkMobile() {
+  isMobile.value = window.innerWidth < 768
+}
+
+const mainContentStyle = computed(() => {
+  if (isMobile.value) {
+    return { marginLeft: '0px' }
+  }
+  return {
+    marginLeft: sidebarOpen.value ? '255px' : '79px',
+    paddingLeft: '1px'
+  }
+})
+
 let clockInterval: any = null
 onMounted(() => {
+  checkMobile()
   updateClock()
   loadNotifications()
   clockInterval = setInterval(updateClock, 1000)
   window.addEventListener('click', handleClickOutside)
   window.addEventListener('resize', onWindowResize)
-  updateIndicatorPosition(true)
 })
 onUnmounted(() => {
   if (clockInterval) clearInterval(clockInterval)
@@ -509,226 +764,184 @@ onUnmounted(() => {
   window.removeEventListener('resize', onWindowResize)
 })
 
-interface NavMenuItem {
-  name: string
+function onWindowResize() {
+  checkMobile()
+}
+
+interface NavSubItem {
   to: string
   label: string
   icon: string
   teacherOnly?: boolean
-  studentOnly?: boolean
-  section?: string
 }
 
-const allNavItems: NavMenuItem[] = [
-  // 1. UTAMA
+// 1. KELAS & SISWA
+const rawKelasSiswa: NavSubItem[] = [
   {
-    name: 'dashboard',
-    to: '/dashboard',
-    label: 'Dashboard',
-    icon: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>`,
-    section: 'UTAMA'
-  },
-
-  // 2. KELAS & SISWA
-  {
-    name: 'kelas',
     to: '/classes',
     label: 'Manajemen Kelas',
-    icon: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>`,
-    teacherOnly: true,
-    section: 'KELAS & SISWA'
+    icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>`,
+    teacherOnly: true
   },
   {
-    name: 'siswa',
     to: '/students',
     label: 'Data Siswa',
-    icon: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>`,
+    icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>`,
     teacherOnly: true
   },
   {
-    name: 'jadwal',
     to: '/schedule',
     label: 'Jadwal Mingguan',
-    icon: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>`
+    icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>`
   },
   {
-    name: 'absensi',
     to: '/attendance',
     label: 'Absensi Siswa',
-    icon: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>`
-  },
-
-  // 3. PEMBELAJARAN & CBT
-  {
-    name: 'bank-soal',
-    to: '/question-bank',
-    label: 'Bank Soal',
-    icon: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
-    teacherOnly: true,
-    section: 'PEMBELAJARAN & CBT'
-  },
-  {
-    name: 'ujian',
-    to: '/cbt',
-    label: 'Ujian CBT',
-    icon: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>`
-  },
-  {
-    name: 'tugas',
-    to: '/assignments',
-    label: 'Tugas Siswa',
-    icon: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>`
-  },
-  {
-    name: 'mapping-tp',
-    to: '/curriculum/chapters',
-    label: 'Mapping BAB & TP',
-    icon: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>`,
-    teacherOnly: true
-  },
-  {
-    name: 'rekap-ulangan',
-    to: '/reports/exam-events',
-    label: 'Rekap Nilai Ulangan',
-    icon: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>`
-  },
-  {
-    name: 'nilai',
-    to: '/reports/grades',
-    label: 'Rekap Nilai Siswa',
-    icon: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>`
-  },
-  {
-    name: 'ranking',
-    to: '/rankings',
-    label: 'Live Ranking',
-    icon: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>`
-  },
-  {
-    name: 'materi',
-    to: '/presentations',
-    label: 'Studio Presentasi',
-    icon: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>`
-  },
-  {
-    name: 'games',
-    to: '/games',
-    label: 'Edu-Games',
-    icon: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`
-  },
-
-  // 4. SISTEM & PENGATURAN
-  {
-    name: 'pengaturan-sekolah',
-    to: '/school/settings',
-    label: 'Pengaturan Sekolah',
-    icon: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/></svg>`,
-    teacherOnly: true,
-    section: 'PENGATURAN'
-  },
-  {
-    name: 'pengaturan',
-    to: '/profile',
-    label: 'Profil & Sandi',
-    icon: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>`
+    icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>`
   }
 ]
 
-const navItems = computed(() => {
-  if (isStudent.value) {
-    return allNavItems.filter(item => !item.teacherOnly)
+// 2. PENILAIAN & TUGAS
+const rawPenilaianTugas: NavSubItem[] = [
+  {
+    to: '/question-bank',
+    label: 'Bank Soal',
+    icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+    teacherOnly: true
+  },
+  {
+    to: '/cbt',
+    label: 'Ujian CBT',
+    icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>`
+  },
+  {
+    to: '/assignments',
+    label: 'Tugas Siswa',
+    icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>`
+  },
+  {
+    to: '/curriculum/chapters',
+    label: 'Mapping BAB & TP',
+    icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>`,
+    teacherOnly: true
   }
-  return allNavItems.filter(item => !item.studentOnly)
+]
+
+// 3. LAPORAN & MATERI
+const rawLaporanMateri: NavSubItem[] = [
+  {
+    to: '/reports/exam-events',
+    label: 'Rekap Nilai Ulangan',
+    icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>`
+  },
+  {
+    to: '/reports/grades',
+    label: 'Rekap Nilai Siswa',
+    icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>`
+  },
+  {
+    to: '/rankings',
+    label: 'Live Ranking',
+    icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>`
+  },
+  {
+    to: '/presentations?tab=library',
+    label: 'Materi Ajar',
+    icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>`
+  }
+]
+
+// 4. PENGATURAN
+const rawPengaturan: NavSubItem[] = [
+  {
+    to: '/school/settings',
+    label: 'Pengaturan Sekolah',
+    icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/></svg>`,
+    teacherOnly: true
+  },
+  {
+    to: '/profile',
+    label: 'Profil & Sandi',
+    icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>`
+  }
+]
+
+const filteredKelasSiswa = computed(() => {
+  if (isStudent.value) {
+    return rawKelasSiswa.filter(i => !i.teacherOnly).map(i => {
+      if (i.to === '/attendance') return { ...i, label: 'Absensi Saya' }
+      return i
+    })
+  }
+  return rawKelasSiswa
 })
 
-function isActive(to: string) {
+const filteredPenilaianTugas = computed(() => {
+  if (isStudent.value) {
+    return rawPenilaianTugas.filter(i => !i.teacherOnly)
+  }
+  return rawPenilaianTugas
+})
+
+const filteredLaporanMateri = computed(() => {
+  if (isStudent.value) {
+    return rawLaporanMateri.filter(i => !i.teacherOnly)
+  }
+  return rawLaporanMateri
+})
+
+const filteredPengaturan = computed(() => {
+  if (isStudent.value) {
+    return rawPengaturan.filter(i => !i.teacherOnly)
+  }
+  return rawPengaturan
+})
+
+const visibleAkademikCount = computed(() => {
+  return filteredKelasSiswa.value.length + filteredPenilaianTugas.value.length + filteredLaporanMateri.value.length
+})
+
+function isRouteActive(to: string): boolean {
   if (to === '/dashboard') return route.path === '/dashboard'
+  if (to === '/academic') return route.path === '/academic'
+  if (to === '/presentations?tab=library') {
+    return route.path === '/presentations' && route.query.tab === 'library'
+  }
+  if (to === '/presentations') {
+    return route.path === '/presentations' && route.query.tab !== 'library'
+  }
   return route.path.startsWith(to)
 }
 
-// Sliding Active Nav Indicator (Smooth physics transition)
-const navContainerRef = ref<HTMLElement | null>(null)
-const navItemDomMap = new Map<string, HTMLElement>()
-const indicatorTop = ref(0)
-const indicatorHeight = ref(44)
-const indicatorVisible = ref(false)
-const indicatorReady = ref(false)
-const hasMounted = ref(false)
+const isAkademikOpen = ref(true)
 
-function setNavItemRef(to: string, el: any) {
-  if (el) {
-    const domEl = el.$el || el
-    navItemDomMap.set(to, domEl)
-  }
+function isCurrentRouteInAkademik(): boolean {
+  if (route.path === '/academic') return true
+  if (route.path === '/presentations' && route.query.tab === 'library') return true
+  const list = [
+    '/classes',
+    '/students',
+    '/schedule',
+    '/attendance',
+    '/question-bank',
+    '/cbt',
+    '/assignments',
+    '/curriculum',
+    '/reports',
+    '/rankings'
+  ]
+  return list.some(p => route.path.startsWith(p))
 }
 
-function getActiveElement(): HTMLElement | null {
-  for (const item of navItems.value) {
-    if (isActive(item.to)) {
-      const el = navItemDomMap.get(item.to)
-      if (el) return el
+watch(
+  () => [route.path, route.query.tab],
+  () => {
+    if (isCurrentRouteInAkademik()) {
+      isAkademikOpen.value = true
     }
-  }
-  return null
-}
-
-function updateIndicatorPosition(immediate = false) {
-  nextTick(() => {
-    const el = getActiveElement()
-    if (el) {
-      indicatorTop.value = el.offsetTop
-      indicatorHeight.value = el.offsetHeight
-      indicatorVisible.value = true
-      indicatorReady.value = true
-    } else {
-      indicatorVisible.value = false
-    }
-
-    if (immediate) {
-      hasMounted.value = false
-      nextTick(() => {
-        setTimeout(() => {
-          hasMounted.value = true
-        }, 60)
-      })
-    }
-  })
-}
-
-function handleNavClick(to: string) {
-  const el = navItemDomMap.get(to)
-  if (el) {
-    indicatorTop.value = el.offsetTop
-    indicatorHeight.value = el.offsetHeight
-    indicatorVisible.value = true
-    indicatorReady.value = true
-  }
-}
-
-const indicatorStyle = computed(() => {
-  return {
-    transform: `translateY(${indicatorTop.value}px)`,
-    height: `${indicatorHeight.value}px`,
-    opacity: indicatorVisible.value ? 1 : 0,
-    transition: hasMounted.value
-      ? 'transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), height 0.2s ease, opacity 0.2s ease'
-      : 'none'
-  }
-})
-
-watch(() => route.path, () => {
-  updateIndicatorPosition()
-})
-
-watch(sidebarOpen, () => {
-  nextTick(() => {
-    setTimeout(updateIndicatorPosition, 320)
-  })
-})
-
-function onWindowResize() {
-  updateIndicatorPosition()
-}
+  },
+  { immediate: true }
+)
 
 async function handleLogout() {
   if (!confirm('Apakah Anda yakin ingin keluar?')) return

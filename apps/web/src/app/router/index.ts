@@ -488,6 +488,14 @@ const router = createRouter({
       meta: { requiresAuth: true, title: 'Live Ranking Kelas' }
     },
 
+    // Pusat Akademik Hub
+    {
+      path: '/academic',
+      name: 'academic-hub',
+      component: () => import('@/modules/academic/AcademicHubPage.vue'),
+      meta: { requiresAuth: true, title: 'Pusat Akademik' }
+    },
+
     // 404
     {
       path: '/:pathMatch(.*)*',
@@ -524,22 +532,32 @@ router.beforeEach(async (to, from, next) => {
     return
   }
 
-  // Proteksi akun siswa agar selalu berada di portal siswa dan tidak mengakses modul guru
+  // Proteksi akun siswa agar selalu berada di portal siswa / modul siswa yang diizinkan dan tidak mengakses modul guru
   if (authStore.isAuthenticated && isStudent) {
     const isStudentAllowed =
       to.path === '/student' ||
       to.path.startsWith('/student/') ||
+      to.path === '/dashboard' ||
+      to.path === '/academic' ||
+      to.path === '/games' ||
+      to.path.startsWith('/games/') ||
+      to.path === '/presentations' ||
       to.path.startsWith('/presentation-live/') ||
       to.path.startsWith('/presentation/live/') ||
-      to.path.startsWith('/cbt/exam/') ||
-      to.path.startsWith('/games/ulangan-harian/play/') ||
-      to.path.startsWith('/games/class-race/play/') ||
-      to.path.startsWith('/games/tower-defense/play/') ||
-      to.path.startsWith('/games/session/') ||
+      to.path === '/schedule' ||
+      to.path === '/attendance' ||
+      to.path === '/cbt' ||
+      to.path.startsWith('/cbt/') ||
+      to.path === '/assignments' ||
+      to.path.startsWith('/assignments/') ||
+      to.path === '/reports/exam-events' ||
+      to.path === '/reports/grades' ||
+      to.path === '/rankings' ||
+      to.path === '/profile' ||
       to.name === 'not-found'
 
     if (!isStudentAllowed) {
-      next({ path: '/student' })
+      next({ path: '/academic' })
       return
     }
   }
