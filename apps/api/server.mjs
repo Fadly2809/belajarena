@@ -49,6 +49,14 @@ function getAllowedOrigin(req) {
   try {
     const url = new URL(origin)
     const hostname = url.hostname
+    if (
+      hostname.endsWith('.netlify.app') ||
+      hostname === 'netlify.app' ||
+      hostname.endsWith('.onrender.com') ||
+      hostname.endsWith('.railway.app')
+    ) {
+      return origin
+    }
     const isPrivateIp = (
       hostname === 'localhost' ||
       hostname === '127.0.0.1' ||
@@ -8958,7 +8966,7 @@ const server = http.createServer(async (req, res) => {
   }
 })
 
-const PORT = 8000
+const PORT = process.env.PORT || 8000
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`Belajarena API Server running at http://0.0.0.0:${PORT}`)
 })
