@@ -455,7 +455,7 @@ const router = createRouter({
       path: '/presentations',
       name: 'presentations',
       component: () => import('@/modules/presentations/PresentationLibraryPage.vue'),
-      meta: { requiresAuth: true, title: 'Studio Presentasi' }
+      meta: { requiresAuth: true, title: 'Studio Presentasi', layout: 'blank' }
     },
     {
       path: '/presentations/studio/:id',

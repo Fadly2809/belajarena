@@ -1,491 +1,1083 @@
 <template>
-  <div class="space-y-7 animate-fade-in pb-12 font-sans">
-    <!-- 1. Header Studio Presentasi -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div>
-        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
-          <span>📽️</span> Studio Presentasi & Materi Interaktif
-        </h1>
-        <p class="text-slate-600 text-sm mt-1 font-medium">
-          Layar Proyektor Cermin, konversi PPTX/PDF otomatis, dan peluncur sesi presentasi mirroring HP siswa · <strong class="text-slate-800">SMP Negeri 6 Kendari</strong>
-        </p>
-      </div>
-
-      <div class="flex flex-wrap items-center gap-2.5">
-        <span class="px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200/80 text-blue-700 text-xs font-bold font-mono shadow-2xs">
-          Kurikulum Merdeka (Fase D)
-        </span>
-        <button
-          @click="showUploadModal = true"
-          class="px-4 py-2.5 rounded-xl bg-[#0c2b3d] hover:bg-[#082231] text-white font-bold text-xs shadow-md transition flex items-center gap-2"
-        >
-          <span>📤</span> <span>Unggah / Buat Modul Baru</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Tab Switcher: Live Presentasi Studio vs Pustaka Materi Ajar -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-2 sm:p-2.5 rounded-[22px] border border-slate-200/80 shadow-xs">
-      <div class="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-100">
-        <button
-          @click="switchTab('studio')"
-          class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2"
-          :class="activeTab === 'studio' ? 'bg-[#0c2b3d] text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'"
-        >
-          <span>📡</span>
-          <span>Studio Live Presentasi</span>
-          <span v-if="activeSession" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        </button>
-        <button
-          @click="switchTab('library')"
-          class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2"
-          :class="activeTab === 'library' ? 'bg-[#0c2b3d] text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'"
-        >
-          <span>📚</span>
-          <span>Pustaka Materi Ajar (File & Slide)</span>
-          <span class="text-[10px] px-1.5 py-0.5 rounded-full" :class="activeTab === 'library' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'">
-            {{ presentations.length }}
-          </span>
-        </button>
-      </div>
-
-      <div class="text-xs text-slate-500 font-medium px-2">
-        <span v-if="activeTab === 'studio'">⚡ Fokus: Pemaparan cermin proyektor & mirroring HP siswa</span>
-        <span v-else>📁 Fokus: Arsip file slide PPTX, PDF & materi pembelajaran</span>
-      </div>
-    </div>
-
-    <!-- Student PIN Entry Card (Tampil jika role siswa atau di mode live) -->
+  <div>
+    <!-- =========================================================================
+         HERO PRODUCT PAGE FULLSCREEN VIEW (Default View - 100dvh Desktop / Projector)
+         ========================================================================= -->
     <div
-      v-if="isStudent"
-      class="p-6 rounded-[24px] bg-gradient-to-br from-[#0c2b3d] to-[#164e63] text-white shadow-xl border-2 border-cyan-400/40 relative overflow-hidden"
+      v-if="currentView === 'hero'"
+      class="hero-container min-h-[100dvh] lg:h-[100dvh] w-full overflow-y-auto lg:overflow-hidden flex flex-col justify-between relative select-none text-white font-sans transition-colors duration-700 ease-out"
+      :style="{ background: currentTheme.gradient }"
+      :class="{ 'mode-ringan': reducedMotion }"
     >
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
-        <div class="flex items-center gap-4">
-          <div class="w-14 h-14 rounded-2xl bg-cyan-400 text-slate-950 flex items-center justify-center text-3xl font-black shadow-lg">
-            📱
-          </div>
+      <!-- Background Splatter Dots (CSS/SVG Light Effect, Hidden on Mode Ringan) -->
+      <div v-if="!reducedMotion" class="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+        <svg class="w-full h-full opacity-40" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="15%" cy="25%" r="3" fill="#ffffff" class="splatter-dot" />
+          <circle cx="22%" cy="18%" r="2" fill="#ffffff" class="splatter-dot" />
+          <circle cx="32%" cy="28%" r="4" fill="#ffffff" class="splatter-dot" />
+          <circle cx="48%" cy="14%" r="2.5" fill="#ffffff" class="splatter-dot" />
+          <circle cx="68%" cy="22%" r="3.5" fill="#ffffff" class="splatter-dot" />
+          <circle cx="78%" cy="16%" r="2" fill="#ffffff" class="splatter-dot" />
+          <circle cx="85%" cy="32%" r="4" fill="#ffffff" class="splatter-dot" />
+          <circle cx="12%" cy="65%" r="3" fill="#ffffff" class="splatter-dot" />
+          <circle cx="20%" cy="75%" r="2.5" fill="#ffffff" class="splatter-dot" />
+          <circle cx="30%" cy="85%" r="4" fill="#ffffff" class="splatter-dot" />
+          <circle cx="70%" cy="78%" r="3" fill="#ffffff" class="splatter-dot" />
+          <circle cx="82%" cy="72%" r="4.5" fill="#ffffff" class="splatter-dot" />
+          <circle cx="88%" cy="86%" r="2" fill="#ffffff" class="splatter-dot" />
+          <circle cx="50%" cy="88%" r="3" fill="#ffffff" class="splatter-dot" />
+        </svg>
+      </div>
+
+      <!-- Student PIN Entry Card (Bila dibuka akun siswa atau mode live portal siswa) -->
+      <div
+        v-if="isStudent"
+        class="relative z-40 bg-black/60 backdrop-blur-md border-b border-cyan-400/40 px-4 py-2.5 text-xs flex flex-col sm:flex-row items-center justify-between gap-3 text-cyan-200"
+      >
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl">📱</span>
           <div>
-            <span class="px-2.5 py-0.5 rounded-full bg-cyan-400/20 text-cyan-300 border border-cyan-400/30 text-[10px] font-bold uppercase tracking-wider">
-              Portal Siswa
-            </span>
-            <h2 class="text-lg font-black text-white mt-1">Gabung Sesi Live Presentasi</h2>
-            <p class="text-xs text-slate-300 mt-0.5">
-              Masukkan 6 digit kode PIN yang ditampilkan oleh guru di layar proyektor kelas.
-            </p>
+            <span class="font-extrabold text-white text-xs">Portal Siswa &bull; Gabung Sesi Live Presentasi</span>
+            <p class="text-[10px] text-cyan-300/80">Masukkan kode PIN sesi dari layar proyektor guru di depan kelas.</p>
           </div>
         </div>
-
         <form @submit.prevent="joinStudentSession()" class="flex items-center gap-2">
           <input
             v-model="studentJoinPin"
             type="text"
             maxlength="10"
-            placeholder="Contoh: 849201"
-            class="px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white font-mono font-bold tracking-widest text-center text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 placeholder:text-slate-400 uppercase"
+            placeholder="PIN SESI (contoh: PRS-123)"
+            class="px-3 py-1.5 rounded-xl bg-white/10 border border-white/20 text-white font-mono font-bold tracking-widest text-center text-xs focus:outline-none focus:ring-2 focus:ring-cyan-400 uppercase"
           />
           <button
             type="submit"
-            class="px-5 py-2.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-black text-xs shadow-md transition whitespace-nowrap"
+            class="px-4 py-1.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-black text-xs shadow-md transition whitespace-nowrap cursor-pointer"
           >
             Masuk Sesi 🚀
           </button>
         </form>
       </div>
-    </div>
 
-    <!-- 2. Top 4 Stat Cards Row (Matching Dashboard Theme) -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-      <!-- Card 1: Total Modul Presentasi (Deep Petrol) -->
-      <div class="card-stat-petrol group">
-        <div>
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-300">Total Modul Presentasi</span>
-            <div class="w-9 h-9 rounded-full bg-white/15 backdrop-blur-md flex items-center justify-center text-white text-base shadow-inner">
-              📽️
-            </div>
+      <!-- BANNER SESI AKTIF (Under Header or Top of Screen) -->
+      <div
+        v-if="activeSession"
+        class="relative z-40 bg-black/75 backdrop-blur-md border-b border-amber-400/50 px-4 sm:px-8 py-2.5 sm:py-3 text-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-amber-200"
+      >
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center text-lg font-black shrink-0 animate-pulse">
+            ⚡
           </div>
-          <div class="mt-3">
-            <div class="text-3xl font-black text-white tracking-tight leading-none">
-              {{ presentations.length }}
+          <div>
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 text-[10px] uppercase font-black tracking-wider">
+                Sedang Tayang Langsung
+              </span>
+              <span class="text-xs text-white/90 font-medium">
+                Kelas {{ activeSession.classroom }} &bull; Slide {{ activeSession.activeSlide || 1 }} / {{ activeSession.totalSlides }}
+              </span>
             </div>
-            <p class="text-[11px] text-slate-300 font-medium mt-1">
-              Modul Ajar Digital Terdata
-            </p>
+            <div class="flex flex-wrap items-center gap-2 mt-0.5">
+              <span class="font-bold text-white text-xs truncate max-w-sm">{{ activeSession.title }}</span>
+              <span class="text-white/60">&bull;</span>
+              <span class="text-[11px] text-white/80">PIN:</span>
+              <span class="font-mono font-black text-slate-950 bg-amber-400 px-2 py-0.5 rounded text-xs tracking-wider">{{ activeSession.accessCode }}</span>
+              <span class="text-emerald-300 font-bold text-[11px]">&bull; {{ activeSession.connectedCount || 0 }} Siswa Terhubung</span>
+            </div>
           </div>
         </div>
-        <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-300/90 group-hover:text-white transition">
-          <button @click="showUploadModal = true" class="flex items-center justify-between w-full">
-            <span>+ Buat / Unggah Modul</span>
-            <span class="font-bold transition-transform group-hover:translate-x-1">→</span>
+
+        <div class="flex items-center gap-2 flex-shrink-0 flex-wrap">
+          <!-- Button 4: Masuk Layar Kontrol Studio Guru -->
+          <router-link
+            :to="`/presentations/studio/${activeSession.id}`"
+            class="px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs shadow transition cursor-pointer flex items-center gap-1.5"
+          >
+            <span>Masuk Layar Kontrol Studio Guru</span>
+            <span>→</span>
+          </router-link>
+
+          <!-- Button 5: Buka Layar Siswa -->
+          <router-link
+            :to="`/presentation-live/${activeSession.accessCode}`"
+            target="_blank"
+            class="px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs border border-white/20 transition cursor-pointer flex items-center gap-1"
+            title="Buka simulasi tampilan di HP siswa"
+          >
+            <span>📱</span>
+            <span>Buka Layar Siswa</span>
+          </router-link>
+
+          <!-- Button 6: Akhiri Sesi -->
+          <button
+            @click="stopActiveSession"
+            class="px-3 py-1.5 rounded-xl bg-rose-600/80 hover:bg-rose-600 text-white font-bold text-xs border border-rose-500/30 transition cursor-pointer flex items-center gap-1"
+            title="Hentikan dan akhiri sesi tayang langsung ini"
+          >
+            <span>⏹️</span>
+            <span>Akhiri Sesi</span>
           </button>
         </div>
       </div>
 
-      <!-- Card 2: Slide Siap Tayang (Warm Honey Amber) -->
-      <div class="card-stat-honey group">
-        <div>
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-900/80">Slide Siap Tayang</span>
-            <div class="w-9 h-9 rounded-full bg-black/10 flex items-center justify-center text-slate-950 text-base shadow-inner">
-              📑
-            </div>
-          </div>
-          <div class="mt-3">
-            <div class="text-3xl font-black text-slate-950 tracking-tight leading-none">
-              {{ totalReadySlides }}
-            </div>
-            <p class="text-[11px] text-slate-900/80 font-semibold mt-1">
-              Halaman Slide Interaktif
-            </p>
-          </div>
-        </div>
-        <div class="mt-4 pt-3 border-t border-black/10 flex items-center justify-between text-xs text-slate-900/80 group-hover:text-slate-950 font-bold transition">
-          <span>Format PPTX & PDF</span>
-          <span class="font-black">✓ Siap Digunakan</span>
-        </div>
-      </div>
-
-      <!-- Card 3: Total Sesi Terlaksana (Deep Petrol) -->
-      <div class="card-stat-petrol group">
-        <div>
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-300">Total Sesi Terlaksana</span>
-            <div class="w-9 h-9 rounded-full bg-white/15 backdrop-blur-md flex items-center justify-center text-white text-base shadow-inner">
-              🏫
-            </div>
-          </div>
-          <div class="mt-3">
-            <div class="text-3xl font-black text-white tracking-tight leading-none">
-              {{ totalSessionsDone }}
-            </div>
-            <p class="text-[11px] text-emerald-300 font-semibold mt-1">
-              Sesi Kelas di Layar Proyektor
-            </p>
-          </div>
-        </div>
-        <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-300/90 group-hover:text-white transition">
-          <span>Mirroring Proyektor</span>
-          <span class="font-bold">SMPN 6</span>
-        </div>
-      </div>
-
-      <!-- Card 4: Status Studio Live (Dark Slate Petrol) -->
-      <div class="card-stat-dark group">
-        <div>
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-300">Status Studio Live</span>
-            <div class="w-9 h-9 rounded-full bg-white/15 backdrop-blur-md flex items-center justify-center text-white text-base shadow-inner">
-              ⚡
-            </div>
-          </div>
-          <div class="mt-3">
-            <div class="text-3xl font-black text-white tracking-tight leading-none">
-              {{ activeSession ? 'Aktif' : 'Standby' }}
-            </div>
-            <p class="text-[11px] text-slate-300 font-medium mt-1 truncate">
-              {{ activeSession ? `${activeSession.classroom} · PIN: ${activeSession.accessCode}` : 'Siap Tayang ke HP Siswa' }}
-            </p>
-          </div>
-        </div>
-        <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-300/90 group-hover:text-white transition">
-          <span>Mirroring Real-Time</span>
-          <span class="font-bold">{{ activeSession ? '🟢 ON AIR' : '⚪ STANDBY' }}</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- 3. Active Live Session Banner (Jika ada sesi tayang langsung) -->
-    <div
-      v-if="activeSession"
-      class="p-6 rounded-[24px] bg-[#0c2b3d] text-white shadow-card border-2 border-[#f59e0b]/60 flex flex-col md:flex-row md:items-center md:justify-between gap-5 relative overflow-hidden"
-    >
-      <div class="absolute -right-10 -bottom-10 w-44 h-44 bg-[#f59e0b]/10 rounded-full blur-3xl pointer-events-none"></div>
-
-      <div class="flex items-center gap-4 relative z-10">
-        <div class="w-14 h-14 rounded-2xl bg-[#f59e0b] text-slate-950 flex items-center justify-center text-2xl font-black shadow-lg animate-pulse shrink-0">
-          ⚡
-        </div>
-        <div>
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="px-2.5 py-0.5 rounded-full bg-[#f59e0b] text-slate-950 text-[10px] uppercase font-black tracking-wider">Sedang Tayang Langsung</span>
-            <span class="text-xs text-slate-300 font-medium">Kelas {{ activeSession.classroom }} &bull; Slide {{ activeSession.activeSlide || 1 }} / {{ activeSession.totalSlides }}</span>
-          </div>
-          <h2 class="text-lg font-black text-white mt-1">{{ activeSession.title }}</h2>
-          <p class="text-xs text-slate-300 mt-1 flex flex-wrap items-center gap-2">
-            <span>PIN Bergabung Siswa:</span>
-            <span class="font-mono font-black text-slate-950 bg-[#f59e0b] px-2.5 py-0.5 rounded-lg text-xs tracking-widest shadow-xs">{{ activeSession.accessCode }}</span>
-            <span class="text-emerald-400 font-bold">&bull; {{ activeSession.connectedCount || 0 }} Siswa Terhubung</span>
-          </p>
-        </div>
-      </div>
-
-      <div class="flex flex-wrap items-center gap-2.5 relative z-10">
-        <router-link
-          :to="`/presentations/studio/${activeSession.id}`"
-          class="px-5 py-2.5 bg-[#f59e0b] hover:bg-[#d97706] text-slate-950 text-xs font-black rounded-xl shadow-md transition flex items-center gap-1.5"
-        >
-          <span>Masuk Layar Kontrol Guru</span>
-          <span>→</span>
-        </router-link>
-        <router-link
-          :to="`/presentation-live/${activeSession.accessCode}`"
-          target="_blank"
-          class="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl border border-white/20 transition flex items-center gap-1.5"
-          title="Buka simulasi tampilan di HP siswa"
-        >
-          <span>📱</span> Buka Layar Siswa
-        </router-link>
-        <button
-          @click="stopActiveSession"
-          class="px-3.5 py-2.5 bg-rose-600/80 hover:bg-rose-700 text-white text-xs font-bold rounded-xl border border-rose-500/30 transition flex items-center gap-1"
-          title="Hentikan dan akhiri sesi tayang langsung ini"
-        >
-          <span>⏹️</span> Akhiri Sesi
-        </button>
-      </div>
-    </div>
-
-    <!-- 4. Filter & Search Bar Card -->
-    <div class="bg-white rounded-[24px] shadow-card border border-slate-200/60 p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
-      <div class="flex flex-wrap items-center gap-3">
-        <div>
-          <select v-model="filterSubject" class="px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#0c2b3d]/20 focus:border-[#0c2b3d] transition">
-            <option value="all">Semua Mata Pelajaran</option>
-            <option value="Informatika">Informatika</option>
-            <option value="KKA (Koding dan Kecerdasan Artifisial)">KKA (Koding dan Kecerdasan Artifisial)</option>
-          </select>
-        </div>
-        <div>
-          <select v-model="filterClass" class="px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#0c2b3d]/20 focus:border-[#0c2b3d] transition">
-            <option value="all">Semua Rombel</option>
-            <option v-for="cls in classrooms" :key="cls.id" :value="cls.name">Kelas {{ cls.name }}</option>
-          </select>
-        </div>
-        <div>
-          <select v-model="filterStatus" class="px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#0c2b3d]/20 focus:border-[#0c2b3d] transition">
-            <option value="all">Semua Status</option>
-            <option value="ready">Siap Presentasi</option>
-            <option value="processing">Sedang Diproses</option>
-            <option value="archived">Diarsipkan</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="w-full sm:w-72">
-        <div class="relative">
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="Cari materi presentasi..."
-            class="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0c2b3d]/20 focus:border-[#0c2b3d] transition"
-          />
-          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- 5. Loading State -->
-    <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div v-for="i in 3" :key="i" class="bg-white rounded-[24px] shadow-card border border-slate-200/60 p-6 animate-pulse space-y-4">
-        <div class="h-36 bg-slate-150 rounded-2xl"></div>
-        <div class="h-4 bg-slate-150 rounded w-2/3"></div>
-        <div class="h-8 bg-slate-150 rounded"></div>
-      </div>
-    </div>
-
-    <!-- 6. Empty State -->
-    <div v-else-if="filteredPresentations.length === 0" class="bg-white rounded-[24px] shadow-card border border-slate-200/60 p-12 text-center space-y-4">
-      <div class="text-5xl">📽️</div>
-      <h2 class="text-lg font-bold text-slate-900">Belum Ada Materi Presentasi</h2>
-      <p class="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-        Belum ada bahan ajar atau slide presentasi interaktif yang diunggah. Mulai buat presentasi baru atau unggah berkas PPTX/PDF untuk rombongan belajar Anda.
-      </p>
-      <button
-        @click="showUploadModal = true"
-        class="px-5 py-2.5 rounded-xl bg-[#0c2b3d] hover:bg-[#082231] text-white font-bold text-xs shadow-md transition inline-flex items-center gap-2"
-      >
-        <span>📤 Unggah Materi Presentasi Baru</span>
-      </button>
-    </div>
-
-    <!-- 7. Presentation Cards Grid -->
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div
-        v-for="item in filteredPresentations"
-        :key="item.id"
-        class="bg-white rounded-[24px] shadow-card border border-slate-200/60 overflow-hidden hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col justify-between group"
-      >
-        <!-- Slide Preview Banner / Thumbnail Slide 1 -->
-        <div class="relative aspect-video bg-[#0c2b3d] flex flex-col justify-between overflow-hidden border-b border-slate-100">
-          <!-- Thumbnail Gambar Slide Pertama (Jika Ada Gambar/Visual Slide 1) -->
-          <div v-if="getFirstSlide(item).image" class="absolute inset-0 bg-[#0c2b3d] flex items-center justify-center overflow-hidden">
+      <!-- =========================================================================
+           TOP SLIM HEADER (Logo Belajarena, Filter Bar, Unggah Baru, KEMBALI KE DASHBOARD WAJIB)
+           ========================================================================= -->
+      <header class="relative z-40 px-4 sm:px-8 lg:px-12 py-3 sm:py-3.5 flex items-center justify-between gap-4 border-b border-white/10 backdrop-blur-sm">
+        <!-- Left: Logo Belajarena + Module Badge -->
+        <div class="flex items-center gap-3">
+          <router-link to="/dashboard" class="flex items-center gap-2.5 group cursor-pointer" title="Dashboard Utama">
             <img
-              :src="getFirstSlide(item).image"
-              :alt="getFirstSlide(item).title || item.title"
-              class="w-full h-full object-contain select-none transition-transform duration-500 ease-out group-hover:scale-105"
-              loading="lazy"
+              src="/logo.png"
+              alt="Belajarena"
+              class="h-8 sm:h-9 w-auto max-w-[170px] object-contain group-hover:scale-105 transition-transform drop-shadow"
             />
-            <!-- Gradient Overlay untuk keterbacaan badge dan teks keterangan -->
-            <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/60 pointer-events-none"></div>
+          </router-link>
+          <span class="hidden sm:inline-block px-2.5 py-0.5 rounded-full bg-white/15 text-white font-extrabold text-[10px] tracking-wider uppercase border border-white/20">
+            LIVE PRESENTASI
+          </span>
+        </div>
 
-            <!-- Keterangan Slide 1 di bagian bawah gambar -->
-            <div class="absolute bottom-2.5 left-3.5 right-3.5 z-10 flex items-center justify-between text-white pointer-events-none">
-              <span class="text-[11px] font-bold truncate max-w-[70%] drop-shadow text-white">
-                Slide 1 &bull; {{ getFirstSlide(item).title }}
-              </span>
-              <span class="font-mono text-[9px] font-bold px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md text-[#f59e0b] border border-white/10 shrink-0">
-                {{ item.slideCount || item.slides?.length || 1 }} Slide
-              </span>
-            </div>
+        <!-- Center: Filter & Search Bar Inline (Desktop / Tablet) -->
+        <div class="hidden md:flex items-center gap-2 bg-black/25 p-1 px-3 rounded-full border border-white/15 backdrop-blur-md shadow-sm">
+          <!-- A2: Kolom Pencarian Teks -->
+          <div class="relative flex items-center">
+            <span class="absolute left-2.5 text-white/50 text-xs">🔍</span>
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Cari materi..."
+              class="pl-7 pr-3 py-1 rounded-full bg-transparent text-xs text-white placeholder-white/50 focus:outline-none w-32 lg:w-44 focus:w-52 transition-all"
+            />
           </div>
 
-          <!-- Thumbnail Tampilan Kanvas Slide Pertama (Jika Slide 1 Berupa Teks/Konten Modul) -->
-          <div v-else class="absolute inset-0 bg-gradient-to-br from-[#0c2b3d] via-[#10384f] to-[#082231] p-5 flex flex-col justify-between overflow-hidden select-none">
-            <div class="absolute inset-0 opacity-15 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
+          <div class="w-px h-4 bg-white/20"></div>
 
-            <!-- Header Mini Kanvas Slide -->
-            <div class="pt-5 flex items-center justify-between text-[9px] text-cyan-300 font-bold opacity-90 z-10">
-              <span class="tracking-wider uppercase">Slide 1 &bull; Pembuka</span>
-              <span class="font-mono text-[#f59e0b] font-bold">{{ item.slideCount || item.slides?.length || 1 }} Slide</span>
+          <!-- A3: Filter Mata Pelajaran -->
+          <select
+            v-model="filterSubject"
+            class="bg-transparent text-xs text-white/90 font-medium focus:outline-none cursor-pointer pr-1"
+          >
+            <option value="all" class="bg-slate-900 text-white">Semua Mapel</option>
+            <option value="Informatika" class="bg-slate-900 text-white">Informatika</option>
+            <option value="KKA (Koding dan Kecerdasan Artifisial)" class="bg-slate-900 text-white">KKA</option>
+          </select>
+
+          <div class="w-px h-4 bg-white/20"></div>
+
+          <!-- A3: Filter Rombel -->
+          <select
+            v-model="filterClass"
+            class="bg-transparent text-xs text-white/90 font-medium focus:outline-none cursor-pointer pr-1"
+          >
+            <option value="all" class="bg-slate-900 text-white">Semua Rombel</option>
+            <option v-for="cls in classrooms" :key="cls.id" :value="cls.name" class="bg-slate-900 text-white">Kelas {{ cls.name }}</option>
+          </select>
+
+          <div class="w-px h-4 bg-white/20"></div>
+
+          <!-- A3: Filter Status -->
+          <select
+            v-model="filterStatus"
+            class="bg-transparent text-xs text-white/90 font-medium focus:outline-none cursor-pointer pr-1"
+          >
+            <option value="all" class="bg-slate-900 text-white">Semua Status</option>
+            <option value="ready" class="bg-slate-900 text-white">Siap Ajar</option>
+            <option value="processing" class="bg-slate-900 text-white">Konversi...</option>
+            <option value="archived" class="bg-slate-900 text-white">Arsip</option>
+          </select>
+        </div>
+
+        <!-- Right: Action Controls (Unggah Baru, Mode Ringan, KEMBALI KE DASHBOARD WAJIB) -->
+        <div class="flex items-center gap-2 sm:gap-3">
+          <!-- Toggle Mode Ringan / Reduced Motion -->
+          <button
+            @click="toggleReducedMotion"
+            class="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-full border border-white/20 bg-black/25 hover:bg-black/40 text-[11px] font-bold text-white/80 hover:text-white transition cursor-pointer flex items-center gap-1.5 backdrop-blur-sm"
+            :title="reducedMotion ? 'Mode Ringan aktif (animasi dimatikan). Klik untuk menyalakan animasi.' : 'Mode Animasi aktif. Klik untuk Mode Ringan.'"
+          >
+            <span>{{ reducedMotion ? '🌱' : '✨' }}</span>
+            <span class="hidden xl:inline">{{ reducedMotion ? 'Mode Ringan' : 'Animasi Halus' }}</span>
+          </button>
+
+          <!-- A1: KANAN ATAS WAJIB (a): Tombol Utama Unggah / Buat Materi Baru -->
+          <button
+            @click="showUploadModal = true"
+            class="px-3.5 py-2 sm:px-4 sm:py-2 rounded-full bg-white text-slate-950 hover:bg-white/95 active:scale-95 font-extrabold text-xs sm:text-sm shadow-lg transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap z-50"
+            title="Unggah berkas PPTX, PDF, atau buat modul presentasi baru"
+          >
+            <span>📤</span>
+            <span class="hidden sm:inline">Unggah / Buat Materi Baru</span>
+            <span class="sm:hidden">Unggah</span>
+          </button>
+
+          <!-- KANAN ATAS WAJIB (b): Tombol Kembali ke Dashboard (Selalu terlihat di semua tema dan ukuran layar) -->
+          <router-link
+            to="/dashboard"
+            class="z-50 px-3.5 py-2 sm:px-4 sm:py-2 rounded-full bg-black/40 hover:bg-black/60 active:scale-95 text-white font-extrabold text-xs sm:text-sm border border-white/25 backdrop-blur-md shadow-xl transition-all flex items-center gap-2 group cursor-pointer whitespace-nowrap"
+            title="Kembali ke Dashboard Guru Utama"
+          >
+            <svg class="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            <span class="font-extrabold">Kembali ke Dashboard</span>
+          </router-link>
+        </div>
+      </header>
+
+      <!-- Mobile Search Bar (Only shown on small screens) -->
+      <div class="md:hidden px-4 py-2 bg-black/30 backdrop-blur-md border-b border-white/10 flex items-center gap-2 overflow-x-auto custom-scroll">
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="Cari materi..."
+          class="px-3 py-1.5 rounded-xl bg-white/10 text-xs text-white placeholder-white/50 border border-white/15 focus:outline-none flex-1 min-w-[130px]"
+        />
+        <select v-model="filterSubject" class="bg-black/40 text-xs text-white rounded-xl px-2.5 py-1.5 border border-white/15">
+          <option value="all">Semua Mapel</option>
+          <option value="Informatika">Informatika</option>
+          <option value="KKA (Koding dan Kecerdasan Artifisial)">KKA</option>
+        </select>
+        <select v-model="filterClass" class="bg-black/40 text-xs text-white rounded-xl px-2.5 py-1.5 border border-white/15">
+          <option value="all">Semua Rombel</option>
+          <option v-for="cls in classrooms" :key="cls.id" :value="cls.name">Kelas {{ cls.name }}</option>
+        </select>
+      </div>
+
+      <!-- =========================================================================
+           CENTER HERO STAGE (3-Column Layout: Left Copy + Center Visual + Right Selector)
+           ========================================================================= -->
+      <main class="relative z-10 flex-1 flex flex-col justify-center px-4 sm:px-8 lg:px-10 py-4 sm:py-6 max-w-[1440px] mx-auto w-full">
+        <!-- EMPTY STATE (Bila tidak ada materi yang cocok) -->
+        <div
+          v-if="filteredPresentations.length === 0"
+          class="flex flex-col items-center justify-center text-center p-8 space-y-4 my-auto max-w-lg mx-auto bg-black/30 backdrop-blur-md rounded-3xl border border-white/15 shadow-2xl"
+        >
+          <div class="text-6xl animate-bounce">📽️</div>
+          <h2 class="text-2xl font-black text-white">Tidak Ada Materi Ditemukan</h2>
+          <p class="text-xs sm:text-sm text-white/80 leading-relaxed">
+            {{ searchQuery || filterSubject !== 'all' || filterClass !== 'all' || filterStatus !== 'all'
+               ? 'Tidak ada materi presentasi yang sesuai dengan filter pencarian Anda. Coba bersihkan filter atau kata kunci.'
+               : 'Belum ada bahan ajar atau slide presentasi interaktif yang diunggah. Mulai buat presentasi baru sekarang!' }}
+          </p>
+          <div class="flex items-center gap-3 pt-2">
+            <button
+              v-if="searchQuery || filterSubject !== 'all' || filterClass !== 'all' || filterStatus !== 'all'"
+              @click="resetFilters"
+              class="px-5 py-2.5 rounded-full bg-white/20 hover:bg-white/30 text-white font-bold text-xs backdrop-blur-md transition cursor-pointer"
+            >
+              Reset Filter
+            </button>
+            <!-- A1: Tombol pada keadaan kosong / empty state -->
+            <button
+              @click="showUploadModal = true"
+              class="px-6 py-2.5 rounded-full bg-white text-slate-950 font-black text-xs sm:text-sm shadow-xl hover:bg-white/90 active:scale-95 transition cursor-pointer"
+            >
+              📤 Unggah / Buat Materi Baru
+            </button>
+          </div>
+        </div>
+
+        <!-- 3-COLUMN SHOWCASE LAYOUT (Bila ada materi aktif) -->
+        <div v-else class="grid grid-cols-1 lg:grid-cols-12 items-center gap-6 sm:gap-8 lg:gap-8 w-full">
+          <!-- -------------------------------------------------------------
+               LEFT COLUMN (±25-30% lebar): Label, Judul Sangat Besar, Deskripsi, Tombol Aksi
+               ------------------------------------------------------------- -->
+          <div class="lg:col-span-3 xl:col-span-3 flex flex-col justify-center text-left space-y-3 sm:space-y-4 z-20 order-2 lg:order-1">
+            <!-- Small Label Pill -->
+            <div>
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-white/90 font-black text-[10px] tracking-[0.25em] uppercase border border-white/25 backdrop-blur-md shadow-xs">
+                <span>📡</span> LIVE PRESENTASI
+              </span>
             </div>
 
-            <!-- Body Mini Slide -->
-            <div class="relative z-10 my-auto text-center px-2 py-1 transform transition-transform duration-500 ease-out group-hover:scale-105">
-              <div class="w-10 h-10 mx-auto rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-lg shadow-inner mb-2 text-white">
-                {{ getFirstSlide(item).icon }}
-              </div>
-              <h4 class="font-black text-xs sm:text-sm text-white line-clamp-2 leading-snug px-2 drop-shadow">
-                {{ getFirstSlide(item).title }}
-              </h4>
-              <p class="text-[10px] text-slate-300 line-clamp-2 mt-1 leading-relaxed max-w-xs mx-auto">
-                {{ getFirstSlide(item).content }}
+            <!-- Giant Presentation Title (Max 2-3 baris, ellipsis rapi) -->
+            <div :key="`title-${currentPresentation.id}`" class="animate-text-title">
+              <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-[1.08] tracking-tight drop-shadow-md line-clamp-3">
+                {{ currentPresentation.title }}
+              </h1>
+              <p class="text-xs sm:text-sm font-extrabold text-white/80 tracking-wide mt-1 truncate">
+                {{ currentPresentation.subject }} &bull; {{ formatClassroomBadge(currentPresentation) }}
               </p>
             </div>
 
-            <!-- Footer Mini Slide -->
-            <div class="relative z-10 flex items-center justify-between text-[8px] text-slate-400 border-t border-white/10 pt-1.5">
-              <span class="truncate max-w-[65%]">{{ item.title }}</span>
-              <span class="font-mono text-[#f59e0b] font-bold">16:9 Studio</span>
+            <!-- Short 2-3 Line Material Description -->
+            <div :key="`desc-${currentPresentation.id}`" class="animate-text-desc">
+              <p class="text-xs sm:text-sm text-white/90 leading-relaxed max-w-md drop-shadow-xs font-medium line-clamp-3">
+                {{ currentPresentation.description || 'Slide presentasi interaktif dengan sinkronisasi proyektor cerdas dan mirroring langsung ke HP siswa.' }}
+              </p>
+            </div>
+
+            <!-- Action Buttons Row (C7-C11) -->
+            <div :key="`cta-${currentPresentation.id}`" class="animate-text-cta flex items-center gap-2.5 pt-2 sm:pt-3 flex-wrap">
+              <!-- C7: Tombol Utama Buka Sesi Kelas (Pill, High Contrast, Disabled bila not ready) -->
+              <button
+                @click="openLaunchModal(currentPresentation)"
+                :disabled="currentPresentation.status !== 'ready'"
+                class="px-6 sm:px-7 py-3 sm:py-3.5 rounded-full bg-white text-slate-950 font-black text-xs sm:text-sm tracking-wide shadow-2xl hover:bg-white/90 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed group"
+                :title="currentPresentation.status !== 'ready' ? 'Materi masih dalam proses atau diarsipkan' : 'Mulai tayangkan materi di proyektor kelas'"
+              >
+                <span>▶️</span>
+                <span>Buka Sesi Kelas</span>
+                <span class="group-hover:translate-x-1 transition-transform font-bold">→</span>
+              </button>
+
+              <!-- C8: Tombol Sekunder Pratinjau Slide -->
+              <button
+                @click="previewPresentation(currentPresentation)"
+                class="px-4 py-3 sm:py-3.5 rounded-full bg-black/25 hover:bg-black/40 text-white font-bold text-xs sm:text-sm border border-white/25 backdrop-blur-md hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                title="Pratinjau isi halaman slide"
+              >
+                <span>👁️</span>
+                <span>Pratinjau</span>
+              </button>
+
+              <!-- C9: Tombol Sekunder Edit -->
+              <button
+                @click="openEditModal(currentPresentation)"
+                class="px-4 py-3 sm:py-3.5 rounded-full bg-black/25 hover:bg-black/40 text-white font-bold text-xs sm:text-sm border border-white/25 backdrop-blur-md hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                title="Edit judul, rombel, dan slide materi"
+              >
+                <span>✏️</span>
+                <span>Edit</span>
+              </button>
+
+              <!-- C10: Ikon Duplikasi Slide -->
+              <button
+                @click="duplicatePresentation(currentPresentation)"
+                class="p-3 sm:p-3.5 rounded-full bg-black/25 hover:bg-black/40 text-white/90 hover:text-white border border-white/25 backdrop-blur-md hover:scale-105 active:scale-95 transition cursor-pointer shadow-sm"
+                title="Duplikasi Slide Modul Ini"
+              >
+                📋
+              </button>
+
+              <!-- C11: Ikon Hapus Materi (Konfirmasi seperti sekarang) -->
+              <button
+                @click="deletePresentation(currentPresentation)"
+                class="p-3 sm:p-3.5 rounded-full bg-rose-600/30 hover:bg-rose-600/80 text-rose-200 hover:text-white border border-rose-400/30 backdrop-blur-md hover:scale-105 active:scale-95 transition cursor-pointer shadow-sm"
+                title="Hapus Materi Presentasi"
+              >
+                🗑️
+              </button>
             </div>
           </div>
 
-          <!-- Floating Badges: Subject & Status -->
-          <span class="text-[10px] uppercase font-bold tracking-wider absolute top-3 left-3 bg-[#0c2b3d]/80 backdrop-blur-md text-white px-2.5 py-1 rounded-xl border border-white/20 max-w-[65%] truncate z-10 shadow-sm">
-            {{ item.subject }} &bull; {{ formatClassroomBadge(item) }}
-          </span>
-
-          <span
-            :class="[
-              'text-[10px] uppercase font-bold absolute top-3 right-3 z-10 px-2.5 py-0.5 rounded-full shadow-sm',
-              item.status === 'ready' ? 'bg-emerald-500 text-white font-bold' : item.status === 'processing' ? 'bg-amber-400 text-slate-950 font-black' : 'bg-slate-200 text-slate-700 font-bold'
-            ]"
-          >
-            {{ item.status === 'ready' ? 'Siap Ajar' : item.status === 'processing' ? 'Konversi...' : 'Arsip' }}
-          </span>
-
-          <!-- Quick Actions Button on Hover -->
-          <div class="absolute inset-0 bg-[#0c2b3d]/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-2.5 p-4 z-20">
-            <div class="text-xs text-[#f59e0b] font-mono font-bold mb-1">
-              Slide 1 dari {{ item.slideCount || item.slides?.length || 1 }} Halaman
+          <!-- -------------------------------------------------------------
+               CENTER COLUMN (±50% lebar): Kata Raksasa di Belakang + Pratinjau Slide Pertama Lebih Besar
+               ------------------------------------------------------------- -->
+          <div class="lg:col-span-6 xl:col-span-6 relative flex items-center justify-center min-h-[300px] sm:min-h-[400px] lg:min-h-[480px] z-10 order-1 lg:order-2">
+            <!-- KATA RAKSASA DI TENGAH LAYAR DI BELAKANG VISUAL UTAMA -->
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0 overflow-hidden">
+              <span
+                :key="`giant-${currentPresentation.id}`"
+                class="font-black tracking-tighter uppercase text-white/[0.14] select-none leading-none animate-giant-word font-sans text-center px-2"
+                style="font-size: clamp(5.5rem, 18vw, 18rem);"
+              >
+                {{ currentGiantWord }}
+              </span>
             </div>
-            <div class="flex items-center gap-2">
+
+            <!-- VISUAL UTAMA: PRATINJAU SLIDE PERTAMA MATERI LEBIH BESAR (HIGHLIGHT UTAMA) -->
+            <div :key="`visual-${currentPresentation.id}`" class="relative z-10 w-full max-w-xl sm:max-w-2xl lg:max-w-2xl xl:max-w-3xl aspect-video animate-visual-enter transform scale-100 sm:scale-105 lg:scale-110 xl:scale-115 transition-transform duration-500">
+              <div class="w-full h-full rounded-3xl overflow-hidden border-2 border-white/25 shadow-[0_30px_60px_rgba(0,0,0,0.7)] relative group flex flex-col justify-between bg-black/40 backdrop-blur-md">
+                <!-- Thumbnail Gambar Slide Pertama (Jika Ada Gambar/Visual Slide 1) -->
+                <div v-if="getFirstSlide(currentPresentation).image" class="absolute inset-0 bg-[#0c2b3d] flex items-center justify-center overflow-hidden">
+                  <img
+                    :src="getFirstSlide(currentPresentation).image"
+                    :alt="getFirstSlide(currentPresentation).title || currentPresentation.title"
+                    class="w-full h-full object-contain select-none transition-transform duration-500 ease-out group-hover:scale-105"
+                    loading="lazy"
+                  />
+                  <!-- Gradient Overlay untuk keterbacaan badge dan teks keterangan -->
+                  <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/60 pointer-events-none"></div>
+
+                  <!-- Keterangan Slide 1 di bagian bawah gambar -->
+                  <div class="absolute bottom-3.5 left-4 right-4 z-10 flex items-center justify-between text-white pointer-events-none">
+                    <span class="text-xs sm:text-sm font-bold truncate max-w-[70%] drop-shadow text-white">
+                      Slide 1 &bull; {{ getFirstSlide(currentPresentation).title }}
+                    </span>
+                    <span class="font-mono text-[10px] sm:text-xs font-bold px-3 py-0.5 rounded-full bg-black/75 backdrop-blur-md text-[#f59e0b] border border-white/10 shrink-0">
+                      {{ currentPresentation.slideCount || currentPresentation.slides?.length || 1 }} Slide
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Thumbnail Tampilan Kanvas Slide Pertama (Jika Slide 1 Berupa Teks/Konten Modul) -->
+                <div v-else class="absolute inset-0 bg-gradient-to-br from-[#0c2b3d] via-[#10384f] to-[#082231] p-6 sm:p-8 flex flex-col justify-between overflow-hidden select-none">
+                  <div class="absolute inset-0 opacity-15 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
+
+                  <!-- Header Mini Kanvas Slide -->
+                  <div class="pt-6 flex items-center justify-between text-xs text-cyan-300 font-bold opacity-90 z-10">
+                    <span class="tracking-wider uppercase">Slide 1 &bull; Pembuka</span>
+                    <span class="font-mono text-[#f59e0b] font-bold">{{ currentPresentation.slideCount || currentPresentation.slides?.length || 1 }} Slide</span>
+                  </div>
+
+                  <!-- Body Mini Slide -->
+                  <div class="relative z-10 my-auto text-center px-4 py-2 transform transition-transform duration-500 ease-out group-hover:scale-105">
+                    <div class="w-14 h-14 mx-auto rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-2xl shadow-inner mb-3 text-white">
+                      {{ getFirstSlide(currentPresentation).icon }}
+                    </div>
+                    <h4 class="font-black text-base sm:text-lg lg:text-xl text-white line-clamp-2 leading-snug px-2 drop-shadow">
+                      {{ getFirstSlide(currentPresentation).title }}
+                    </h4>
+                    <p class="text-xs sm:text-sm text-slate-300 line-clamp-2 mt-1.5 leading-relaxed max-w-md mx-auto">
+                      {{ getFirstSlide(currentPresentation).content }}
+                    </p>
+                  </div>
+
+                  <!-- Footer Mini Slide -->
+                  <div class="relative z-10 flex items-center justify-between text-[10px] text-slate-400 border-t border-white/10 pt-2.5">
+                    <span class="truncate max-w-[65%]">{{ currentPresentation.title }}</span>
+                    <span class="font-mono text-[#f59e0b] font-bold">16:9 Studio</span>
+                  </div>
+                </div>
+
+                <!-- Floating Badges di Visual Utama (Wajib Selalu Terlihat) -->
+                <!-- Badge Mapel • Rombel di Kiri Atas -->
+                <span class="text-[10px] sm:text-xs uppercase font-extrabold tracking-wider absolute top-3.5 left-3.5 bg-black/60 backdrop-blur-md text-white px-3 py-1 rounded-xl border border-white/25 max-w-[65%] truncate z-20 shadow-md">
+                  {{ currentPresentation.subject }} &bull; {{ formatClassroomBadge(currentPresentation) }}
+                </span>
+
+                <!-- Badge Status di Kanan Atas ("Siap Ajar" / "Konversi..." / "Arsip") -->
+                <span
+                  :class="[
+                    'text-[10px] sm:text-xs uppercase font-black absolute top-3.5 right-3.5 z-20 px-3 py-1 rounded-full shadow-md backdrop-blur-sm',
+                    currentPresentation.status === 'ready'
+                      ? 'bg-emerald-500 text-white border border-emerald-400/40'
+                      : currentPresentation.status === 'processing'
+                        ? 'bg-amber-400 text-slate-950 border border-amber-300'
+                        : 'bg-slate-300 text-slate-900 border border-slate-200'
+                  ]"
+                >
+                  {{ currentPresentation.status === 'ready' ? 'Siap Ajar' : currentPresentation.status === 'processing' ? 'Konversi...' : 'Arsip' }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- -------------------------------------------------------------
+               RIGHT COLUMN (±25% lebar): Pemilih Titik Warna + Chip Info Materi
+               ------------------------------------------------------------- -->
+          <div class="lg:col-span-3 xl:col-span-3 flex flex-col justify-center text-left lg:text-right space-y-3 sm:space-y-4 z-20 order-3">
+            <!-- "PILIH MATERI" Label -->
+            <div class="flex items-center justify-between lg:justify-end">
+              <span class="text-[10px] font-black uppercase tracking-[0.25em] text-white/70">
+                Pilih Materi
+              </span>
+              <span class="text-[10px] font-bold text-white/60">
+                {{ activePresentationIndex + 1 }} dari {{ filteredPresentations.length }}
+              </span>
+            </div>
+
+            <!-- Titik Warna (Choose Your Material Color Dots) -->
+            <div class="flex items-center gap-2 lg:justify-end flex-wrap py-1">
               <button
-                @click="previewPresentation(item)"
-                class="px-3.5 py-2 rounded-xl bg-white text-slate-900 hover:bg-slate-100 text-xs font-bold shadow-md flex items-center gap-1.5 active:scale-95 transition"
+                v-for="(item, idx) in filteredPresentations"
+                :key="item.id"
+                @click="selectPresentation(idx)"
+                class="transition-all duration-300 rounded-full cursor-pointer relative flex items-center justify-center"
+                :class="idx === activePresentationIndex
+                  ? 'w-7 h-7 sm:w-8 sm:h-8 ring-4 ring-white shadow-[0_0_20px_rgba(255,255,255,0.7)] scale-110 z-10'
+                  : 'w-5 h-5 sm:w-6 sm:h-6 opacity-70 hover:opacity-100 hover:scale-110'"
+                :style="{ backgroundColor: getPresentationTheme(item).themeColor }"
+                :title="`${item.title} (${getGiantWord(item)})`"
               >
-                <span>👁️</span> Pratinjau
+                <span v-if="idx === activePresentationIndex" class="w-1.5 h-1.5 rounded-full bg-white shadow-xs"></span>
               </button>
+            </div>
+
+            <!-- Vertical Thumbnail Strip Selector (Scrollable) -->
+            <div class="max-h-28 sm:max-h-36 overflow-y-auto space-y-1.5 custom-scroll pr-1">
               <button
-                @click="openEditModal(item)"
-                class="px-3.5 py-2 rounded-xl bg-[#f59e0b] hover:bg-[#d97706] text-slate-950 text-xs font-bold shadow-md flex items-center gap-1 active:scale-95 transition"
+                v-for="(item, idx) in filteredPresentations"
+                :key="item.id"
+                @click="selectPresentation(idx)"
+                class="w-full text-left p-2 rounded-xl border transition-all flex items-center gap-2.5 cursor-pointer backdrop-blur-md"
+                :class="idx === activePresentationIndex
+                  ? 'bg-white/25 border-white shadow-md ring-1 ring-white/50'
+                  : 'bg-black/20 border-white/10 opacity-70 hover:opacity-100 hover:bg-black/30'"
               >
-                <span>✏️</span> Edit
+                <div class="w-8 h-6 rounded bg-black/40 overflow-hidden shrink-0 flex items-center justify-center text-[10px]">
+                  <img v-if="getFirstSlide(item).image" :src="getFirstSlide(item).image" class="w-full h-full object-cover" />
+                  <span v-else>{{ getFirstSlide(item).icon }}</span>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <p class="text-xs font-bold text-white truncate leading-tight">{{ item.title }}</p>
+                  <span class="text-[9px] text-white/70">{{ item.slideCount || item.slides?.length || 1 }} slide &bull; {{ item.subject }}</span>
+                </div>
               </button>
-              <button
-                v-if="item.status === 'ready'"
-                @click="openLaunchModal(item)"
-                class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md flex items-center gap-1 active:scale-95 transition"
+            </div>
+
+            <!-- Active Material Name Indicator Under Dots -->
+            <div>
+              <p class="text-white font-black text-sm tracking-wide truncate">
+                {{ currentPresentation.title }}
+              </p>
+              <p class="text-[11px] font-bold text-white/70">
+                Tema: <span class="capitalize">{{ currentTheme.themeName }}</span>
+              </p>
+            </div>
+
+            <!-- Chip Info Materi Berbentuk Pill (Meniru Pemilih Ukuran Sepatu) -->
+            <div :key="`chips-${currentPresentation.id}`" class="space-y-1.5 w-full max-w-xs lg:ml-auto animate-text-desc">
+              <div
+                v-for="(chip, cIdx) in currentChips"
+                :key="cIdx"
+                class="p-2 sm:p-2.5 rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md transition hover:bg-white/15 text-left shadow-xs"
               >
-                <span>🚀</span> Mulai
-              </button>
+                <div class="text-[9px] uppercase font-extrabold tracking-wider text-white/60">
+                  {{ chip.label }}
+                </div>
+                <div class="text-xs font-black text-white mt-0.5 truncate">
+                  {{ chip.value }}
+                </div>
+              </div>
             </div>
           </div>
         </div>
+      </main>
 
-        <!-- Meta Information -->
-        <div class="p-5 space-y-3">
+      <!-- =========================================================================
+           BOTTOM BAR (Mini Cards Strip, Prev/Next Arrows, & "Lihat Semua Materi" Button)
+           ========================================================================= -->
+      <footer class="relative z-30 px-4 sm:px-8 lg:px-12 py-3 sm:py-3.5 border-t border-white/10 backdrop-blur-sm flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+        <!-- Mini Cards Strip + Navigation Arrows -->
+        <div class="flex items-center gap-2 sm:gap-3 w-full sm:w-auto overflow-x-auto py-1 custom-scroll">
+          <!-- Prev Arrow -->
+          <button
+            @click="prevPresentation"
+            class="w-8 h-8 rounded-full bg-black/25 hover:bg-black/50 border border-white/20 text-white font-bold flex items-center justify-center transition active:scale-95 cursor-pointer flex-shrink-0"
+            title="Materi Sebelumnya (Panah Kiri)"
+          >
+            ‹
+          </button>
+
+          <!-- Mini Cards Strip -->
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <button
+              v-for="(item, idx) in filteredPresentations"
+              :key="item.id"
+              @click="selectPresentation(idx)"
+              class="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-2xl border transition-all flex items-center gap-2 cursor-pointer text-left"
+              :class="idx === activePresentationIndex
+                ? 'bg-white/25 border-white shadow-lg scale-105 ring-2 ring-white/50'
+                : 'bg-black/20 border-white/10 opacity-70 hover:opacity-100 hover:bg-black/30'"
+            >
+              <div class="w-7 h-5 rounded bg-black/40 overflow-hidden shrink-0 flex items-center justify-center text-[9px]">
+                <img v-if="getFirstSlide(item).image" :src="getFirstSlide(item).image" class="w-full h-full object-cover" />
+                <span v-else>{{ getFirstSlide(item).icon }}</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-xs font-black text-white whitespace-nowrap max-w-[120px] truncate">{{ item.title }}</span>
+                <span class="text-[9px] font-bold text-white/70">{{ getGiantWord(item) }}</span>
+              </div>
+            </button>
+          </div>
+
+          <!-- Next Arrow -->
+          <button
+            @click="nextPresentation"
+            class="w-8 h-8 rounded-full bg-black/25 hover:bg-black/50 border border-white/20 text-white font-bold flex items-center justify-center transition active:scale-95 cursor-pointer flex-shrink-0"
+            title="Materi Berikutnya (Panah Kanan)"
+          >
+            ›
+          </button>
+
+          <!-- Keyboard Shortcut Helper (Hidden on Mobile) -->
+          <span class="hidden xl:inline-flex items-center gap-1 text-[10px] text-white/60 font-medium ml-2">
+            Gunakan <kbd class="px-1.5 py-0.5 rounded bg-white/15 text-white font-mono text-[9px]">←</kbd> <kbd class="px-1.5 py-0.5 rounded bg-white/15 text-white font-mono text-[9px]">→</kbd> ganti materi &bull; <kbd class="px-1.5 py-0.5 rounded bg-white/15 text-white font-mono text-[9px]">Enter</kbd> buka sesi
+          </span>
+        </div>
+
+        <!-- Button "Lihat Semua Materi" -> Buka Grid Pustaka Lama -->
+        <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <button
+            @click="currentView = 'catalog'"
+            class="w-full sm:w-auto px-4 py-2 sm:py-2.5 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 border border-white/25 text-white font-black text-xs transition flex items-center justify-center gap-2 backdrop-blur-md shadow-md cursor-pointer whitespace-nowrap"
+          >
+            <span>📂</span>
+            <span>Lihat Semua Materi (Katalog & Pustaka)</span>
+          </button>
+        </div>
+      </footer>
+    </div>
+
+    <!-- =========================================================================
+         SECONDARY VIEW: KATALOG GRID LAMA & PUSTAKA MATERI AJAR
+         ========================================================================= -->
+    <div v-else class="min-h-screen bg-[#e8edf2] p-4 sm:p-6 lg:p-8 space-y-6 font-sans">
+      <!-- Top Sticky Return Bar to Hero Fullscreen -->
+      <div class="rounded-2xl bg-[#0c2b3d] text-white p-4 shadow-lg flex flex-wrap items-center justify-between gap-4 sticky top-4 z-30">
+        <div class="flex items-center gap-3">
+          <button
+            @click="currentView = 'hero'"
+            class="px-4 py-2 rounded-xl bg-white text-[#0c2b3d] font-black text-xs hover:bg-white/90 active:scale-95 transition shadow-sm flex items-center gap-2 cursor-pointer"
+          >
+            <span>←</span>
+            <span>Kembali ke Mode Showcase (Hero)</span>
+          </button>
+          <span class="text-xs text-slate-300 hidden sm:inline">
+            Live Presentasi &bull; Pustaka Modul Klasik & Riwayat Sesi
+          </span>
+        </div>
+        <div class="flex items-center gap-2">
+          <!-- A1: Tombol Unggah di Catalog View -->
+          <button
+            @click="showUploadModal = true"
+            class="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+          >
+            <span>📤</span> <span>Unggah / Buat Modul</span>
+          </button>
+          <router-link
+            to="/dashboard"
+            class="px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs transition flex items-center gap-1.5"
+          >
+            <span>🏠</span> <span>Dashboard Guru</span>
+          </router-link>
+        </div>
+      </div>
+
+      <!-- Student PIN Entry Card (Catalog View) -->
+      <div
+        v-if="isStudent"
+        class="p-6 rounded-[24px] bg-gradient-to-br from-[#0c2b3d] to-[#164e63] text-white shadow-xl border-2 border-cyan-400/40 relative overflow-hidden"
+      >
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
+          <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-2xl bg-cyan-400 text-slate-950 flex items-center justify-center text-3xl font-black shadow-lg">
+              📱
+            </div>
+            <div>
+              <span class="px-2.5 py-0.5 rounded-full bg-cyan-400/20 text-cyan-300 border border-cyan-400/30 text-[10px] font-bold uppercase tracking-wider">
+                Portal Siswa
+              </span>
+              <h2 class="text-lg font-black text-white mt-1">Gabung Sesi Live Presentasi</h2>
+              <p class="text-xs text-slate-300 mt-0.5">
+                Masukkan kode PIN yang ditampilkan oleh guru di layar proyektor kelas.
+              </p>
+            </div>
+          </div>
+
+          <form @submit.prevent="joinStudentSession()" class="flex items-center gap-2">
+            <input
+              v-model="studentJoinPin"
+              type="text"
+              maxlength="10"
+              placeholder="Contoh: 849201"
+              class="px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white font-mono font-bold tracking-widest text-center text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 placeholder:text-slate-400 uppercase"
+            />
+            <button
+              type="submit"
+              class="px-5 py-2.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-black text-xs shadow-md transition whitespace-nowrap"
+            >
+              Masuk Sesi 🚀
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Top 4 Stat Cards Row -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <!-- Card 1: Total Modul Presentasi -->
+        <div class="p-5 rounded-[24px] bg-[#0c2b3d] text-white shadow-card border border-white/10 flex flex-col justify-between group">
           <div>
-            <h3 class="font-bold text-slate-900 text-sm line-clamp-1 group-hover:text-blue-600 transition">
-              {{ item.title }}
-            </h3>
-            <p class="text-xs text-slate-500 line-clamp-2 mt-1 leading-relaxed">
-              {{ item.description || 'Tidak ada deskripsi pengantar materi.' }}
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-slate-300">Total Modul Presentasi</span>
+              <div class="w-9 h-9 rounded-full bg-white/15 backdrop-blur-md flex items-center justify-center text-white text-base shadow-inner">
+                📽️
+              </div>
+            </div>
+            <div class="mt-3">
+              <div class="text-3xl font-black text-white tracking-tight leading-none">
+                {{ presentations.length }}
+              </div>
+              <p class="text-[11px] text-slate-300 font-medium mt-1">
+                Modul Ajar Digital Terdata
+              </p>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-300/90 group-hover:text-white transition">
+            <button @click="showUploadModal = true" class="flex items-center justify-between w-full">
+              <span>+ Buat / Unggah Modul</span>
+              <span class="font-bold transition-transform group-hover:translate-x-1">→</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Card 2: Slide Siap Tayang -->
+        <div class="p-5 rounded-[24px] bg-[#f59e0b] text-slate-950 shadow-card border border-amber-300 flex flex-col justify-between group">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-900/80">Slide Siap Tayang</span>
+              <div class="w-9 h-9 rounded-full bg-black/10 flex items-center justify-center text-slate-950 text-base shadow-inner">
+                📑
+              </div>
+            </div>
+            <div class="mt-3">
+              <div class="text-3xl font-black text-slate-950 tracking-tight leading-none">
+                {{ totalReadySlides }}
+              </div>
+              <p class="text-[11px] text-slate-900/80 font-semibold mt-1">
+                Halaman Slide Interaktif
+              </p>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-black/10 flex items-center justify-between text-xs text-slate-900/80 group-hover:text-slate-950 font-bold transition">
+            <span>Format PPTX & PDF</span>
+            <span class="font-black">✓ Siap Digunakan</span>
+          </div>
+        </div>
+
+        <!-- Card 3: Total Sesi Terlaksana -->
+        <div class="p-5 rounded-[24px] bg-[#0c2b3d] text-white shadow-card border border-white/10 flex flex-col justify-between group">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-slate-300">Total Sesi Terlaksana</span>
+              <div class="w-9 h-9 rounded-full bg-white/15 backdrop-blur-md flex items-center justify-center text-white text-base shadow-inner">
+                🏫
+              </div>
+            </div>
+            <div class="mt-3">
+              <div class="text-3xl font-black text-white tracking-tight leading-none">
+                {{ totalSessionsDone }}
+              </div>
+              <p class="text-[11px] text-emerald-300 font-semibold mt-1">
+                Sesi Kelas di Layar Proyektor
+              </p>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-300/90 group-hover:text-white transition">
+            <span>Mirroring Proyektor</span>
+            <span class="font-bold">SMPN 6</span>
+          </div>
+        </div>
+
+        <!-- Card 4: Status Studio Live -->
+        <div class="p-5 rounded-[24px] bg-[#082231] text-white shadow-card border border-white/10 flex flex-col justify-between group">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-slate-300">Status Studio Live</span>
+              <div class="w-9 h-9 rounded-full bg-white/15 backdrop-blur-md flex items-center justify-center text-white text-base shadow-inner">
+                ⚡
+              </div>
+            </div>
+            <div class="mt-3">
+              <div class="text-3xl font-black text-white tracking-tight leading-none">
+                {{ activeSession ? 'Aktif' : 'Standby' }}
+              </div>
+              <p class="text-[11px] text-slate-300 font-medium mt-1 truncate">
+                {{ activeSession ? `${activeSession.classroom} · PIN: ${activeSession.accessCode}` : 'Siap Tayang ke HP Siswa' }}
+              </p>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-300/90 group-hover:text-white transition">
+            <span>Mirroring Real-Time</span>
+            <span class="font-bold">{{ activeSession ? '🟢 ON AIR' : '⚪ STANDBY' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Live Session Banner (Catalog View) -->
+      <div
+        v-if="activeSession"
+        class="p-6 rounded-[24px] bg-[#0c2b3d] text-white shadow-xl border-2 border-[#f59e0b]/60 flex flex-col md:flex-row md:items-center md:justify-between gap-5 relative overflow-hidden"
+      >
+        <div class="flex items-center gap-4 relative z-10">
+          <div class="w-14 h-14 rounded-2xl bg-[#f59e0b] text-slate-950 flex items-center justify-center text-2xl font-black shadow-lg animate-pulse shrink-0">
+            ⚡
+          </div>
+          <div>
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-full bg-[#f59e0b] text-slate-950 text-[10px] uppercase font-black tracking-wider">Sedang Tayang Langsung</span>
+              <span class="text-xs text-slate-300 font-medium">Kelas {{ activeSession.classroom }} &bull; Slide {{ activeSession.activeSlide || 1 }} / {{ activeSession.totalSlides }}</span>
+            </div>
+            <h2 class="text-lg font-black text-white mt-1">{{ activeSession.title }}</h2>
+            <p class="text-xs text-slate-300 mt-1 flex flex-wrap items-center gap-2">
+              <span>PIN Bergabung Siswa:</span>
+              <span class="font-mono font-black text-slate-950 bg-[#f59e0b] px-2.5 py-0.5 rounded-lg text-xs tracking-widest shadow-xs">{{ activeSession.accessCode }}</span>
+              <span class="text-emerald-400 font-bold">&bull; {{ activeSession.connectedCount || 0 }} Siswa Terhubung</span>
             </p>
           </div>
+        </div>
 
-          <!-- Tags & TP Link -->
-          <div class="flex flex-wrap gap-1.5" v-if="item.tags && item.tags.length">
-            <span
-              v-for="(t, i) in item.tags"
-              :key="i"
-              class="px-2.5 py-0.5 rounded-lg text-[10px] bg-slate-100 text-slate-600 font-medium"
-            >
-              #{{ t }}
-            </span>
+        <div class="flex flex-wrap items-center gap-2.5 relative z-10">
+          <!-- Button 4 -->
+          <router-link
+            :to="`/presentations/studio/${activeSession.id}`"
+            class="px-5 py-2.5 bg-[#f59e0b] hover:bg-[#d97706] text-slate-950 text-xs font-black rounded-xl shadow-md transition flex items-center gap-1.5"
+          >
+            <span>Masuk Layar Kontrol Studio Guru</span>
+            <span>→</span>
+          </router-link>
+          <!-- Button 5 -->
+          <router-link
+            :to="`/presentation-live/${activeSession.accessCode}`"
+            target="_blank"
+            class="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl border border-white/20 transition flex items-center gap-1.5"
+            title="Buka simulasi tampilan di HP siswa"
+          >
+            <span>📱</span> Buka Layar Siswa
+          </router-link>
+          <!-- Button 6 -->
+          <button
+            @click="stopActiveSession"
+            class="px-3.5 py-2.5 bg-rose-600/80 hover:bg-rose-700 text-white text-xs font-bold rounded-xl border border-rose-500/30 transition flex items-center gap-1 cursor-pointer"
+            title="Hentikan dan akhiri sesi tayang langsung ini"
+          >
+            <span>⏹️</span> Akhiri Sesi
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter & Search Bar Card (Catalog View) -->
+      <div class="bg-white rounded-[24px] shadow-sm border border-slate-200/80 p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center gap-3">
+          <!-- A3: Filter Mapel -->
+          <div>
+            <select v-model="filterSubject" class="px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#0c2b3d]/20 focus:border-[#0c2b3d] transition">
+              <option value="all">Semua Mata Pelajaran</option>
+              <option value="Informatika">Informatika</option>
+              <option value="KKA (Koding dan Kecerdasan Artifisial)">KKA (Koding dan Kecerdasan Artifisial)</option>
+            </select>
           </div>
-
-          <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
-            <span>Digunakan: <strong class="text-slate-700">{{ item.sessionCount || 0 }}x Sesi</strong></span>
-            <span>Update: {{ item.updatedAt || 'Baru saja' }}</span>
+          <!-- A3: Filter Rombel -->
+          <div>
+            <select v-model="filterClass" class="px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#0c2b3d]/20 focus:border-[#0c2b3d] transition">
+              <option value="all">Semua Rombel</option>
+              <option v-for="cls in classrooms" :key="cls.id" :value="cls.name">Kelas {{ cls.name }}</option>
+            </select>
+          </div>
+          <!-- A3: Filter Status -->
+          <div>
+            <select v-model="filterStatus" class="px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#0c2b3d]/20 focus:border-[#0c2b3d] transition">
+              <option value="all">Semua Status</option>
+              <option value="ready">Siap Presentasi</option>
+              <option value="processing">Sedang Diproses</option>
+              <option value="archived">Diarsipkan</option>
+            </select>
           </div>
         </div>
 
-        <!-- Action Toolbar with Edit & Preview -->
-        <div class="p-3.5 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between gap-2">
-          <div class="flex items-center gap-1">
-            <button
-              @click="previewPresentation(item)"
-              class="p-2 rounded-xl text-blue-600 hover:bg-blue-50 text-xs transition"
-              title="Pratinjau Slide"
+        <!-- A2: Kolom Pencarian -->
+        <div class="w-full sm:w-72">
+          <div class="relative">
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Cari materi presentasi..."
+              class="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0c2b3d]/20 focus:border-[#0c2b3d] transition"
+            />
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div v-for="i in 3" :key="i" class="bg-white rounded-[24px] shadow-sm border border-slate-200/60 p-6 animate-pulse space-y-4">
+          <div class="h-36 bg-slate-150 rounded-2xl"></div>
+          <div class="h-4 bg-slate-150 rounded w-2/3"></div>
+          <div class="h-8 bg-slate-150 rounded"></div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div v-else-if="filteredPresentations.length === 0" class="bg-white rounded-[24px] shadow-sm border border-slate-200/60 p-12 text-center space-y-4">
+        <div class="text-5xl">📽️</div>
+        <h2 class="text-lg font-bold text-slate-900">Belum Ada Materi Presentasi</h2>
+        <p class="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+          Belum ada bahan ajar atau slide presentasi interaktif yang diunggah. Mulai buat presentasi baru atau unggah berkas PPTX/PDF untuk rombongan belajar Anda.
+        </p>
+        <!-- A1: Tombol pada keadaan kosong / empty state -->
+        <button
+          @click="showUploadModal = true"
+          class="px-5 py-2.5 rounded-xl bg-[#0c2b3d] hover:bg-[#082231] text-white font-bold text-xs shadow-md transition inline-flex items-center gap-2 cursor-pointer"
+        >
+          <span>📤 Unggah Materi Presentasi Baru</span>
+        </button>
+      </div>
+
+      <!-- Presentation Cards Grid (Catalog View) -->
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div
+          v-for="item in filteredPresentations"
+          :key="item.id"
+          class="bg-white rounded-[24px] shadow-sm border border-slate-200/60 overflow-hidden hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col justify-between group"
+        >
+          <!-- Slide Preview Banner / Thumbnail Slide 1 -->
+          <div class="relative aspect-video bg-[#0c2b3d] flex flex-col justify-between overflow-hidden border-b border-slate-100">
+            <!-- Thumbnail Gambar Slide Pertama -->
+            <div v-if="getFirstSlide(item).image" class="absolute inset-0 bg-[#0c2b3d] flex items-center justify-center overflow-hidden">
+              <img
+                :src="getFirstSlide(item).image"
+                :alt="getFirstSlide(item).title || item.title"
+                class="w-full h-full object-contain select-none transition-transform duration-500 ease-out group-hover:scale-105"
+                loading="lazy"
+              />
+              <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/60 pointer-events-none"></div>
+
+              <div class="absolute bottom-2.5 left-3.5 right-3.5 z-10 flex items-center justify-between text-white pointer-events-none">
+                <span class="text-[11px] font-bold truncate max-w-[70%] drop-shadow text-white">
+                  Slide 1 &bull; {{ getFirstSlide(item).title }}
+                </span>
+                <span class="font-mono text-[9px] font-bold px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md text-[#f59e0b] border border-white/10 shrink-0">
+                  {{ item.slideCount || item.slides?.length || 1 }} Slide
+                </span>
+              </div>
+            </div>
+
+            <!-- Thumbnail Tampilan Kanvas Slide Pertama -->
+            <div v-else class="absolute inset-0 bg-gradient-to-br from-[#0c2b3d] via-[#10384f] to-[#082231] p-5 flex flex-col justify-between overflow-hidden select-none">
+              <div class="absolute inset-0 opacity-15 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
+
+              <div class="pt-5 flex items-center justify-between text-[9px] text-cyan-300 font-bold opacity-90 z-10">
+                <span class="tracking-wider uppercase">Slide 1 &bull; Pembuka</span>
+                <span class="font-mono text-[#f59e0b] font-bold">{{ item.slideCount || item.slides?.length || 1 }} Slide</span>
+              </div>
+
+              <div class="relative z-10 my-auto text-center px-2 py-1 transform transition-transform duration-500 ease-out group-hover:scale-105">
+                <div class="w-10 h-10 mx-auto rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-lg shadow-inner mb-2 text-white">
+                  {{ getFirstSlide(item).icon }}
+                </div>
+                <h4 class="font-black text-xs sm:text-sm text-white line-clamp-2 leading-snug px-2 drop-shadow">
+                  {{ getFirstSlide(item).title }}
+                </h4>
+                <p class="text-[10px] text-slate-300 line-clamp-2 mt-1 leading-relaxed max-w-xs mx-auto">
+                  {{ getFirstSlide(item).content }}
+                </p>
+              </div>
+
+              <div class="relative z-10 flex items-center justify-between text-[8px] text-slate-400 border-t border-white/10 pt-1.5">
+                <span class="truncate max-w-[65%]">{{ item.title }}</span>
+                <span class="font-mono text-[#f59e0b] font-bold">16:9 Studio</span>
+              </div>
+            </div>
+
+            <!-- Floating Badges -->
+            <span class="text-[10px] uppercase font-bold tracking-wider absolute top-3 left-3 bg-[#0c2b3d]/80 backdrop-blur-md text-white px-2.5 py-1 rounded-xl border border-white/20 max-w-[65%] truncate z-10 shadow-sm">
+              {{ item.subject }} &bull; {{ formatClassroomBadge(item) }}
+            </span>
+
+            <span
+              :class="[
+                'text-[10px] uppercase font-bold absolute top-3 right-3 z-10 px-2.5 py-0.5 rounded-full shadow-sm',
+                item.status === 'ready' ? 'bg-emerald-500 text-white font-bold' : item.status === 'processing' ? 'bg-amber-400 text-slate-950 font-black' : 'bg-slate-200 text-slate-700 font-bold'
+              ]"
             >
-              👁️
-            </button>
-            <button
-              @click="openEditModal(item)"
-              class="p-2 rounded-xl text-amber-600 hover:bg-amber-50 text-xs transition"
-              title="Edit Materi Presentasi"
-            >
-              ✏️
-            </button>
-            <button
-              @click="duplicatePresentation(item)"
-              class="p-2 rounded-xl text-slate-500 hover:bg-slate-200 text-xs transition"
-              title="Duplikasi Slide"
-            >
-              📋
-            </button>
-            <button
-              @click="deletePresentation(item)"
-              class="p-2 rounded-xl text-rose-500 hover:bg-rose-50 text-xs transition"
-              title="Hapus"
-            >
-              🗑️
-            </button>
+              {{ item.status === 'ready' ? 'Siap Ajar' : item.status === 'processing' ? 'Konversi...' : 'Arsip' }}
+            </span>
+
+            <!-- Quick Actions on Hover -->
+            <div class="absolute inset-0 bg-[#0c2b3d]/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-2.5 p-4 z-20">
+              <div class="text-xs text-[#f59e0b] font-mono font-bold mb-1">
+                Slide 1 dari {{ item.slideCount || item.slides?.length || 1 }} Halaman
+              </div>
+              <div class="flex items-center gap-2">
+                <!-- C8 -->
+                <button
+                  @click="previewPresentation(item)"
+                  class="px-3.5 py-2 rounded-xl bg-white text-slate-900 hover:bg-slate-100 text-xs font-bold shadow-md flex items-center gap-1.5 active:scale-95 transition cursor-pointer"
+                >
+                  <span>👁️</span> Pratinjau
+                </button>
+                <!-- C9 -->
+                <button
+                  @click="openEditModal(item)"
+                  class="px-3.5 py-2 rounded-xl bg-[#f59e0b] hover:bg-[#d97706] text-slate-950 text-xs font-bold shadow-md flex items-center gap-1 active:scale-95 transition cursor-pointer"
+                >
+                  <span>✏️</span> Edit
+                </button>
+                <!-- C7 -->
+                <button
+                  v-if="item.status === 'ready'"
+                  @click="openLaunchModal(item)"
+                  class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md flex items-center gap-1 active:scale-95 transition cursor-pointer"
+                >
+                  <span>🚀</span> Mulai
+                </button>
+              </div>
+            </div>
           </div>
 
-          <button
-            @click="openLaunchModal(item)"
-            :disabled="item.status !== 'ready'"
-            class="px-4 py-2 rounded-xl bg-[#0c2b3d] hover:bg-[#082231] text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 disabled:opacity-40"
-          >
-            <span>▶️</span> Buka Sesi Kelas
-          </button>
+          <!-- Meta Information -->
+          <div class="p-5 space-y-3">
+            <div>
+              <h3 class="font-bold text-slate-900 text-sm line-clamp-1 group-hover:text-blue-600 transition">
+                {{ item.title }}
+              </h3>
+              <p class="text-xs text-slate-500 line-clamp-2 mt-1 leading-relaxed">
+                {{ item.description || 'Tidak ada deskripsi pengantar materi.' }}
+              </p>
+            </div>
+
+            <div class="flex flex-wrap gap-1.5" v-if="item.tags && item.tags.length">
+              <span
+                v-for="(t, i) in item.tags"
+                :key="i"
+                class="px-2.5 py-0.5 rounded-lg text-[10px] bg-slate-100 text-slate-600 font-medium"
+              >
+                #{{ t }}
+              </span>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+              <span>Digunakan: <strong class="text-slate-700">{{ item.sessionCount || 0 }}x Sesi</strong></span>
+              <span>Update: {{ item.updatedAt || 'Baru saja' }}</span>
+            </div>
+          </div>
+
+          <!-- Action Toolbar with All Buttons (C7-C11) -->
+          <div class="p-3.5 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-1">
+              <!-- C8 -->
+              <button
+                @click="previewPresentation(item)"
+                class="p-2 rounded-xl text-blue-600 hover:bg-blue-50 text-xs transition cursor-pointer"
+                title="Pratinjau Slide"
+              >
+                👁️
+              </button>
+              <!-- C9 -->
+              <button
+                @click="openEditModal(item)"
+                class="p-2 rounded-xl text-amber-600 hover:bg-amber-50 text-xs transition cursor-pointer"
+                title="Edit Materi Presentasi"
+              >
+                ✏️
+              </button>
+              <!-- C10 -->
+              <button
+                @click="duplicatePresentation(item)"
+                class="p-2 rounded-xl text-slate-500 hover:bg-slate-200 text-xs transition cursor-pointer"
+                title="Duplikasi Slide"
+              >
+                📋
+              </button>
+              <!-- C11 -->
+              <button
+                @click="deletePresentation(item)"
+                class="p-2 rounded-xl text-rose-500 hover:bg-rose-50 text-xs transition cursor-pointer"
+                title="Hapus"
+              >
+                🗑️
+              </button>
+            </div>
+
+            <!-- C7: Buka Sesi Kelas -->
+            <button
+              @click="openLaunchModal(item)"
+              :disabled="item.status !== 'ready'"
+              class="px-4 py-2 rounded-xl bg-[#0c2b3d] hover:bg-[#082231] text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+            >
+              <span>▶️</span> Buka Sesi Kelas
+            </button>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- MODAL 1: UNGGAH PRESENTASI (PPTX / PDF / FORM BARU) -->
+    <!-- =========================================================================
+         MODAL 1: UNGGAH PRESENTASI (PPTX / PDF / FORM BARU) - Persis Original
+         ========================================================================= -->
     <div
       v-if="showUploadModal"
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in"
@@ -497,17 +1089,17 @@
             <h3 class="text-base font-bold text-slate-900">Buat / Unggah Materi Presentasi</h3>
             <p class="text-xs text-slate-500">Mendukung berkas PPTX, PDF, atau buat modul slide baru</p>
           </div>
-          <button @click="showUploadModal = false" class="text-slate-400 hover:text-slate-600 text-lg font-bold">✕</button>
+          <button @click="showUploadModal = false" class="text-slate-400 hover:text-slate-600 text-lg font-bold cursor-pointer">✕</button>
         </div>
 
-        <form @submit.prevent="submitUpload" class="space-y-3.5 text-xs">
+        <form @submit.prevent="submitUpload" class="space-y-4 text-xs">
           <div>
             <label class="block font-bold text-slate-700 mb-1">Judul Materi Pembelajaran <span class="text-rose-500">*</span></label>
             <input
               v-model="uploadForm.title"
               type="text"
+              placeholder="Contoh: Pengenalan Jaringan Komputer & Internet"
               class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0c2b3d]/20 focus:border-[#0c2b3d] transition"
-              placeholder="Misal: Arsitektur Komputer & Pemrosesan Biner"
               required
             />
           </div>
@@ -526,7 +1118,7 @@
               <button
                 type="button"
                 @click="toggleSelectAllUploadClasses"
-                class="text-[11px] font-bold text-blue-600 hover:text-blue-800 transition"
+                class="text-[11px] font-bold text-blue-600 hover:text-blue-800 transition cursor-pointer"
               >
                 {{ uploadForm.classroom_ids.length === classrooms.length ? 'Batal Pilih Semua' : 'Pilih Semua Kelas' }}
               </button>
@@ -548,69 +1140,74 @@
                   :value="cls.id"
                   :checked="uploadForm.classroom_ids.includes(cls.id)"
                   @change="toggleUploadClass(cls.id)"
-                  class="rounded text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
+                  class="rounded text-[#0c2b3d] focus:ring-[#0c2b3d]"
                 />
                 <span class="truncate">Kelas {{ cls.name }}</span>
               </label>
             </div>
-            <p v-if="uploadForm.classroom_ids.length === 0" class="text-[11px] text-rose-500 font-medium mt-1">
-              ⚠️ Pilih minimal satu kelas rombel sasaran.
-            </p>
-            <p v-else class="text-[11px] text-slate-500 mt-1">
-              Terpilih: <strong class="text-slate-800">{{ uploadForm.classroom_ids.length }} Kelas</strong> ({{ getSelectedClassroomsLabel(uploadForm.classroom_ids) }})
+            <p class="text-[10px] text-slate-400 mt-1">
+              Terpilih: {{ getSelectedClassroomsLabel(uploadForm.classroom_ids) }}
             </p>
           </div>
 
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Deskripsi Ringkas Materi</label>
+            <label class="block font-bold text-slate-700 mb-1">Deskripsi Singkat / Catatan Pengantar</label>
             <textarea
               v-model="uploadForm.description"
               rows="2"
-              class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0c2b3d]/20 focus:border-[#0c2b3d] transition"
-              placeholder="Catatan pengantar materi dan tujuan apersepsi..."
+              placeholder="Tuliskan tujuan pembelajaran atau ringkasan topik bahasan..."
+              class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0c2b3d]/20 focus:border-[#0c2b3d] transition"
             ></textarea>
           </div>
 
-          <!-- Drag and Drop Dropzone -->
-          <div
-            @dragover.prevent="isDragging = true"
-            @dragleave.prevent="isDragging = false"
-            @drop.prevent="handleDrop"
-            :class="[
-              'border-2 border-dashed rounded-2xl p-5 text-center transition-colors cursor-pointer flex flex-col items-center justify-center space-y-1.5',
-              isDragging ? 'border-blue-500 bg-blue-50/50' : 'border-slate-300 hover:border-blue-400 bg-slate-50/60'
-            ]"
-            @click="triggerFileInput"
-          >
-            <input
-              type="file"
-              ref="fileInputRef"
-              class="hidden"
-              accept=".pdf,.pptx,.ppt,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-powerpoint"
-              @change="handleFileChange"
-            />
-            <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-xl">
-              📄
-            </div>
-            <div v-if="!selectedFile">
-              <p class="font-bold text-slate-800 text-xs">Klik untuk memilih berkas PPT / PPTX / PDF (opsional)</p>
-              <p class="text-[11px] text-slate-400">Atau langsung simpan untuk mulai menyusun slide di studio</p>
-            </div>
-            <div v-else class="space-y-0.5">
-              <p class="font-bold text-blue-800 text-xs">{{ selectedFile.name }}</p>
-              <p class="text-[11px] text-emerald-600 font-semibold">
-                {{ (selectedFile.size / (1024 * 1024)).toFixed(2) }} MB &bull; Berkas valid
-              </p>
+          <!-- Area Upload Drag-and-Drop Berkas -->
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Unggah Berkas Slide (PPTX / PPT / PDF) - Opsional</label>
+            <div
+              @dragover.prevent="isDragging = true"
+              @dragleave.prevent="isDragging = false"
+              @drop.prevent="handleDrop"
+              @click="triggerFileInput"
+              :class="[
+                'border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition flex flex-col items-center justify-center gap-1.5',
+                isDragging ? 'border-[#0c2b3d] bg-blue-50/50' : 'border-slate-200 hover:border-slate-300 bg-slate-50/50'
+              ]"
+            >
+              <input
+                ref="fileInputRef"
+                type="file"
+                accept=".pptx,.ppt,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-powerpoint"
+                class="hidden"
+                @change="handleFileChange"
+              />
+              <span class="text-2xl">📄</span>
+              <div v-if="!selectedFile">
+                <span class="font-bold text-slate-700">Tarik berkas ke sini atau klik untuk memilih</span>
+                <p class="text-[10px] text-slate-400 mt-0.5">Mendukung PowerPoint (.pptx) & Dokumen PDF (Maks. 50 MB)</p>
+              </div>
+              <div v-else class="text-left w-full bg-white p-2.5 rounded-xl border border-slate-200 flex items-center justify-between">
+                <div class="truncate max-w-[80%]">
+                  <span class="font-bold text-slate-800 text-xs block truncate">{{ selectedFile.name }}</span>
+                  <span class="text-[10px] text-slate-400">{{ (selectedFile.size / 1024 / 1024).toFixed(2) }} MB</span>
+                </div>
+                <button
+                  type="button"
+                  @click.stop="selectedFile = null"
+                  class="text-rose-500 hover:text-rose-700 font-bold text-xs p-1 cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
           </div>
 
-          <div v-if="uploadProgress > 0" class="space-y-1">
-            <div class="flex justify-between text-[11px] font-semibold text-slate-600">
-              <span>Menyimpan & Menyiapkan Slide...</span>
+          <div v-if="isUploading" class="space-y-1">
+            <div class="flex justify-between text-[10px] font-bold text-slate-600">
+              <span>Memproses Konversi Slide...</span>
               <span>{{ uploadProgress }}%</span>
             </div>
-            <div class="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
-              <div class="h-full bg-[#0c2b3d] transition-all duration-300" :style="{ width: `${uploadProgress}%` }"></div>
+            <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+              <div class="bg-[#0c2b3d] h-1.5 rounded-full transition-all duration-300" :style="{ width: `${uploadProgress}%` }"></div>
             </div>
           </div>
 
@@ -618,14 +1215,14 @@
             <button
               type="button"
               @click="showUploadModal = false"
-              class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition"
+              class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition cursor-pointer"
             >
               Batal
             </button>
             <button
               type="submit"
-              :disabled="isUploading"
-              class="px-5 py-2.5 rounded-xl bg-[#0c2b3d] hover:bg-[#082231] text-white font-bold text-xs shadow-md transition disabled:opacity-50"
+              :disabled="isUploading || !uploadForm.title"
+              class="px-5 py-2.5 rounded-xl bg-[#0c2b3d] hover:bg-[#082231] text-white font-bold text-xs shadow-md transition disabled:opacity-50 cursor-pointer"
             >
               {{ isUploading ? 'Menyimpan Materi...' : 'Simpan Materi' }}
             </button>
@@ -634,7 +1231,9 @@
       </div>
     </div>
 
-    <!-- MODAL 2: PELUNCURAN SESI BARU (START SESSION) -->
+    <!-- =========================================================================
+         MODAL 2: PELUNCURAN SESI BARU (START SESSION) - Persis Original
+         ========================================================================= -->
     <div
       v-if="launchingItem"
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in"
@@ -646,7 +1245,7 @@
             <h3 class="text-base font-bold text-slate-900">Mulai Sesi Presentasi Langsung</h3>
             <p class="text-xs text-slate-500 truncate max-w-xs">{{ launchingItem.title }}</p>
           </div>
-          <button @click="launchingItem = null" class="text-slate-400 hover:text-slate-600 text-lg font-bold">✕</button>
+          <button @click="launchingItem = null" class="text-slate-400 hover:text-slate-600 text-lg font-bold cursor-pointer">✕</button>
         </div>
 
         <form @submit.prevent="confirmLaunchSession" class="space-y-3.5 text-xs">
@@ -694,13 +1293,13 @@
             <button
               type="button"
               @click="launchingItem = null"
-              class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition"
+              class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition cursor-pointer"
             >
               Batal
             </button>
             <button
               type="submit"
-              class="px-5 py-2.5 rounded-xl bg-[#0c2b3d] hover:bg-[#082231] text-white font-bold text-xs shadow-md transition"
+              class="px-5 py-2.5 rounded-xl bg-[#0c2b3d] hover:bg-[#082231] text-white font-bold text-xs shadow-md transition cursor-pointer"
             >
               🚀 Masuk Studio Presenter
             </button>
@@ -709,7 +1308,9 @@
       </div>
     </div>
 
-    <!-- MODAL 3: PRATINJAU SLIDE INTERAKTIF -->
+    <!-- =========================================================================
+         MODAL 3: PRATINJAU SLIDE INTERAKTIF - Persis Original
+         ========================================================================= -->
     <div
       v-if="previewItem"
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md animate-fade-in"
@@ -728,14 +1329,15 @@
             </div>
             <h3 class="font-black text-lg text-white mt-1">{{ previewItem.title }}</h3>
           </div>
+
           <div class="flex items-center gap-2">
             <button
               @click="openEditModal(previewItem); previewItem = null"
-              class="px-3.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-bold transition flex items-center gap-1.5"
+              class="px-3.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
             >
               <span>✏️</span> Edit Materi
             </button>
-            <button @click="previewItem = null" class="text-slate-400 hover:text-white text-xl p-1 font-bold">✕</button>
+            <button @click="previewItem = null" class="text-slate-400 hover:text-white text-xl p-1 font-bold cursor-pointer">✕</button>
           </div>
         </div>
 
@@ -784,27 +1386,27 @@
           <button
             @click="prevSlide"
             :disabled="previewSlideIndex === 0"
-            class="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-20 text-white font-bold text-lg transition backdrop-blur-sm z-20"
+            class="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-20 text-white font-bold text-lg transition backdrop-blur-sm z-20 cursor-pointer disabled:cursor-not-allowed"
           >
             ←
           </button>
           <button
             @click="nextSlide"
             :disabled="previewSlideIndex >= totalSlidesCount - 1"
-            class="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-20 text-white font-bold text-lg transition backdrop-blur-sm z-20"
+            class="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-20 text-white font-bold text-lg transition backdrop-blur-sm z-20 cursor-pointer disabled:cursor-not-allowed"
           >
             →
           </button>
         </div>
 
         <!-- Slide Thumbnails Strip -->
-        <div class="flex items-center gap-2.5 overflow-x-auto py-2 px-1">
+        <div class="flex items-center gap-2.5 overflow-x-auto py-2 px-1 custom-scroll">
           <button
             v-for="(_, sIdx) in totalSlidesCount"
             :key="sIdx"
             @click="previewSlideIndex = sIdx"
             :class="[
-              'relative rounded-xl border-2 transition shrink-0 overflow-hidden flex flex-col items-center justify-between text-left group/thumb',
+              'relative rounded-xl border-2 transition shrink-0 overflow-hidden flex flex-col items-center justify-between text-left group/thumb cursor-pointer',
               previewSlideIndex === sIdx
                 ? 'border-[#f59e0b] ring-2 ring-[#f59e0b]/50 bg-white/10'
                 : 'border-white/15 hover:border-white/40 bg-white/5'
@@ -831,7 +1433,7 @@
           <div class="flex items-center gap-2">
             <button
               @click="openLaunchModal(previewItem); previewItem = null"
-              class="px-5 py-2 rounded-xl bg-[#f59e0b] hover:bg-[#d97706] text-slate-950 text-xs font-black shadow-md transition"
+              class="px-5 py-2 rounded-xl bg-[#f59e0b] hover:bg-[#d97706] text-slate-950 text-xs font-black shadow-md transition cursor-pointer"
             >
               🚀 Mulai Tayangkan Sesi Sekarang →
             </button>
@@ -840,7 +1442,9 @@
       </div>
     </div>
 
-    <!-- MODAL 4: EDIT MATERI PRESENTASI -->
+    <!-- =========================================================================
+         MODAL 4: EDIT MATERI PRESENTASI - Persis Original
+         ========================================================================= -->
     <div
       v-if="showEditModal"
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in"
@@ -852,7 +1456,7 @@
             <h3 class="text-base font-bold text-slate-900">Edit Materi Presentasi</h3>
             <p class="text-xs text-slate-500">Perbarui judul, rombel sasaran, dan isi slide pembelajaran</p>
           </div>
-          <button @click="showEditModal = false" class="text-slate-400 hover:text-slate-600 text-lg font-bold">✕</button>
+          <button @click="showEditModal = false" class="text-slate-400 hover:text-slate-600 text-lg font-bold cursor-pointer">✕</button>
         </div>
 
         <form @submit.prevent="saveEditPresentation" class="space-y-3.5 text-xs">
@@ -880,7 +1484,7 @@
               <button
                 type="button"
                 @click="toggleSelectAllEditClasses"
-                class="text-[11px] font-bold text-blue-600 hover:text-blue-800 transition"
+                class="text-[11px] font-bold text-blue-600 hover:text-blue-800 transition cursor-pointer"
               >
                 {{ editForm.classroom_ids.length === classrooms.length ? 'Batal Pilih Semua' : 'Pilih Semua Kelas' }}
               </button>
@@ -902,53 +1506,49 @@
                   :value="cls.id"
                   :checked="editForm.classroom_ids.includes(cls.id)"
                   @change="toggleEditClass(cls.id)"
-                  class="rounded text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
+                  class="rounded text-[#0c2b3d] focus:ring-[#0c2b3d]"
                 />
                 <span class="truncate">Kelas {{ cls.name }}</span>
               </label>
             </div>
-            <p v-if="editForm.classroom_ids.length === 0" class="text-[11px] text-rose-500 font-medium mt-1">
-              ⚠️ Pilih minimal satu kelas rombel sasaran.
-            </p>
-            <p v-else class="text-[11px] text-slate-500 mt-1">
-              Terpilih: <strong class="text-slate-800">{{ editForm.classroom_ids.length }} Kelas</strong> ({{ getSelectedClassroomsLabel(editForm.classroom_ids) }})
+            <p class="text-[10px] text-slate-400 mt-1">
+              Terpilih: {{ getSelectedClassroomsLabel(editForm.classroom_ids) }}
             </p>
           </div>
 
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Deskripsi Ringkas Materi</label>
+            <label class="block font-bold text-slate-700 mb-1">Deskripsi Singkat</label>
             <textarea
               v-model="editForm.description"
               rows="2"
-              class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0c2b3d]/20 focus:border-[#0c2b3d] transition"
-              placeholder="Catatan pengantar materi..."
+              class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-[#0c2b3d]"
             ></textarea>
           </div>
 
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Tag / Topik (pisahkan dengan koma)</label>
+            <label class="block font-bold text-slate-700 mb-1">Tags / Topik (Pisahkan dengan koma)</label>
             <input
               v-model="editForm.tagsString"
               type="text"
-              class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0c2b3d]/20 focus:border-[#0c2b3d] transition"
-              placeholder="Contoh: fase-d, hardware, jaringan"
+              placeholder="Contoh: algoritma, scratch, koding"
+              class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-[#0c2b3d]"
             />
           </div>
 
-          <!-- Slide Content Editor -->
-          <div class="space-y-2.5 pt-2.5 border-t border-slate-100">
-            <div class="flex items-center justify-between">
-              <label class="block font-bold text-slate-700 mb-0">Daftar Konten Slide ({{ editForm.slides.length }} Halaman)</label>
+          <!-- Edit Daftar Slide -->
+          <div class="border-t border-slate-100 pt-3">
+            <div class="flex items-center justify-between mb-2">
+              <label class="font-bold text-slate-800 text-xs">Isi Halaman Slide ({{ editForm.slides.length }} Halaman)</label>
               <button
                 type="button"
                 @click="addSlideToEdit"
-                class="text-[11px] text-blue-600 hover:underline font-bold"
+                class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 text-[11px] font-bold transition flex items-center gap-1 cursor-pointer"
               >
-                + Tambah Slide Baru
+                <span>+</span> Tambah Slide
               </button>
             </div>
 
-            <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
+            <div class="space-y-2 max-h-48 overflow-y-auto pr-1 custom-scroll">
               <div
                 v-for="(sl, sIdx) in editForm.slides"
                 :key="sIdx"
@@ -960,7 +1560,7 @@
                     v-if="editForm.slides.length > 1"
                     type="button"
                     @click="removeSlideFromEdit(sIdx)"
-                    class="text-rose-500 hover:text-rose-700 text-[10px] font-bold"
+                    class="text-rose-500 hover:text-rose-700 text-[10px] font-bold cursor-pointer"
                   >
                     Hapus
                   </button>
@@ -990,7 +1590,7 @@
                     <button
                       type="button"
                       @click="sl.image = undefined"
-                      class="bg-rose-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-xl shadow hover:bg-rose-700"
+                      class="bg-rose-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-xl shadow hover:bg-rose-700 cursor-pointer"
                     >
                       Hapus
                     </button>
@@ -1015,13 +1615,13 @@
             <button
               type="button"
               @click="showEditModal = false"
-              class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition"
+              class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition cursor-pointer"
             >
               Batal
             </button>
             <button
               type="submit"
-              class="px-5 py-2.5 rounded-xl bg-[#0c2b3d] hover:bg-[#082231] text-white font-bold text-xs shadow-md transition"
+              class="px-5 py-2.5 rounded-xl bg-[#0c2b3d] hover:bg-[#082231] text-white font-bold text-xs shadow-md transition cursor-pointer"
             >
               Simpan Perubahan Materi
             </button>
@@ -1033,7 +1633,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
@@ -1043,26 +1643,42 @@ const route = useRoute()
 const authStore = useAuthStore()
 const isStudent = computed(() => authStore.hasRole('student'))
 
-const activeTab = ref<'studio' | 'library'>(route.query.tab === 'library' ? 'library' : 'studio')
+// View mode: 'hero' (Fullscreen 100dvh) or 'catalog' (Classic Grid)
+const currentView = ref<'hero' | 'catalog'>(route.query.view === 'catalog' ? 'catalog' : 'hero')
 
-watch(() => route.query.tab, (newTab) => {
-  if (newTab === 'library') {
-    activeTab.value = 'library'
-  } else if (newTab === 'studio') {
-    activeTab.value = 'studio'
+watch(() => route.query.view, (newView) => {
+  if (newView === 'catalog') {
+    currentView.value = 'catalog'
+  } else {
+    currentView.value = 'hero'
   }
 })
 
-function switchTab(tab: 'studio' | 'library') {
-  activeTab.value = tab
-  router.replace({
-    query: {
-      ...route.query,
-      tab
+// Active material index in hero showcase
+const activePresentationIndex = ref(0)
+
+// Mode Ringan / Reduced Motion Support
+const reducedMotion = ref(false)
+
+function initReducedMotion() {
+  try {
+    const saved = localStorage.getItem('belajarena_reduced_motion')
+    if (saved !== null) {
+      reducedMotion.value = saved === 'true'
+    } else if (typeof window !== 'undefined' && window.matchMedia) {
+      reducedMotion.value = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     }
-  })
+  } catch {}
 }
 
+function toggleReducedMotion() {
+  reducedMotion.value = !reducedMotion.value
+  try {
+    localStorage.setItem('belajarena_reduced_motion', String(reducedMotion.value))
+  } catch {}
+}
+
+// Student Join PIN
 const studentJoinPin = ref('')
 function joinStudentSession(pin?: string) {
   const code = (pin || studentJoinPin.value).trim()
@@ -1073,16 +1689,25 @@ function joinStudentSession(pin?: string) {
   router.push(`/presentation-live/${code}`)
 }
 
+// Filters & Search
 const loading = ref(false)
 const filterSubject = ref('all')
 const filterClass = ref('all')
 const filterStatus = ref('all')
 const searchQuery = ref('')
 
+function resetFilters() {
+  filterSubject.value = 'all'
+  filterClass.value = 'all'
+  filterStatus.value = 'all'
+  searchQuery.value = ''
+}
+
 const classrooms = ref<any[]>([])
 const presentations = ref<any[]>([])
 const activeSession = ref<any>(null)
 
+// Stats Computed
 const totalReadySlides = computed(() => {
   return presentations.value.reduce((acc, p) => acc + (p.slideCount || p.slides?.length || 0), 0)
 })
@@ -1091,6 +1716,227 @@ const totalSessionsDone = computed(() => {
   return presentations.value.reduce((acc, p) => acc + (p.sessionCount || 0), 0)
 })
 
+// Filtered Presentations
+const filteredPresentations = computed(() => {
+  return presentations.value.filter(p => {
+    const matchSubj = filterSubject.value === 'all' || p.subject === filterSubject.value
+
+    let matchCls = filterClass.value === 'all'
+    if (!matchCls) {
+      const target = (filterClass.value || '').toLowerCase().trim()
+      const targetNorm = target.replace(/^kelas\s+/i, '')
+      const ids: string[] = p.classroom_ids || []
+      const names: string[] = p.classrooms || (p.classroom ? p.classroom.split(',').map((s: string) => s.trim()) : [])
+      matchCls = ids.some(id => id.toLowerCase() === target) ||
+        names.some(n => n.toLowerCase() === target || n.toLowerCase() === targetNorm) ||
+        (p.classroom && p.classroom.toLowerCase().includes(targetNorm))
+    }
+
+    const matchStat = filterStatus.value === 'all' || p.status === filterStatus.value
+    const matchQuery = (p.title || '').toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+                       (p.description || '').toLowerCase().includes(searchQuery.value.toLowerCase())
+    return matchSubj && matchCls && matchStat && matchQuery
+  })
+})
+
+// Guard active presentation index when filtered list changes
+watch(filteredPresentations, (newList) => {
+  if (newList.length === 0) {
+    activePresentationIndex.value = 0
+    return
+  }
+  if (activePresentationIndex.value >= newList.length) {
+    activePresentationIndex.value = 0
+  }
+})
+
+// Current Active Presentation
+const currentPresentation = computed(() => {
+  if (filteredPresentations.value.length === 0) return null
+  return filteredPresentations.value[activePresentationIndex.value] || filteredPresentations.value[0]
+})
+
+// ---------------------------------------------------------------------------
+// THEME COLOR & RADIAL GRADIENT LOGIC (Aturan Warna Sesuai Spesifikasi)
+// Informatika = #2563EB (biru), KKA = #7C3AED (ungu)
+// Lainnya = Deterministik dari [merah #E11D48, oranye #F97316, hijau #16A34A, sian #0891B2]
+// ---------------------------------------------------------------------------
+const FALLBACK_PALETTE = ['#E11D48', '#F97316', '#16A34A', '#0891B2']
+
+const THEME_MAP: Record<string, { themeName: string; gradient: string }> = {
+  '#2563EB': {
+    themeName: 'Ocean Blue',
+    gradient: 'radial-gradient(circle at 55% 45%, #2563EB 0%, #1D4ED8 45%, #0B1E4A 100%)'
+  },
+  '#7C3AED': {
+    themeName: 'Cyber Violet',
+    gradient: 'radial-gradient(circle at 55% 45%, #7C3AED 0%, #5B21B6 45%, #2E1065 100%)'
+  },
+  '#E11D48': {
+    themeName: 'Crimson Fury',
+    gradient: 'radial-gradient(circle at 55% 45%, #E11D48 0%, #9F1239 45%, #4C0519 100%)'
+  },
+  '#F97316': {
+    themeName: 'Electric Blaze',
+    gradient: 'radial-gradient(circle at 55% 45%, #F97316 0%, #C2410C 45%, #431407 100%)'
+  },
+  '#16A34A': {
+    themeName: 'Emerald Matrix',
+    gradient: 'radial-gradient(circle at 55% 45%, #16A34A 0%, #15803D 45%, #052E16 100%)'
+  },
+  '#0891B2': {
+    themeName: 'Cyan Pulse',
+    gradient: 'radial-gradient(circle at 55% 45%, #0891B2 0%, #0E7490 45%, #083344 100%)'
+  }
+}
+
+function getPresentationTheme(item: any): { themeColor: string; themeName: string; gradient: string } {
+  if (!item) {
+    return {
+      themeColor: '#2563EB',
+      themeName: 'Ocean Blue',
+      gradient: THEME_MAP['#2563EB'].gradient
+    }
+  }
+
+  const subj = (item.subject || '').toLowerCase()
+  let color = ''
+
+  if (subj.includes('kka') || subj.includes('koding') || subj.includes('kecerdasan')) {
+    color = '#7C3AED'
+  } else if (subj.includes('informatika')) {
+    color = '#2563EB'
+  } else {
+    // Hash deterministik berdasarkan id materi
+    const key = String(item.id || item.title || '0')
+    let hash = 0
+    for (let i = 0; i < key.length; i++) {
+      hash = (hash << 5) - hash + key.charCodeAt(i)
+      hash |= 0
+    }
+    const idx = Math.abs(hash) % FALLBACK_PALETTE.length
+    color = FALLBACK_PALETTE[idx]
+  }
+
+  const conf = THEME_MAP[color] || THEME_MAP['#2563EB']
+  return {
+    themeColor: color,
+    themeName: conf.themeName,
+    gradient: conf.gradient
+  }
+}
+
+const currentTheme = computed(() => getPresentationTheme(currentPresentation.value))
+
+// ---------------------------------------------------------------------------
+// KATA RAKSASA (Aturan Sesuai Spesifikasi)
+// Satu kata paling menonjol dari judul, uppercase, maks ±10 huruf.
+// Abaikan kata umum: 'materi', 'bab', 'pertemuan', 'modul', 'ppt', 'pptx', 'pdf'
+// Bila hanya satu kata umum, gunakan nama mapel.
+// ---------------------------------------------------------------------------
+function getGiantWord(item: any): string {
+  if (!item) return 'PRESENTASI'
+  const title = (item.title || '').trim()
+
+  // Ambil kata-kata, pisahkan juga karakter pemisah seperti '-' dan '_'
+  const words: string[] = title
+    .replace(/[^\p{L}\p{N}\s_-]/gu, ' ')
+    .split(/[\s_-]+/)
+    .filter((w: string) => Boolean(w))
+
+  const stopWords = ['materi', 'bab', 'pertemuan', 'modul', 'topik', 'pembelajaran', 'ppt', 'pptx', 'pdf']
+  const significant = words.filter((w: string) => !stopWords.includes(w.toLowerCase()))
+  const alphaSignificant = significant.filter((w: string) => /[a-zA-Z]/i.test(w))
+
+  let candidate = ''
+  if (alphaSignificant.length > 0) {
+    candidate = alphaSignificant[0]
+  } else if (significant.length > 0) {
+    candidate = significant[0]
+  } else if (item.subject) {
+    const subjWords: string[] = item.subject
+      .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+      .split(/\s+/)
+      .filter((s: string) => Boolean(s))
+    candidate = subjWords[0] || 'PRESENTASI'
+  } else if (words.length > 0) {
+    candidate = words[0]
+  } else {
+    candidate = 'PRESENTASI'
+  }
+
+  // Maksimal ±10 huruf, potong rapi
+  if (candidate.length > 10) {
+    candidate = candidate.slice(0, 10)
+  }
+  return candidate.toUpperCase()
+}
+
+const currentGiantWord = computed(() => getGiantWord(currentPresentation.value))
+
+// Info Chips Authentic Data
+const currentChips = computed(() => {
+  const item = currentPresentation.value
+  if (!item) return []
+  return [
+    { label: 'Jumlah Slide', value: `${item.slideCount || item.slides?.length || 1} Slide Interaktif` },
+    { label: 'Mata Pelajaran', value: item.subject || 'Informatika' },
+    { label: 'Rombel Sasaran', value: formatClassroomBadge(item) },
+    {
+      label: 'Status Materi',
+      value: item.status === 'ready' ? 'Siap Presentasi' : item.status === 'processing' ? 'Konversi...' : 'Diarsipkan'
+    },
+    { label: 'Penggunaan Sesi', value: `Digunakan: ${item.sessionCount || 0}x Sesi` },
+    { label: 'Update Terakhir', value: item.updatedAt || 'Baru saja' }
+  ]
+})
+
+// Navigation & Selection Functions
+function selectPresentation(index: number) {
+  if (index >= 0 && index < filteredPresentations.value.length) {
+    activePresentationIndex.value = index
+    try {
+      sessionStorage.setItem('belajarena_active_presentation_id', filteredPresentations.value[index].id)
+    } catch {}
+  }
+}
+
+function prevPresentation() {
+  if (filteredPresentations.value.length === 0) return
+  if (activePresentationIndex.value > 0) {
+    selectPresentation(activePresentationIndex.value - 1)
+  } else {
+    selectPresentation(filteredPresentations.value.length - 1)
+  }
+}
+
+function nextPresentation() {
+  if (filteredPresentations.value.length === 0) return
+  if (activePresentationIndex.value < filteredPresentations.value.length - 1) {
+    selectPresentation(activePresentationIndex.value + 1)
+  } else {
+    selectPresentation(0)
+  }
+}
+
+// Keyboard Navigation Listener (←, →, Enter)
+function handleKeydown(e: KeyboardEvent) {
+  if (showUploadModal.value || launchingItem.value || previewItem.value || showEditModal.value) return
+  const activeTagName = (document.activeElement?.tagName || '').toLowerCase()
+  if (activeTagName === 'input' || activeTagName === 'select' || activeTagName === 'textarea') return
+
+  if (e.key === 'ArrowLeft') {
+    prevPresentation()
+  } else if (e.key === 'ArrowRight') {
+    nextPresentation()
+  } else if (e.key === 'Enter') {
+    if (currentPresentation.value && currentPresentation.value.status === 'ready') {
+      openLaunchModal(currentPresentation.value)
+    }
+  }
+}
+
+// Modals State
 const showUploadModal = ref(false)
 const isDragging = ref(false)
 const selectedFile = ref<File | null>(null)
@@ -1173,6 +2019,7 @@ function getSelectedClassroomsLabel(ids: string[]) {
 }
 
 function formatClassroomBadge(item: any) {
+  if (!item) return 'Semua Kelas'
   if (item.classrooms && Array.isArray(item.classrooms) && item.classrooms.length > 0) {
     return item.classrooms.map((c: string) => `Kelas ${c}`).join(', ')
   }
@@ -1216,28 +2063,6 @@ function getFirstSlide(item: any) {
   }
 }
 
-const filteredPresentations = computed(() => {
-  return presentations.value.filter(p => {
-    const matchSubj = filterSubject.value === 'all' || p.subject === filterSubject.value
-
-    let matchCls = filterClass.value === 'all'
-    if (!matchCls) {
-      const target = (filterClass.value || '').toLowerCase().trim()
-      const targetNorm = target.replace(/^kelas\s+/i, '')
-      const ids: string[] = p.classroom_ids || []
-      const names: string[] = p.classrooms || (p.classroom ? p.classroom.split(',').map((s: string) => s.trim()) : [])
-      matchCls = ids.some(id => id.toLowerCase() === target) ||
-        names.some(n => n.toLowerCase() === target || n.toLowerCase() === targetNorm) ||
-        (p.classroom && p.classroom.toLowerCase().includes(targetNorm))
-    }
-
-    const matchStat = filterStatus.value === 'all' || p.status === filterStatus.value
-    const matchQuery = (p.title || '').toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-                       (p.description || '').toLowerCase().includes(searchQuery.value.toLowerCase())
-    return matchSubj && matchCls && matchStat && matchQuery
-  })
-})
-
 const totalSlidesCount = computed(() => {
   if (!previewItem.value) return 1
   return previewItem.value.slides?.length || previewItem.value.slideCount || 1
@@ -1260,12 +2085,32 @@ function nextSlide() {
   }
 }
 
+// Data Fetching
 async function loadPresentations() {
   loading.value = true
   try {
     const res = await api.get('/presentations')
     const raw = res.data?.data || res.data || []
     presentations.value = Array.isArray(raw) ? raw : []
+
+    // Restore selected presentation (prioritize active session, then sessionStorage, then 0)
+    if (activeSession.value && activeSession.value.presentation_id) {
+      const sIdx = presentations.value.findIndex(p => p.id === activeSession.value.presentation_id)
+      if (sIdx !== -1) {
+        activePresentationIndex.value = sIdx
+        return
+      }
+    }
+
+    try {
+      const savedId = sessionStorage.getItem('belajarena_active_presentation_id')
+      if (savedId) {
+        const foundIdx = presentations.value.findIndex(p => p.id === savedId)
+        if (foundIdx !== -1) {
+          activePresentationIndex.value = foundIdx
+        }
+      }
+    } catch {}
   } catch (err) {
     console.error('Failed to load presentations:', err)
     presentations.value = []
@@ -1278,7 +2123,6 @@ async function loadActiveSession() {
   try {
     const res = await api.get('/presentation-sessions/active')
     const session = res.data?.data || null
-    // Sesi aktif hanya boleh muncul jika materi presentasi terkait memang ada
     if (session) {
       if (presentations.value.length === 0) {
         activeSession.value = null
@@ -1295,6 +2139,7 @@ async function loadActiveSession() {
   }
 }
 
+// B6: Akhiri Sesi
 async function stopActiveSession() {
   if (!activeSession.value) return
   if (!confirm(`Hentikan sesi presentasi "${activeSession.value.title}" sekarang?`)) return
@@ -1332,10 +2177,17 @@ async function loadClassrooms() {
 }
 
 onMounted(async () => {
+  initReducedMotion()
+  window.addEventListener('keydown', handleKeydown)
   await Promise.all([loadClassrooms(), loadPresentations()])
   await loadActiveSession()
 })
 
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
+})
+
+// File Upload Handlers (PPTX / PDF / Forms)
 function triggerFileInput() {
   fileInputRef.value?.click()
 }
@@ -1548,6 +2400,7 @@ function validateAndSelectFile(file: File) {
   }
 }
 
+// Modal 1 Submit: Unggah / Buat Modul
 async function submitUpload() {
   if (!uploadForm.value.title) return
   if (uploadForm.value.classroom_ids.length === 0) {
@@ -1639,6 +2492,7 @@ async function submitUpload() {
   }
 }
 
+// Modal 4: Edit Presentation
 function openEditModal(item: any) {
   let initialClassIds: string[] = []
   if (item.classroom_ids && Array.isArray(item.classroom_ids) && item.classroom_ids.length > 0) {
@@ -1714,11 +2568,13 @@ async function saveEditPresentation() {
   }
 }
 
+// Modal 3: Preview
 function previewPresentation(item: any) {
   previewItem.value = item
   previewSlideIndex.value = 0
 }
 
+// Modal 2: Launch Session
 function openLaunchModal(item: any) {
   launchingItem.value = item
   sessionForm.value.title = `Sesi Presentasi: ${item.title}`
@@ -1749,6 +2605,7 @@ async function confirmLaunchSession() {
   }
 }
 
+// C10: Duplikasi
 async function duplicatePresentation(item: any) {
   try {
     const payload = {
@@ -1756,6 +2613,8 @@ async function duplicatePresentation(item: any) {
       description: item.description,
       subject: item.subject,
       classroom: item.classroom,
+      classroom_ids: item.classroom_ids,
+      classrooms: item.classrooms,
       tags: item.tags,
       slides: item.slides,
       slideCount: item.slideCount
@@ -1767,6 +2626,7 @@ async function duplicatePresentation(item: any) {
   }
 }
 
+// C11: Hapus
 async function deletePresentation(item: any) {
   if (!confirm(`Hapus presentasi "${item.title}"?`)) return
   try {
@@ -1778,3 +2638,138 @@ async function deletePresentation(item: any) {
   }
 }
 </script>
+
+<style scoped>
+/* ---------------------------------------------------------------------------
+   KEYFRAME ANIMATIONS FOR HERO PRODUCT PAGE (CSS MURNI & RINGAN)
+   --------------------------------------------------------------------------- */
+@keyframes giantWordFade {
+  0% {
+    opacity: 0;
+    transform: scale(0.92) translateY(14px);
+  }
+  100% {
+    opacity: 0.14;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes visualEnter {
+  0% {
+    opacity: 0;
+    transform: scale(0.88) translateY(24px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes textFadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes splatterTwinkle {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.1);
+  }
+}
+
+.animate-giant-word {
+  animation: giantWordFade 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-visual-enter {
+  animation: visualEnter 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-text-title {
+  animation: textFadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
+}
+
+.animate-text-desc {
+  animation: textFadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+}
+
+.animate-text-cta {
+  animation: textFadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both;
+}
+
+.splatter-dot {
+  animation: splatterTwinkle 3.5s ease-in-out infinite;
+}
+
+/* ---------------------------------------------------------------------------
+   MODE RINGAN & PREFERS-REDUCED-MOTION (Batasan Keras #4 & #9)
+   --------------------------------------------------------------------------- */
+.mode-ringan .animate-giant-word,
+.mode-ringan .animate-visual-enter,
+.mode-ringan .animate-text-title,
+.mode-ringan .animate-text-desc,
+.mode-ringan .animate-text-cta,
+.mode-ringan .splatter-dot {
+  animation: none !important;
+  transition: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+.mode-ringan .animate-giant-word {
+  opacity: 0.14 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-giant-word,
+  .animate-visual-enter,
+  .animate-text-title,
+  .animate-text-desc,
+  .animate-text-cta,
+  .splatter-dot {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .animate-giant-word {
+    opacity: 0.14 !important;
+  }
+}
+
+/* Custom Scrollbar for horizontal strip & dropdowns */
+.custom-scroll::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 9999px;
+}
+
+/* Animation utilities for modals */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+.animate-scale-up {
+  animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+</style>

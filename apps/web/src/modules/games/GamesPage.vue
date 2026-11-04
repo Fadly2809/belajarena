@@ -134,12 +134,12 @@
     <!-- =========================================================================
          CENTER HERO STAGE (3-Column Layout: Left Copy + Center Visual + Right Selector)
          ========================================================================= -->
-    <main class="relative z-10 flex-1 flex flex-col justify-center px-4 sm:px-8 lg:px-14 py-4 sm:py-6 max-w-7xl mx-auto w-full">
-      <div class="grid grid-cols-1 lg:grid-cols-12 items-center gap-6 sm:gap-8 lg:gap-6 w-full">
+    <main class="relative z-10 flex-1 flex flex-col justify-center px-4 sm:px-8 lg:px-10 py-4 sm:py-6 max-w-[1440px] mx-auto w-full">
+      <div class="grid grid-cols-1 lg:grid-cols-12 items-center gap-6 sm:gap-8 lg:gap-8 w-full">
         <!-- -------------------------------------------------------------
-             LEFT COLUMN (±30% lebar): Label, Judul Sangat Besar, Deskripsi, CTA Buttons
+             LEFT COLUMN (±25-30% lebar): Label, Judul Sangat Besar, Deskripsi, CTA Buttons
              ------------------------------------------------------------- -->
-        <div class="lg:col-span-4 flex flex-col justify-center text-left space-y-3 sm:space-y-4 z-20 order-2 lg:order-1">
+        <div class="lg:col-span-3 xl:col-span-3 flex flex-col justify-center text-left space-y-3 sm:space-y-4 z-20 order-2 lg:order-1">
           <!-- Small Label Pill -->
           <div>
             <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-white/90 font-black text-[10px] tracking-[0.25em] uppercase border border-white/25 backdrop-blur-md shadow-xs">
@@ -188,22 +188,22 @@
         </div>
 
         <!-- -------------------------------------------------------------
-             CENTER COLUMN (±50% lebar): Kata Raksasa di Belakang + Visual Utama di Tengah
+             CENTER COLUMN (±50% lebar): Kata Raksasa di Belakang + Visual Utama Lebih Besar
              ------------------------------------------------------------- -->
-        <div class="lg:col-span-5 relative flex items-center justify-center min-h-[260px] sm:min-h-[340px] lg:min-h-[420px] z-10 order-1 lg:order-2">
+        <div class="lg:col-span-6 xl:col-span-6 relative flex items-center justify-center min-h-[300px] sm:min-h-[400px] lg:min-h-[480px] z-10 order-1 lg:order-2">
           <!-- KATA RAKSASA DI TENGAH LAYAR DI BELAKANG VISUAL UTAMA -->
           <div class="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0 overflow-hidden">
             <span
               :key="`giant-${currentGame.id}`"
-              class="font-black tracking-tighter uppercase text-white/[0.14] select-none leading-none animate-giant-word font-sans"
+              class="font-black tracking-tighter uppercase text-white/[0.14] select-none leading-none animate-giant-word font-sans text-center"
               style="font-size: clamp(5.5rem, 19vw, 19rem);"
             >
               {{ currentGame.giantWord }}
             </span>
           </div>
 
-          <!-- VISUAL UTAMA GAME (Z-INDEX DI ATAS KATA RAKSASA) -->
-          <div :key="`visual-${currentGame.id}`" class="relative z-10 flex items-center justify-center animate-visual-enter">
+          <!-- VISUAL UTAMA GAME LEBIH BESAR UNTUK HIGHLIGHT MAKSIMAL (Z-INDEX DI ATAS KATA RAKSASA) -->
+          <div :key="`visual-${currentGame.id}`" class="relative z-10 flex items-center justify-center animate-visual-enter transform scale-110 sm:scale-120 lg:scale-130 xl:scale-135 transition-transform duration-500">
             <!-- 1. Final Boss Battle: Boss utama Robot Glitch dari BossSprite.vue aset existing -->
             <div v-if="currentGame.id === 'boss_battle'" class="relative flex items-center justify-center">
               <BossSprite
@@ -211,7 +211,7 @@
                 name="Robot Glitch"
                 pose="idle"
                 :reduced-motion="reducedMotion"
-                class="w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 filter drop-shadow-[0_25px_50px_rgba(0,0,0,0.6)]"
+                class="w-72 h-72 sm:w-96 sm:h-96 md:w-[420px] md:h-[420px] lg:w-[460px] lg:h-[460px] filter drop-shadow-[0_30px_60px_rgba(0,0,0,0.7)]"
               />
             </div>
 
@@ -242,9 +242,9 @@
         </div>
 
         <!-- -------------------------------------------------------------
-             RIGHT COLUMN (±20% lebar): Pemilih Titik Warna + Chip Info Game
+             RIGHT COLUMN (±25% lebar): Pemilih Titik Warna + Chip Info Game
              ------------------------------------------------------------- -->
-        <div class="lg:col-span-3 flex flex-col justify-center text-left lg:text-right space-y-3 sm:space-y-4 z-20 order-3">
+        <div class="lg:col-span-3 xl:col-span-3 flex flex-col justify-center text-left lg:text-right space-y-3 sm:space-y-4 z-20 order-3">
           <!-- "PILIH GAME" Label -->
           <div>
             <span class="text-[10px] font-black uppercase tracking-[0.25em] text-white/70">
