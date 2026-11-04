@@ -1261,9 +1261,24 @@
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block font-bold text-slate-700 mb-1">Pilih Rombel Siswa</label>
-              <select v-model="sessionForm.classroom" class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#0c2b3d]/20 focus:border-[#0c2b3d] transition">
-                <option v-for="cls in classrooms" :key="cls.id" :value="cls.name">Kelas {{ cls.name }}</option>
+              <div class="flex items-center justify-between mb-1">
+                <label class="block font-bold text-slate-700 mb-0">Pilih Rombel Siswa</label>
+                <span v-if="availableLaunchClassrooms.length > 0" class="text-[10px] text-slate-400 font-medium">
+                  {{ availableLaunchClassrooms.length }} Kelas Terpilih
+                </span>
+              </div>
+              <select v-model="sessionForm.classroom" class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#0c2b3d]/20 focus:border-[#0c2b3d] transition" required>
+                <!-- Opsi gabungan jika materi diperuntukkan lebih dari satu kelas -->
+                <option
+                  v-if="availableLaunchClassrooms.length > 1"
+                  :value="availableLaunchClassrooms.map(c => c.name).join(', ')"
+                >
+                  Gabungan ({{ availableLaunchClassrooms.map(c => 'Kelas ' + c.name).join(', ') }})
+                </option>
+                <!-- Daftar kelas yang khusus terpilih untuk materi ini -->
+                <option v-for="cls in availableLaunchClassrooms" :key="cls.id" :value="cls.name">
+                  Kelas {{ cls.name }}
+                </option>
               </select>
             </div>
             <div>
@@ -2574,21 +2589,86 @@ function previewPresentation(item: any) {
   previewSlideIndex.value = 0
 }
 
-// Modal 2: Launch Session
+// Modal 2: Launch Session & Filter Rombel Terpilih
+function getAvailableClassroomsForItem(item: any): any[] {
+  if (!item) return classrooms.value
+
+  // 1. Berdasarkan array ID kelas (classroom_ids)
+  if (Array.isArray(item.classroom_ids) && item.classroom_ids.length > 0) {
+    const matched = classrooms.value.filter(c => item.classroom_ids.includes(c.id))
+    if (matched.length > 0) return matched
+  }
+
+  // 2. Berdasarkan array nama kelas (classrooms)
+  if (Array.isArray(item.classrooms) && item.classrooms.length > 0) {
+    const targetNames = item.classrooms.map((n: string) =>
+      String(n).trim().toLowerCase().replace(/^kelas\s+/i, '')
+    )
+    const matched = classrooms.value.filter(c =>
+      targetNames.includes(String(c.name).trim().toLowerCase().replace(/^kelas\s+/i, ''))
+    )
+    if (matched.length > 0) return matched
+  }
+
+  // 3. Berdasarkan string classroom (misal: "IX A, IX B")
+  if (item.classroom && typeof item.classroom === 'string') {
+    const rawTokens = item.classroom
+      .split(',')
+      .map((s: string) => s.trim().toLowerCase().replace(/^kelas\s+/i, ''))
+      .filter(Boolean)
+    const matched = classrooms.value.filter(c =>
+      rawTokens.includes(String(c.name).trim().toLowerCase().replace(/^kelas\s+/i, ''))
+    )
+    if (matched.length > 0) return matched
+  }
+
+  // 4. Berdasarkan classroom_id tunggal
+  if (item.classroom_id) {
+    const matched = classrooms.value.filter(c => c.id === item.classroom_id)
+    if (matched.length > 0) return matched
+  }
+
+  return classrooms.value
+}
+
+const availableLaunchClassrooms = computed(() => {
+  return getAvailableClassroomsForItem(launchingItem.value)
+})
+
 function openLaunchModal(item: any) {
   launchingItem.value = item
   sessionForm.value.title = `Sesi Presentasi: ${item.title}`
-  sessionForm.value.classroom = item.classroom
+
+  const available = getAvailableClassroomsForItem(item)
+  if (available.length > 0) {
+    // Pilih kelas pertama yang ditugaskan sebagai default
+    sessionForm.value.classroom = available[0].name
+  } else if (item.classroom) {
+    sessionForm.value.classroom = item.classroom.includes(',') ? item.classroom.split(',')[0].trim() : item.classroom
+  } else {
+    sessionForm.value.classroom = classrooms.value[0]?.name || 'VII A'
+  }
+
   sessionForm.value.accessCode = 'PRS-' + Math.floor(100 + Math.random() * 900)
 }
 
 async function confirmLaunchSession() {
   if (!launchingItem.value) return
   try {
+    let selectedClassIds: string[] = []
+    const selectedClassNames = sessionForm.value.classroom.split(',').map((s: string) => s.trim().replace(/^kelas\s+/i, ''))
+    const matched = classrooms.value.filter(c => selectedClassNames.includes(c.name))
+    if (matched.length > 0) {
+      selectedClassIds = matched.map(c => c.id)
+    } else if (launchingItem.value.classroom_ids) {
+      selectedClassIds = launchingItem.value.classroom_ids
+    }
+
     const payload = {
       presentation_id: launchingItem.value.id,
       title: sessionForm.value.title,
       classroom: sessionForm.value.classroom,
+      classroom_ids: selectedClassIds,
       accessCode: sessionForm.value.accessCode,
       totalSlides: launchingItem.value.slideCount || launchingItem.value.slides?.length || 10,
       slides: launchingItem.value.slides || []
