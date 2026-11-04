@@ -53,7 +53,8 @@ function getAllowedOrigin(req) {
       hostname.endsWith('.netlify.app') ||
       hostname === 'netlify.app' ||
       hostname.endsWith('.onrender.com') ||
-      hostname.endsWith('.railway.app')
+      hostname.endsWith('.railway.app') ||
+      hostname.endsWith('.trycloudflare.com')
     ) {
       return origin
     }
