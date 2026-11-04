@@ -2336,9 +2336,16 @@ async function parsePdfSlides(file: File): Promise<Array<{ title: string; conten
     const pdfjsModule: any = await import('pdfjs-dist/legacy/build/pdf.js')
     const pdfjsLib = pdfjsModule.default || pdfjsModule
 
+    if (pdfjsLib.GlobalWorkerOptions) {
+      const workerUrl = typeof window !== 'undefined'
+        ? `${window.location.origin}/pdf.worker.min.js`
+        : '/pdf.worker.min.js'
+      pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl
+    }
+
     const loadingTask = pdfjsLib.getDocument({
-      data: arrayBuffer,
-      disableWorker: true
+      data: new Uint8Array(arrayBuffer),
+      useSystemFonts: true
     })
     const pdfDoc = await loadingTask.promise
     const numPages = pdfDoc.numPages
@@ -2346,17 +2353,22 @@ async function parsePdfSlides(file: File): Promise<Array<{ title: string; conten
 
     for (let i = 1; i <= numPages; i++) {
       const page = await pdfDoc.getPage(i)
-      const viewport = page.getViewport({ scale: 1.5 })
+      
+      // Hitung skala adaptif agar tampilan tajam namun ukuran payload tetap efisien
+      const baseViewport = page.getViewport({ scale: 1.0 })
+      const maxDim = Math.max(baseViewport.width, baseViewport.height)
+      const targetScale = Math.min(1.5, Math.max(0.75, 1400 / maxDim))
+      const viewport = page.getViewport({ scale: targetScale })
 
       const canvas = document.createElement('canvas')
       const ctx = canvas.getContext('2d')
-      canvas.width = viewport.width
-      canvas.height = viewport.height
+      canvas.width = Math.round(viewport.width)
+      canvas.height = Math.round(viewport.height)
 
       let imageDataUrl = ''
       if (ctx) {
         await page.render({ canvasContext: ctx, viewport }).promise
-        imageDataUrl = canvas.toDataURL('image/jpeg', 0.85)
+        imageDataUrl = canvas.toDataURL('image/jpeg', 0.82)
       }
 
       let pageText = ''
@@ -2376,9 +2388,9 @@ async function parsePdfSlides(file: File): Promise<Array<{ title: string; conten
       })
     }
     return slides
-  } catch (err) {
-    console.warn('Gagal membaca berkas PDF:', err)
-    return []
+  } catch (err: any) {
+    console.error('Gagal membaca berkas PDF:', err)
+    throw new Error('Gagal mengekstrak berkas PDF: ' + (err?.message || 'Format tidak didukung atau terenkripsi'))
   }
 }
 
@@ -2497,7 +2509,7 @@ async function submitUpload() {
   } catch (err: any) {
     console.error('Failed to create presentation:', err)
     let errorMsg = err.response?.data?.message || err.message || 'Terjadi kesalahan sistem'
-    if (err.message === 'Network Error' || !err.response) {
+    if (err.isAxiosError && (err.message === 'Network Error' || err.code === 'ERR_NETWORK' || !err.response)) {
       errorMsg = 'Koneksi ke backend server terputus (Network Error). Pastikan server Belajarena aktif di port 8000.'
     }
     alert('Gagal menyimpan presentasi: ' + errorMsg)
