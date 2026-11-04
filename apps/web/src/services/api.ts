@@ -1,7 +1,21 @@
 import axios from 'axios'
 
+const getBaseURL = () => {
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL
+  }
+  if (
+    typeof window !== 'undefined' &&
+    !window.location.hostname.includes('localhost') &&
+    !window.location.hostname.includes('127.0.0.1')
+  ) {
+    return 'https://port-yellow-handy-discipline.trycloudflare.com/api/v1'
+  }
+  return '/api/v1'
+}
+
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: getBaseURL(),
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',

@@ -192,7 +192,7 @@ const showPassword = ref(false)
 const errorMessage = ref('')
 
 const form = reactive({
-  email: 'fadly.arsandi@smpn6kendari.sch.id',
+  email: 'muhammadarsandi89@guru.smp.belajar.id',
   password: 'password',
 })
 
@@ -207,7 +207,7 @@ function selectAccountType(type: 'teacher' | 'student') {
   errors.email = ''
   errors.password = ''
   if (type === 'teacher') {
-    form.email = 'fadly.arsandi@smpn6kendari.sch.id'
+    form.email = 'muhammadarsandi89@guru.smp.belajar.id'
     form.password = 'password'
   } else {
     form.email = ''
@@ -216,7 +216,7 @@ function selectAccountType(type: 'teacher' | 'student') {
 }
 
 function quickFillTeacher() {
-  form.email = 'fadly.arsandi@smpn6kendari.sch.id'
+  form.email = 'muhammadarsandi89@guru.smp.belajar.id'
   form.password = 'password'
   errorMessage.value = ''
 }
