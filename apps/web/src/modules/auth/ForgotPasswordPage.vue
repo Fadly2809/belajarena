@@ -2,9 +2,11 @@
   <div class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary-900 via-surface-900 to-indigo-950">
     <div class="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8 space-y-6">
       <div class="text-center space-y-2">
-        <div class="w-12 h-12 mx-auto rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center text-2xl font-bold">
-          🔑
-        </div>
+        <img
+          src="/logo-icon.png"
+          alt="Belajarena Logo"
+          class="w-14 h-14 mx-auto rounded-2xl shadow-md object-contain"
+        />
         <h1 class="text-2xl font-black text-surface-900">Lupa Kata Sandi?</h1>
         <p class="text-xs text-surface-500">
           Masukkan alamat surel (email) akun pendidik Anda yang terdaftar di Belajarena untuk menerima tautan pemulihan.

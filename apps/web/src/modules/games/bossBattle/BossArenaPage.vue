@@ -3,9 +3,11 @@
     <!-- Top Header Bar (Layar Guru / Proyektor) -->
     <header class="flex flex-wrap items-center justify-between gap-3 px-5 py-3 bg-black/60 border-b border-white/10 backdrop-blur-md sticky top-0 z-30">
       <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-xl bg-violet-600/30 border border-violet-400/40 flex items-center justify-center text-base">
-          ⚔️
-        </div>
+        <img
+          src="/logo-icon.png"
+          alt="Belajarena"
+          class="w-8 h-8 rounded-xl object-contain shadow"
+        />
         <div>
           <p class="text-[10px] uppercase tracking-[0.25em] text-amber-300 font-extrabold">Layar Guru / Proyektor</p>
           <h1 class="text-base sm:text-lg font-black tracking-wide text-white">

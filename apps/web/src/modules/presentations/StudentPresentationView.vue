@@ -43,9 +43,11 @@
           <span>←</span>
           <span class="hidden sm:inline">Portal Siswa</span>
         </router-link>
-        <div class="w-8 h-8 rounded-xl bg-primary-600 flex items-center justify-center font-bold text-xs shrink-0">
-          📱
-        </div>
+        <img
+          src="/logo-icon.png"
+          alt="Belajarena"
+          class="w-8 h-8 rounded-xl object-contain shadow shrink-0"
+        />
         <div class="truncate">
           <h1 class="text-xs font-bold text-white truncate max-w-[200px] sm:max-w-md">
             {{ sessionInfo.title }}

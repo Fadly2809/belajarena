@@ -10,6 +10,11 @@
         >
           ←
         </router-link>
+        <img
+          src="/logo-icon.png"
+          alt="Belajarena"
+          class="w-7 h-7 rounded-lg object-contain shadow shrink-0 hidden sm:block"
+        />
         <div>
           <h1 class="text-xs sm:text-sm font-black truncate max-w-[200px] sm:max-w-md text-white">
             {{ session.title }}

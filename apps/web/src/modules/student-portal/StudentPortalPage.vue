@@ -1,14 +1,19 @@
 <template>
   <div class="min-h-screen bg-[#e8edf2] text-slate-800 pb-24 select-none font-sans">
     <!-- Top Mobile App Bar (Deep Petrol) -->
-    <header class="sticky top-0 z-30 bg-[#0c2b3d] text-white px-4 py-3.5 shadow-md flex items-center justify-between border-b border-[#071a25]/40">
+    <header class="sticky top-0 z-30 bg-[#0c2b3d] text-white px-4 py-3 shadow-md flex items-center justify-between border-b border-[#071a25]/40">
       <div class="flex items-center gap-2.5">
-        <div class="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center font-bold text-lg shadow-inner">
-          🎓
-        </div>
+        <img
+          src="/logo-icon.png"
+          alt="Belajarena"
+          class="w-9 h-9 rounded-xl shadow-md object-contain ring-1 ring-white/20"
+        />
         <div>
-          <h1 class="text-sm font-black tracking-tight leading-none text-white">SMPN 6 KENDARI</h1>
-          <p class="text-[10px] text-slate-300 font-medium">Portal Belajar Siswa Digital</p>
+          <h1 class="text-sm font-black tracking-tight leading-none text-white flex items-center gap-1.5">
+            <span>Belajar<span class="text-amber-400">ena</span></span>
+            <span class="text-[9px] font-extrabold text-cyan-300 bg-cyan-400/20 px-1.5 py-0.5 rounded uppercase">Siswa</span>
+          </h1>
+          <p class="text-[10px] text-slate-300 font-medium">SMP Negeri 6 Kendari</p>
         </div>
       </div>
 

@@ -338,7 +338,7 @@
         <div>
           <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
             <h2 class="text-base font-bold text-slate-900 tracking-tight">Aplikasi Terintegrasi</h2>
-            <span class="text-[11px] font-bold text-slate-400">Belajarena</span>
+            <img src="/logo-icon.png" alt="Belajarena" class="w-5 h-5 rounded-md object-contain shadow-xs" />
           </div>
 
           <!-- Apps Tiles (Google, Foursquare, etc. style) -->

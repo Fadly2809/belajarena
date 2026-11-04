@@ -60,17 +60,11 @@
       <!-- Left: Logo Belajarena + Module Badge -->
       <div class="flex items-center gap-3">
         <router-link to="/dashboard" class="flex items-center gap-2.5 group cursor-pointer" title="Dashboard Utama">
-          <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center text-xl shadow-md group-hover:scale-105 transition-transform backdrop-blur-md">
-            🎮
-          </div>
-          <div class="flex flex-col">
-            <span class="font-black text-sm sm:text-base tracking-tight text-white leading-none">
-              Belajarena
-            </span>
-            <span class="text-[9px] font-extrabold uppercase tracking-widest text-white/70 mt-0.5">
-              SMPN 6 Kendari
-            </span>
-          </div>
+          <img
+            src="/logo.png"
+            alt="Belajarena"
+            class="h-8 sm:h-9 w-auto max-w-[170px] object-contain group-hover:scale-105 transition-transform drop-shadow"
+          />
         </router-link>
         <span class="hidden sm:inline-block px-2.5 py-0.5 rounded-full bg-white/15 text-white font-extrabold text-[10px] tracking-wider uppercase border border-white/20">
           Edu-Games

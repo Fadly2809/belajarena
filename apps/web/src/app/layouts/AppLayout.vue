@@ -5,6 +5,24 @@
       class="fixed inset-y-0 left-0 z-30 flex flex-col bg-[#0c2b3d] transition-all duration-300"
       :class="sidebarOpen ? 'w-64' : 'w-20'"
     >
+      <!-- Top Brand Logo -->
+      <div class="pt-5 pb-3 px-4 flex items-center justify-center flex-shrink-0 border-b border-white/10">
+        <RouterLink to="/dashboard" class="flex items-center justify-center transition-transform hover:scale-105" title="Belajarena">
+          <img
+            v-if="sidebarOpen"
+            src="/logo.png"
+            alt="Belajarena"
+            class="h-9 w-auto max-w-[190px] object-contain drop-shadow"
+          />
+          <img
+            v-else
+            src="/logo-icon.png"
+            alt="Belajarena Icon"
+            class="w-9 h-9 rounded-xl object-contain shadow-md"
+          />
+        </RouterLink>
+      </div>
+
       <!-- Top Profile & Brand Header -->
       <div class="pt-6 pb-4 px-4 flex flex-col items-center text-center flex-shrink-0">
         <div class="relative mb-2">
