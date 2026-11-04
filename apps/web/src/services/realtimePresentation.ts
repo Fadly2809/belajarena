@@ -79,6 +79,30 @@ export function getWebDemoState(sessionId: string): WebDemoState | null {
   }
 }
 
+export function resolveSlideImageUrl(url?: string): string {
+  if (!url) return ''
+  if (url.startsWith('data:') || url.startsWith('http://') || url.startsWith('https://') || url.startsWith('blob:')) {
+    return url
+  }
+  const base = api.defaults.baseURL || '/api/v1'
+  if (base.startsWith('http')) {
+    const root = base.replace(/\/api\/v1\/?$/, '')
+    return `${root}${url.startsWith('/') ? '' : '/'}${url}`
+  }
+  return url
+}
+
+export function preloadSlideImages(slides: Array<{ image?: string }>) {
+  if (!Array.isArray(slides) || slides.length === 0) return
+  slides.forEach((slide) => {
+    if (slide && slide.image) {
+      const fullUrl = resolveSlideImageUrl(slide.image)
+      const img = new Image()
+      img.src = fullUrl
+    }
+  })
+}
+
 class RealtimePresentationEngine {
   private channel: BroadcastChannel | null = null
   private listeners: Map<string, Set<(data: any) => void>> = new Map()
@@ -141,8 +165,8 @@ class RealtimePresentationEngine {
         this.eventSource = new EventSource(sseUrl, { withCredentials: true })
 
         this.eventSource.onopen = () => {
-          // Saat SSE aktif terhubung, kurangi beban polling agar koneksi tunnel lancar
-          this.currentPollIntervalMs = 2500
+          // Dual-sync ultra-realtime: SSE push langsung + fast poll 350ms
+          this.currentPollIntervalMs = 350
           if (this.pollTimer) {
             clearInterval(this.pollTimer)
             this.pollTimer = setInterval(() => {
@@ -152,15 +176,12 @@ class RealtimePresentationEngine {
         }
 
         this.eventSource.onerror = () => {
-          // Jika SSE sempat drop/reconnecting, tingkatkan polling kembali ke 600ms
-          if (this.currentPollIntervalMs !== 600) {
-            this.currentPollIntervalMs = 600
-            if (this.pollTimer) {
-              clearInterval(this.pollTimer)
-              this.pollTimer = setInterval(() => {
-                if (this.currentSessionId) this.pollSession(this.currentSessionId)
-              }, this.currentPollIntervalMs)
-            }
+          this.currentPollIntervalMs = 350
+          if (this.pollTimer) {
+            clearInterval(this.pollTimer)
+            this.pollTimer = setInterval(() => {
+              if (this.currentSessionId) this.pollSession(this.currentSessionId)
+            }, this.currentPollIntervalMs)
           }
         }
 
@@ -231,7 +252,7 @@ class RealtimePresentationEngine {
     this.pollSession(sessionId)
     this.pollTimer = setInterval(() => {
       this.pollSession(sessionId)
-    }, 500)
+    }, 350)
   }
 
   private async pollSession(sessionId: string) {

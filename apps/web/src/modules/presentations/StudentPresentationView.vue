@@ -271,9 +271,11 @@
             <!-- Slide Content Visual (Image or Text) -->
             <div v-if="activeSlideContent.image" class="w-full h-full flex items-center justify-center bg-black relative">
               <img
-                :src="activeSlideContent.image"
+                :src="resolveSlideImageUrl(activeSlideContent.image)"
                 :alt="activeSlideContent.title || 'Slide Visual'"
                 class="w-full h-full object-contain pointer-events-none select-none"
+                loading="eager"
+                decoding="sync"
               />
             </div>
             <div v-else class="p-6 text-center max-w-xl mx-auto space-y-3">
@@ -488,6 +490,8 @@ import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
 import {
   presentationRealtime,
+  resolveSlideImageUrl,
+  preloadSlideImages,
   type SlideState,
   type LiveVoteState,
   type WebDemoState,
@@ -796,6 +800,13 @@ async function saveStudentName() {
 const isSessionLoaded = ref(false)
 const slideDeck = ref<Array<{ icon?: string; title: string; description?: string; content?: string; image?: string }>>([])
 
+// Ultra-fast slide preloader: load all slide images into browser cache upfront
+watch(slideDeck, (newSlides) => {
+  if (Array.isArray(newSlides) && newSlides.length > 0) {
+    preloadSlideImages(newSlides)
+  }
+}, { immediate: true })
+
 const activeSlideContent = computed(() => {
   if (slideDeck.value.length === 0) {
     return {
@@ -1006,16 +1017,15 @@ onMounted(async () => {
   sendHeartbeat()
   heartbeatTimer = setInterval(sendHeartbeat, 5000)
 
-  // 7. Listen to teacher slide changes
+  // 7. Listen to teacher slide changes (Ultra-fast instant zero-delay sync)
   unsubSlide = presentationRealtime.subscribe('SLIDE_CHANGED', (payload: SlideState) => {
-    isSyncing.value = true
-    currentSlide.value = Number(payload.activeSlide)
+    const target = Number(payload.activeSlide)
+    if (!isNaN(target) && target > 0) {
+      currentSlide.value = target
+    }
     if (payload.totalSlides) totalSlides.value = Number(payload.totalSlides)
     isLocked.value = Boolean(payload.isLocked)
-    setTimeout(() => {
-      isSyncing.value = false
-      acknowledgeActiveSlide()
-    }, 150)
+    acknowledgeActiveSlide()
   })
 
   // 8. Listen to Laser Pointer Guru secara realtime

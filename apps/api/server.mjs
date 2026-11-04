@@ -129,6 +129,7 @@ function broadcastToPresentation(sessionId, eventData) {
     const isFrame = eventData.type === 'WEB_SCREEN_FRAME'
     for (const clientRes of subs) {
       try {
+        if (clientRes.socket) clientRes.socket.setNoDelay(true)
         // Jika antrean socket buffer klien sedang padat (> 64KB), drop video frame agar tidak menimbun buffer & menghambat voting
         if (isFrame && clientRes.writableLength > 65536) {
           continue
@@ -815,8 +816,9 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, {
         'Content-Type': mime,
         'Content-Length': stat.size,
-        'Cache-Control': 'public, max-age=86400',
-        'Access-Control-Allow-Origin': getAllowedOrigin(req)
+        'Cache-Control': 'public, max-age=604800, immutable',
+        'Access-Control-Allow-Origin': getAllowedOrigin(req),
+        'Access-Control-Allow-Credentials': 'true'
       })
       if (req.method === 'HEAD') {
         res.end()
@@ -847,8 +849,9 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, {
         'Content-Type': mime,
         'Content-Length': stat.size,
-        'Cache-Control': 'public, max-age=86400',
-        'Access-Control-Allow-Origin': getAllowedOrigin(req)
+        'Cache-Control': 'public, max-age=604800, immutable',
+        'Access-Control-Allow-Origin': getAllowedOrigin(req),
+        'Access-Control-Allow-Credentials': 'true'
       })
       if (req.method === 'HEAD') {
         res.end()

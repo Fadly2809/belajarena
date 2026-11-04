@@ -341,9 +341,11 @@
             </div>
             <div v-else-if="currentSlideData.image" class="w-full h-full flex items-center justify-center bg-black relative">
               <img
-                :src="currentSlideData.image"
+                :src="resolveSlideImageUrl(currentSlideData.image)"
                 :alt="currentSlideData.title || 'Slide Visual Content'"
                 class="w-full h-full object-contain pointer-events-none select-none"
+                loading="eager"
+                decoding="sync"
               />
             </div>
             <div v-else class="p-8 text-center max-w-2xl mx-auto space-y-4">
@@ -902,6 +904,8 @@ import { useRoute, useRouter } from 'vue-router'
 import api from '@/services/api'
 import {
   presentationRealtime,
+  resolveSlideImageUrl,
+  preloadSlideImages,
   type SlideState,
   type ParticipantState,
   type LiveVoteState,
@@ -1617,6 +1621,7 @@ onMounted(async () => {
       if (Array.isArray(data.slides) && data.slides.length > 0) {
         slidesData.value = data.slides
         totalSlides.value = data.slides.length
+        preloadSlideImages(data.slides)
       }
       if (Array.isArray(data.participants) && data.participants.length > 0) {
         participants.value = data.participants
