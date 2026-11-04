@@ -39,109 +39,131 @@
         </div>
       </div>
 
-      <!-- Navigation Links (Struktur Baru Belajarena) -->
-      <nav class="relative flex-1 overflow-y-auto pt-1 pb-4 px-2 space-y-2.5 custom-sidebar-scroll">
+      <!-- Navigation Links (Struktur Baru Belajarena dengan Animasi Geser Slide Menu) -->
+      <nav
+        ref="navContainerRef"
+        class="relative flex-1 overflow-y-auto pt-2 pb-4 custom-sidebar-scroll"
+      >
+        <!-- Floating Sliding Active Pill (Animasi Geser Slide Carved Indicator) -->
+        <div
+          v-if="indicatorReady"
+          class="nav-sliding-pill"
+          :style="indicatorStyle"
+        ></div>
+
         <!-- 1. BERANDA / DASHBOARD -->
         <div>
           <RouterLink
             to="/dashboard"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150"
-            :class="isRouteActive('/dashboard') ? 'bg-white text-[#0c2b3d] font-bold shadow-md' : 'text-slate-300/80 hover:text-white hover:bg-white/10'"
+            :ref="(el) => setNavItemRef('/dashboard', el)"
+            class="nav-item-link group"
+            :class="{ 'active-text': isRouteActive('/dashboard') }"
             :title="!sidebarOpen ? 'Dashboard' : undefined"
+            @click="handleNavClick('/dashboard')"
           >
-            <span class="w-5 h-5 flex-shrink-0 flex items-center justify-center">
-              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <span
+              class="w-5 h-5 flex-shrink-0 transition-colors duration-200"
+              :class="isRouteActive('/dashboard') ? 'text-[#0c2b3d]' : 'text-slate-300/80 group-hover:text-white'"
+            >
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
               </svg>
             </span>
-            <span v-if="sidebarOpen" class="truncate tracking-wide text-sm">
+            <span v-if="sidebarOpen" class="truncate text-sm tracking-wide transition-colors duration-200">
               Dashboard
             </span>
           </RouterLink>
         </div>
 
         <!-- 2. FITUR UTAMA (DUA KARTU MENONJOL: EDU-GAMES & LIVE PRESENTASI) -->
-        <div class="space-y-2">
-          <div v-if="sidebarOpen" class="px-2 pt-1 text-[10px] font-extrabold tracking-wider uppercase text-amber-300/90 flex items-center justify-between">
+        <div class="pt-2 pb-1">
+          <div v-if="sidebarOpen" class="px-4 pb-1.5 text-[10px] font-bold tracking-wider uppercase text-amber-300/90 flex items-center justify-between">
             <span class="flex items-center gap-1">⭐ FITUR UTAMA</span>
             <span class="text-[9px] bg-amber-400/20 text-amber-300 px-1.5 py-0.2 rounded font-mono font-bold">UNGGULAN</span>
           </div>
-          <div v-else class="my-1 border-t border-white/10"></div>
+          <div v-else class="my-2 border-t border-white/10"></div>
 
-          <!-- KARTU 1: EDU-GAMES -->
-          <RouterLink
-            to="/games"
-            class="block rounded-2xl transition-all duration-200 group relative overflow-hidden"
-            :class="[
-              sidebarOpen
-                ? 'p-3 bg-gradient-to-br from-[#4c1d95] via-[#6d28d9] to-[#d97706] text-white shadow-md border border-white/20 hover:shadow-xl hover:scale-[1.02]'
-                : 'p-2 flex items-center justify-center bg-gradient-to-br from-[#4c1d95] to-[#d97706] text-white mx-auto w-11 h-11',
-              isRouteActive('/games') ? 'ring-2 ring-amber-400 shadow-amber-500/30' : ''
-            ]"
-            :title="!sidebarOpen ? 'Edu-Games (Unggulan)' : undefined"
-          >
-            <div v-if="sidebarOpen">
-              <div class="flex items-center justify-between gap-1.5">
-                <div class="flex items-center gap-2">
-                  <span class="text-base">🎮</span>
-                  <span class="text-xs font-black text-white tracking-tight leading-none">Edu-Games</span>
+          <div class="space-y-2">
+            <!-- KARTU 1: EDU-GAMES -->
+            <RouterLink
+              to="/games"
+              :ref="(el) => setNavItemRef('/games', el)"
+              class="relative z-10 block mx-3 rounded-2xl transition-all duration-200 group overflow-hidden"
+              :class="[
+                sidebarOpen
+                  ? 'p-3 bg-gradient-to-br from-[#4c1d95] via-[#6d28d9] to-[#d97706] text-white shadow-md border border-white/20 hover:shadow-xl hover:scale-[1.02]'
+                  : 'p-2 flex items-center justify-center bg-gradient-to-br from-[#4c1d95] to-[#d97706] text-white mx-auto w-11 h-11',
+                isRouteActive('/games') ? 'ring-2 ring-amber-400 shadow-amber-500/30' : ''
+              ]"
+              :title="!sidebarOpen ? 'Edu-Games (Unggulan)' : undefined"
+              @click="handleNavClick('/games')"
+            >
+              <div v-if="sidebarOpen">
+                <div class="flex items-center justify-between gap-1.5">
+                  <div class="flex items-center gap-2">
+                    <span class="text-base">🎮</span>
+                    <span class="text-xs font-black text-white tracking-tight leading-none">Edu-Games</span>
+                  </div>
+                  <span class="px-1.5 py-0.5 rounded-md bg-amber-400 text-slate-950 text-[9px] font-black uppercase tracking-wider shadow-2xs">
+                    Unggulan
+                  </span>
                 </div>
-                <span class="px-1.5 py-0.5 rounded-md bg-amber-400 text-slate-950 text-[9px] font-black uppercase tracking-wider shadow-2xs">
-                  Unggulan
-                </span>
+                <p class="text-[10px] text-purple-100/90 leading-tight mt-1.5 font-medium line-clamp-1">
+                  Mainkan game belajar bersama kelas
+                </p>
               </div>
-              <p class="text-[10px] text-purple-100/90 leading-tight mt-1.5 font-medium line-clamp-1">
-                Mainkan game belajar bersama kelas
-              </p>
-            </div>
-            <div v-else class="text-lg">
-              🎮
-            </div>
-          </RouterLink>
+              <div v-else class="text-lg">
+                🎮
+              </div>
+            </RouterLink>
 
-          <!-- KARTU 2: LIVE PRESENTASI -->
-          <RouterLink
-            to="/presentations"
-            class="block rounded-2xl transition-all duration-200 group relative overflow-hidden"
-            :class="[
-              sidebarOpen
-                ? 'p-3 bg-gradient-to-br from-[#0369a1] via-[#0284c7] to-[#0d9488] text-white shadow-md border border-white/20 hover:shadow-xl hover:scale-[1.02]'
-                : 'p-2 flex items-center justify-center bg-gradient-to-br from-[#0369a1] to-[#0d9488] text-white mx-auto w-11 h-11',
-              isRouteActive('/presentations') ? 'ring-2 ring-cyan-300 shadow-cyan-500/30' : ''
-            ]"
-            :title="!sidebarOpen ? 'Live Presentasi (Unggulan)' : undefined"
-          >
-            <div v-if="sidebarOpen">
-              <div class="flex items-center justify-between gap-1.5">
-                <div class="flex items-center gap-2">
-                  <span class="text-base">📡</span>
-                  <span class="text-xs font-black text-white tracking-tight leading-none">Live Presentasi</span>
+            <!-- KARTU 2: LIVE PRESENTASI -->
+            <RouterLink
+              to="/presentations"
+              :ref="(el) => setNavItemRef('/presentations', el)"
+              class="relative z-10 block mx-3 rounded-2xl transition-all duration-200 group overflow-hidden"
+              :class="[
+                sidebarOpen
+                  ? 'p-3 bg-gradient-to-br from-[#0369a1] via-[#0284c7] to-[#0d9488] text-white shadow-md border border-white/20 hover:shadow-xl hover:scale-[1.02]'
+                  : 'p-2 flex items-center justify-center bg-gradient-to-br from-[#0369a1] to-[#0d9488] text-white mx-auto w-11 h-11',
+                isRouteActive('/presentations') ? 'ring-2 ring-cyan-300 shadow-cyan-500/30' : ''
+              ]"
+              :title="!sidebarOpen ? 'Live Presentasi (Unggulan)' : undefined"
+              @click="handleNavClick('/presentations')"
+            >
+              <div v-if="sidebarOpen">
+                <div class="flex items-center justify-between gap-1.5">
+                  <div class="flex items-center gap-2">
+                    <span class="text-base">📡</span>
+                    <span class="text-xs font-black text-white tracking-tight leading-none">Live Presentasi</span>
+                  </div>
+                  <span class="px-1.5 py-0.5 rounded-md bg-cyan-300 text-slate-950 text-[9px] font-black uppercase tracking-wider shadow-2xs">
+                    Unggulan
+                  </span>
                 </div>
-                <span class="px-1.5 py-0.5 rounded-md bg-cyan-300 text-slate-950 text-[9px] font-black uppercase tracking-wider shadow-2xs">
-                  Unggulan
-                </span>
+                <p class="text-[10px] text-sky-100/90 leading-tight mt-1.5 font-medium line-clamp-1">
+                  {{ isStudent ? 'Gabung sesi live presentasi guru' : 'Presentasikan slide langsung ke HP siswa' }}
+                </p>
               </div>
-              <p class="text-[10px] text-sky-100/90 leading-tight mt-1.5 font-medium line-clamp-1">
-                {{ isStudent ? 'Gabung sesi live presentasi guru' : 'Presentasikan slide langsung ke HP siswa' }}
-              </p>
-            </div>
-            <div v-else class="text-lg">
-              📡
-            </div>
-          </RouterLink>
+              <div v-else class="text-lg">
+                📡
+              </div>
+            </RouterLink>
+          </div>
         </div>
 
         <!-- 3. AKADEMIK (SATU MENU GABUNGAN: ACCORDION & PUSAT HUB) -->
-        <div class="pt-1">
+        <div class="pt-2">
           <div v-if="sidebarOpen" class="space-y-1">
             <!-- Accordion Header -->
             <div
-              class="flex items-center justify-between px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition select-none group"
+              :ref="(el) => setNavItemRef('akademik-header', el)"
+              class="relative z-10 mx-3 flex items-center justify-between px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition select-none group"
               :class="{ 'bg-white/10 text-white font-semibold': isCurrentRouteInAkademik() }"
             >
               <div
                 class="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer"
-                @click="isAkademikOpen = !isAkademikOpen"
+                @click="toggleAkademik"
               >
                 <span class="text-base">📁</span>
                 <span class="text-sm font-bold tracking-wide truncate">Akademik</span>
@@ -154,8 +176,10 @@
                 <!-- Direct Hub Page Shortcut -->
                 <RouterLink
                   to="/academic"
+                  :ref="(el) => setNavItemRef('/academic', el)"
                   class="p-1 rounded-lg hover:bg-white/20 text-slate-300 hover:text-white transition"
                   title="Buka Pusat Akademik (Halaman Hub)"
+                  @click.stop="handleNavClick('/academic')"
                 >
                   <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
@@ -165,7 +189,7 @@
                 <!-- Chevron Toggle -->
                 <button
                   type="button"
-                  @click="isAkademikOpen = !isAkademikOpen"
+                  @click="toggleAkademik"
                   class="p-1 rounded-lg hover:bg-white/20 text-slate-400 group-hover:text-white transition"
                   :aria-label="isAkademikOpen ? 'Tutup Akademik' : 'Buka Akademik'"
                 >
@@ -182,95 +206,134 @@
               </div>
             </div>
 
-            <!-- Accordion Content: 3 Sub-kelompok -->
+            <!-- Accordion Content: 3 Sub-kelompok dengan dukungan Sliding Pill -->
             <div
               v-show="isAkademikOpen"
-              class="ml-3 pl-2.5 border-l border-white/15 space-y-2 pt-1 pb-1 transition-all"
+              class="space-y-3 pt-1 pb-1 transition-all"
             >
               <!-- Sub-group 1: Kelas & Siswa -->
               <div v-if="filteredKelasSiswa.length" class="space-y-0.5">
-                <div class="px-2 pt-1 text-[9px] font-extrabold uppercase tracking-wider text-slate-400/90">
+                <div class="px-5 pt-1.5 text-[9px] font-extrabold uppercase tracking-wider text-slate-400/80">
                   Kelas & Siswa
                 </div>
                 <RouterLink
                   v-for="item in filteredKelasSiswa"
                   :key="item.to"
                   :to="item.to"
-                  class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-medium transition"
-                  :class="isRouteActive(item.to) ? 'bg-white text-[#0c2b3d] font-bold shadow-xs' : 'text-slate-300 hover:text-white hover:bg-white/10'"
+                  :ref="(el) => setNavItemRef(item.to, el)"
+                  class="nav-item-link group !py-2 !text-xs !pl-7"
+                  :class="{ 'active-text': isRouteActive(item.to) }"
+                  @click="handleNavClick(item.to)"
                 >
-                  <span class="w-3.5 h-3.5 shrink-0" v-html="item.icon"></span>
-                  <span class="truncate">{{ item.label }}</span>
+                  <span
+                    class="w-4 h-4 flex-shrink-0 transition-colors duration-200"
+                    :class="isRouteActive(item.to) ? 'text-[#0c2b3d]' : 'text-slate-300/80 group-hover:text-white'"
+                    v-html="item.icon"
+                  ></span>
+                  <span class="truncate tracking-wide transition-colors duration-200">
+                    {{ item.label }}
+                  </span>
                 </RouterLink>
               </div>
 
               <!-- Sub-group 2: Penilaian & Tugas -->
               <div v-if="filteredPenilaianTugas.length" class="space-y-0.5">
-                <div class="px-2 pt-1 text-[9px] font-extrabold uppercase tracking-wider text-slate-400/90">
+                <div class="px-5 pt-1.5 text-[9px] font-extrabold uppercase tracking-wider text-slate-400/80">
                   Penilaian & Tugas
                 </div>
                 <RouterLink
                   v-for="item in filteredPenilaianTugas"
                   :key="item.to"
                   :to="item.to"
-                  class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-medium transition"
-                  :class="isRouteActive(item.to) ? 'bg-white text-[#0c2b3d] font-bold shadow-xs' : 'text-slate-300 hover:text-white hover:bg-white/10'"
+                  :ref="(el) => setNavItemRef(item.to, el)"
+                  class="nav-item-link group !py-2 !text-xs !pl-7"
+                  :class="{ 'active-text': isRouteActive(item.to) }"
+                  @click="handleNavClick(item.to)"
                 >
-                  <span class="w-3.5 h-3.5 shrink-0" v-html="item.icon"></span>
-                  <span class="truncate">{{ item.label }}</span>
+                  <span
+                    class="w-4 h-4 flex-shrink-0 transition-colors duration-200"
+                    :class="isRouteActive(item.to) ? 'text-[#0c2b3d]' : 'text-slate-300/80 group-hover:text-white'"
+                    v-html="item.icon"
+                  ></span>
+                  <span class="truncate tracking-wide transition-colors duration-200">
+                    {{ item.label }}
+                  </span>
                 </RouterLink>
               </div>
 
               <!-- Sub-group 3: Laporan & Materi -->
               <div v-if="filteredLaporanMateri.length" class="space-y-0.5">
-                <div class="px-2 pt-1 text-[9px] font-extrabold uppercase tracking-wider text-slate-400/90">
+                <div class="px-5 pt-1.5 text-[9px] font-extrabold uppercase tracking-wider text-slate-400/80">
                   Laporan & Materi
                 </div>
                 <RouterLink
                   v-for="item in filteredLaporanMateri"
                   :key="item.to"
                   :to="item.to"
-                  class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-medium transition"
-                  :class="isRouteActive(item.to) ? 'bg-white text-[#0c2b3d] font-bold shadow-xs' : 'text-slate-300 hover:text-white hover:bg-white/10'"
+                  :ref="(el) => setNavItemRef(item.to, el)"
+                  class="nav-item-link group !py-2 !text-xs !pl-7"
+                  :class="{ 'active-text': isRouteActive(item.to) }"
+                  @click="handleNavClick(item.to)"
                 >
-                  <span class="w-3.5 h-3.5 shrink-0" v-html="item.icon"></span>
-                  <span class="truncate">{{ item.label }}</span>
+                  <span
+                    class="w-4 h-4 flex-shrink-0 transition-colors duration-200"
+                    :class="isRouteActive(item.to) ? 'text-[#0c2b3d]' : 'text-slate-300/80 group-hover:text-white'"
+                    v-html="item.icon"
+                  ></span>
+                  <span class="truncate tracking-wide transition-colors duration-200">
+                    {{ item.label }}
+                  </span>
                 </RouterLink>
               </div>
             </div>
           </div>
 
-          <!-- When collapsed: Single Hub Icon -->
-          <div v-else class="flex flex-col items-center py-1">
+          <!-- When collapsed: Single Hub Icon with Sliding Pill Support -->
+          <div v-else class="my-1">
             <RouterLink
               to="/academic"
-              class="w-11 h-11 rounded-2xl flex items-center justify-center transition"
-              :class="isCurrentRouteInAkademik() ? 'bg-white text-[#0c2b3d] font-bold shadow-md' : 'text-slate-300 hover:text-white hover:bg-white/10'"
+              :ref="(el) => setNavItemRef('/academic', el)"
+              class="nav-item-link group"
+              :class="{ 'active-text': isCurrentRouteInAkademik() || isRouteActive('/academic') }"
               title="Pusat Akademik"
+              @click="handleNavClick('/academic')"
             >
-              <span class="text-xl">📁</span>
+              <span
+                class="w-5 h-5 flex-shrink-0 transition-colors duration-200"
+                :class="isCurrentRouteInAkademik() || isRouteActive('/academic') ? 'text-[#0c2b3d]' : 'text-slate-300/80 group-hover:text-white'"
+              >
+                📁
+              </span>
             </RouterLink>
           </div>
         </div>
 
-        <!-- 4. PENGATURAN (TETAP DI BAGIAN BAWAH) -->
-        <div class="pt-1">
-          <div v-if="sidebarOpen" class="px-2 pb-1 text-[10px] font-extrabold tracking-wider uppercase text-slate-400/80">
+        <!-- 4. PENGATURAN (TETAP DI BAGIAN BAWAH DENGAN DUKUNGAN SLIDING PILL) -->
+        <div class="pt-3">
+          <div v-if="sidebarOpen" class="px-4 pb-1 text-[10px] font-bold tracking-wider uppercase text-slate-400/80">
             PENGATURAN
           </div>
-          <div v-else class="my-1 border-t border-white/10"></div>
+          <div v-else class="my-2 border-t border-white/10"></div>
 
           <div class="space-y-0.5">
             <RouterLink
               v-for="item in filteredPengaturan"
               :key="item.to"
               :to="item.to"
-              class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition"
-              :class="isRouteActive(item.to) ? 'bg-white text-[#0c2b3d] font-bold shadow-xs' : 'text-slate-300/80 hover:text-white hover:bg-white/10'"
+              :ref="(el) => setNavItemRef(item.to, el)"
+              class="nav-item-link group !py-2 text-xs"
+              :class="{ 'active-text': isRouteActive(item.to) }"
               :title="!sidebarOpen ? item.label : undefined"
+              @click="handleNavClick(item.to)"
             >
-              <span class="w-4 h-4 shrink-0" v-html="item.icon"></span>
-              <span v-if="sidebarOpen" class="truncate">{{ item.label }}</span>
+              <span
+                class="w-4 h-4 flex-shrink-0 transition-colors duration-200"
+                :class="isRouteActive(item.to) ? 'text-[#0c2b3d]' : 'text-slate-300/80 group-hover:text-white'"
+                v-html="item.icon"
+              ></span>
+              <span v-if="sidebarOpen" class="truncate tracking-wide transition-colors duration-200">
+                {{ item.label }}
+              </span>
             </RouterLink>
           </div>
         </div>
@@ -757,6 +820,7 @@ onMounted(() => {
   clockInterval = setInterval(updateClock, 1000)
   window.addEventListener('click', handleClickOutside)
   window.addEventListener('resize', onWindowResize)
+  updateIndicatorPosition(true)
 })
 onUnmounted(() => {
   if (clockInterval) clearInterval(clockInterval)
@@ -766,6 +830,7 @@ onUnmounted(() => {
 
 function onWindowResize() {
   checkMobile()
+  updateIndicatorPosition()
 }
 
 interface NavSubItem {
@@ -933,15 +998,175 @@ function isCurrentRouteInAkademik(): boolean {
   return list.some(p => route.path.startsWith(p))
 }
 
+// Sliding Active Nav Indicator (Smooth physics transition)
+const navContainerRef = ref<HTMLElement | null>(null)
+const navItemDomMap = new Map<string, HTMLElement>()
+const indicatorTop = ref(0)
+const indicatorHeight = ref(44)
+const indicatorVisible = ref(false)
+const indicatorReady = ref(false)
+const hasMounted = ref(false)
+
+function setNavItemRef(key: string, el: any) {
+  if (el) {
+    const domEl = el.$el || el
+    navItemDomMap.set(key, domEl)
+  }
+}
+
+function getActiveElement(): HTMLElement | null {
+  // If sidebar is collapsed (!sidebarOpen) and route is in Akademik:
+  if (!sidebarOpen.value && isCurrentRouteInAkademik()) {
+    const hubEl = navItemDomMap.get('/academic')
+    if (hubEl && hubEl.offsetParent !== null) return hubEl
+  }
+
+  // 1. Check specific sub-routes first (most specific to least specific)
+  for (const item of filteredLaporanMateri.value) {
+    if (isRouteActive(item.to)) {
+      const el = navItemDomMap.get(item.to)
+      if (el && el.offsetParent !== null) return el
+    }
+  }
+
+  for (const item of filteredPenilaianTugas.value) {
+    if (isRouteActive(item.to)) {
+      const el = navItemDomMap.get(item.to)
+      if (el && el.offsetParent !== null) return el
+    }
+  }
+
+  for (const item of filteredKelasSiswa.value) {
+    if (isRouteActive(item.to)) {
+      const el = navItemDomMap.get(item.to)
+      if (el && el.offsetParent !== null) return el
+    }
+  }
+
+  // If in Akademik but accordion closed, highlight Akademik header
+  if (isCurrentRouteInAkademik() && !isAkademikOpen.value) {
+    const headerEl = navItemDomMap.get('akademik-header')
+    if (headerEl && headerEl.offsetParent !== null) return headerEl
+  }
+
+  // Pengaturan
+  for (const item of filteredPengaturan.value) {
+    if (isRouteActive(item.to)) {
+      const el = navItemDomMap.get(item.to)
+      if (el && el.offsetParent !== null) return el
+    }
+  }
+
+  // Fitur Utama
+  if (isRouteActive('/games')) {
+    const el = navItemDomMap.get('/games')
+    if (el && el.offsetParent !== null) return el
+  }
+  if (isRouteActive('/presentations')) {
+    const el = navItemDomMap.get('/presentations')
+    if (el && el.offsetParent !== null) return el
+  }
+
+  // Dashboard
+  if (isRouteActive('/dashboard')) {
+    const el = navItemDomMap.get('/dashboard')
+    if (el && el.offsetParent !== null) return el
+  }
+
+  // Hub Page
+  if (route.path === '/academic') {
+    const el = navItemDomMap.get('/academic') || navItemDomMap.get('akademik-header')
+    if (el && el.offsetParent !== null) return el
+  }
+
+  return null
+}
+
+function updateIndicatorPosition(immediate = false) {
+  nextTick(() => {
+    const el = getActiveElement()
+    if (el && navContainerRef.value) {
+      const containerRect = navContainerRef.value.getBoundingClientRect()
+      const elRect = el.getBoundingClientRect()
+      const relativeTop = elRect.top - containerRect.top + navContainerRef.value.scrollTop
+
+      indicatorTop.value = relativeTop
+      indicatorHeight.value = el.offsetHeight
+      indicatorVisible.value = true
+      indicatorReady.value = true
+    } else {
+      indicatorVisible.value = false
+    }
+
+    if (immediate) {
+      hasMounted.value = false
+      nextTick(() => {
+        setTimeout(() => {
+          hasMounted.value = true
+        }, 60)
+      })
+    }
+  })
+}
+
+function handleNavClick(to: string) {
+  nextTick(() => {
+    const el = navItemDomMap.get(to)
+    if (el && navContainerRef.value) {
+      const containerRect = navContainerRef.value.getBoundingClientRect()
+      const elRect = el.getBoundingClientRect()
+      const relativeTop = elRect.top - containerRect.top + navContainerRef.value.scrollTop
+
+      indicatorTop.value = relativeTop
+      indicatorHeight.value = el.offsetHeight
+      indicatorVisible.value = true
+      indicatorReady.value = true
+    }
+  })
+}
+
+function toggleAkademik() {
+  isAkademikOpen.value = !isAkademikOpen.value
+  nextTick(() => {
+    setTimeout(updateIndicatorPosition, 200)
+  })
+}
+
+const indicatorStyle = computed(() => {
+  return {
+    transform: `translateY(${indicatorTop.value}px)`,
+    height: `${indicatorHeight.value}px`,
+    opacity: indicatorVisible.value ? 1 : 0,
+    transition: hasMounted.value
+      ? 'transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), height 0.22s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease'
+      : 'none'
+  }
+})
+
 watch(
   () => [route.path, route.query.tab],
   () => {
     if (isCurrentRouteInAkademik()) {
       isAkademikOpen.value = true
     }
+    nextTick(() => {
+      setTimeout(updateIndicatorPosition, 60)
+    })
   },
   { immediate: true }
 )
+
+watch(sidebarOpen, () => {
+  nextTick(() => {
+    setTimeout(updateIndicatorPosition, 320)
+  })
+})
+
+watch(isAkademikOpen, () => {
+  nextTick(() => {
+    setTimeout(updateIndicatorPosition, 200)
+  })
+})
 
 async function handleLogout() {
   if (!confirm('Apakah Anda yakin ingin keluar?')) return
