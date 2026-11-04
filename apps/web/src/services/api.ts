@@ -4,12 +4,29 @@ const getBaseURL = () => {
   if (import.meta.env.VITE_API_BASE_URL) {
     return import.meta.env.VITE_API_BASE_URL
   }
-  if (
-    typeof window !== 'undefined' &&
-    !window.location.hostname.includes('localhost') &&
-    !window.location.hostname.includes('127.0.0.1')
-  ) {
-    return 'https://port-yellow-handy-discipline.trycloudflare.com/api/v1'
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname
+    const port = window.location.port
+
+    // Local / LAN development environments (localhost, 127.0.0.1, 192.168.x.x, 10.x.x.x, *.local, or dev ports)
+    const isLocal =
+      host === 'localhost' ||
+      host === '127.0.0.1' ||
+      host === '0.0.0.0' ||
+      host.startsWith('192.168.') ||
+      host.startsWith('10.') ||
+      host.startsWith('172.') ||
+      host.endsWith('.local') ||
+      port === '5173' ||
+      port === '4173' ||
+      port === '8000'
+
+    if (isLocal) {
+      return '/api/v1'
+    }
+
+    // Public / Netlify production fallback to Cloudflare Tunnel
+    return 'https://probability-edmonton-freebsd-mills.trycloudflare.com/api/v1'
   }
   return '/api/v1'
 }

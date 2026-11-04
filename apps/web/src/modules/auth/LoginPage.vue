@@ -68,7 +68,7 @@
             <span class="text-sm">📚</span>
             <div>
               <p class="font-bold">Akun Siswa</p>
-              <p class="text-[11px] text-emerald-700 mt-0.5">Akses pembelajaran, materi interaktif, tugas, absensi, dan ujian CBT SMPN 6 Kendari.</p>
+              <p class="text-[11px] text-emerald-700 mt-0.5">Masuk dengan NIS (contoh: <b>10527</b>) dan sandi (NIS Anda atau <b>password</b>).</p>
             </div>
           </div>
         </div>
@@ -163,6 +163,17 @@
               ⚡ Klik untuk isi akun Pak Fadly otomatis
             </button>
           </div>
+
+          <!-- Quick Fill for Siswa -->
+          <div v-else class="pt-2">
+            <button
+              type="button"
+              @click="quickFillStudent"
+              class="w-full text-center py-2 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200/80 text-[11px] font-semibold text-amber-900 transition"
+            >
+              ⚡ Klik untuk isi akun Siswa (NIS: 10527 - Abizar)
+            </button>
+          </div>
         </form>
       </div>
 
@@ -221,6 +232,12 @@ function quickFillTeacher() {
   errorMessage.value = ''
 }
 
+function quickFillStudent() {
+  form.email = '10527'
+  form.password = 'password'
+  errorMessage.value = ''
+}
+
 function validateForm(): boolean {
   errors.email = ''
   errors.password = ''
@@ -258,7 +275,14 @@ async function handleLogin() {
   if (result.success) {
     const redirect = route.query.redirect as string
     if (authStore.user?.role === 'student' || authStore.user?.is_student) {
-      router.push(redirect || '/student')
+      const isAllowedStudentRedirect = redirect && (
+        redirect.startsWith('/student') ||
+        redirect.startsWith('/presentation-live') ||
+        redirect.startsWith('/presentation/live') ||
+        redirect.startsWith('/games') ||
+        redirect.startsWith('/cbt')
+      )
+      router.push(isAllowedStudentRedirect ? redirect : '/student')
     } else {
       router.push(redirect || '/dashboard')
     }
