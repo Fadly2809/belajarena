@@ -158,16 +158,30 @@
             <!-- Accordion Header -->
             <div
               :ref="(el) => setNavItemRef('akademik-header', el)"
-              class="relative z-10 mx-3 flex items-center justify-between px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition select-none group"
-              :class="{ 'bg-white/10 text-white font-semibold': isCurrentRouteInAkademik() }"
+              class="relative z-10 mx-3 flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors duration-200 select-none group"
+              :class="[
+                isAkademikHeaderActive
+                  ? 'bg-transparent text-[#0c2b3d] font-bold'
+                  : (isCurrentRouteInAkademik()
+                      ? 'bg-transparent text-white font-semibold hover:bg-white/5'
+                      : 'text-slate-300 hover:text-white hover:bg-white/10')
+              ]"
             >
               <div
                 class="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer"
                 @click="toggleAkademik"
               >
                 <span class="text-base">📁</span>
-                <span class="text-sm font-bold tracking-wide truncate">Akademik</span>
-                <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-white/15 text-slate-300 font-mono font-bold">
+                <span
+                  class="text-sm tracking-wide truncate transition-colors duration-200"
+                  :class="isAkademikHeaderActive ? 'text-[#0c2b3d] font-bold' : (isCurrentRouteInAkademik() ? 'text-white font-semibold' : 'text-slate-300 group-hover:text-white')"
+                >
+                  Akademik
+                </span>
+                <span
+                  class="text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold transition-colors duration-200"
+                  :class="isAkademikHeaderActive ? 'bg-[#0c2b3d]/15 text-[#0c2b3d]' : 'bg-white/15 text-slate-300'"
+                >
                   {{ visibleAkademikCount }}
                 </span>
               </div>
@@ -176,8 +190,8 @@
                 <!-- Direct Hub Page Shortcut -->
                 <RouterLink
                   to="/academic"
-                  :ref="(el) => setNavItemRef('/academic', el)"
-                  class="p-1 rounded-lg hover:bg-white/20 text-slate-300 hover:text-white transition"
+                  class="p-1 rounded-lg transition-colors duration-200"
+                  :class="isAkademikHeaderActive ? 'text-[#0c2b3d] hover:bg-black/10' : 'text-slate-300 hover:text-white hover:bg-white/20'"
                   title="Buka Pusat Akademik (Halaman Hub)"
                   @click.stop="handleNavClick('/academic')"
                 >
@@ -189,8 +203,9 @@
                 <!-- Chevron Toggle -->
                 <button
                   type="button"
-                  @click="toggleAkademik"
-                  class="p-1 rounded-lg hover:bg-white/20 text-slate-400 group-hover:text-white transition"
+                  @click.stop="toggleAkademik"
+                  class="p-1 rounded-lg transition-colors duration-200"
+                  :class="isAkademikHeaderActive ? 'text-[#0c2b3d] hover:bg-black/10' : 'text-slate-400 group-hover:text-white hover:bg-white/20'"
                   :aria-label="isAkademikOpen ? 'Tutup Akademik' : 'Buka Akademik'"
                 >
                   <svg
@@ -998,6 +1013,10 @@ function isCurrentRouteInAkademik(): boolean {
   return list.some(p => route.path.startsWith(p))
 }
 
+const isAkademikHeaderActive = computed(() => {
+  return route.path === '/academic' || (isCurrentRouteInAkademik() && !isAkademikOpen.value)
+})
+
 // Sliding Active Nav Indicator (Smooth physics transition)
 const navContainerRef = ref<HTMLElement | null>(null)
 const navItemDomMap = new Map<string, HTMLElement>()
@@ -1073,9 +1092,9 @@ function getActiveElement(): HTMLElement | null {
     if (el && el.offsetParent !== null) return el
   }
 
-  // Hub Page
+  // Hub Page (/academic)
   if (route.path === '/academic') {
-    const el = navItemDomMap.get('/academic') || navItemDomMap.get('akademik-header')
+    const el = sidebarOpen.value ? navItemDomMap.get('akademik-header') : navItemDomMap.get('/academic')
     if (el && el.offsetParent !== null) return el
   }
 
@@ -1111,7 +1130,8 @@ function updateIndicatorPosition(immediate = false) {
 
 function handleNavClick(to: string) {
   nextTick(() => {
-    const el = navItemDomMap.get(to)
+    const targetKey = to === '/academic' && sidebarOpen.value ? 'akademik-header' : to
+    const el = navItemDomMap.get(targetKey)
     if (el && navContainerRef.value) {
       const containerRect = navContainerRef.value.getBoundingClientRect()
       const elRect = el.getBoundingClientRect()
