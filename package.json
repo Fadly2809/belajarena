@@ -8,6 +8,9 @@
     "test": "tests"
   },
   "scripts": {
+    "dev": "./start-dev.sh",
+    "dev:api": "node apps/api/server.mjs",
+    "dev:web": "npm --prefix apps/web run dev",
     "start": "node apps/api/server.mjs",
     "build": "npm --prefix apps/api install",
     "test": "echo \"Error: no test specified\" && exit 1"
