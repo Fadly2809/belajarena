@@ -1057,10 +1057,10 @@ async function startScreenMirroring() {
       if (isUploadingFrame) return
       if (captureVideoEl.readyState >= 2) {
         isUploadingFrame = true
-        // Resolusi dinamis HD 1280-1366px mempertahankan rasio aspek asli layar guru tanpa distorsi
+        // Resolusi optimal untuk transfer jaringan lancar tanpa membebani bandwidth tunnel
         const vw = captureVideoEl.videoWidth || 1280
         const vh = captureVideoEl.videoHeight || 720
-        const targetWidth = Math.min(1366, Math.max(1280, vw))
+        const targetWidth = Math.min(1024, Math.max(800, vw))
         const targetHeight = Math.round(targetWidth * (vh / vw))
 
         if (captureCanvasEl.width !== targetWidth || captureCanvasEl.height !== targetHeight) {
@@ -1069,18 +1069,18 @@ async function startScreenMirroring() {
         }
 
         ctx.imageSmoothingEnabled = true
-        ctx.imageSmoothingQuality = 'high'
+        ctx.imageSmoothingQuality = 'medium'
         ctx.drawImage(captureVideoEl, 0, 0, targetWidth, targetHeight)
 
-        // WebP kualitas 0.78 menghasilkan ketajaman teks/balok Scratch sangat tinggi tanpa artefak blur
+        // WebP kualitas 0.62 menghasilkan ukuran file kecil (~30KB) namun tetap sangat jelas
         let frameData: string
         try {
-          frameData = captureCanvasEl.toDataURL('image/webp', 0.78)
+          frameData = captureCanvasEl.toDataURL('image/webp', 0.62)
           if (!frameData.startsWith('data:image/webp')) {
-            frameData = captureCanvasEl.toDataURL('image/jpeg', 0.78)
+            frameData = captureCanvasEl.toDataURL('image/jpeg', 0.62)
           }
         } catch (_) {
-          frameData = captureCanvasEl.toDataURL('image/jpeg', 0.78)
+          frameData = captureCanvasEl.toDataURL('image/jpeg', 0.62)
         }
 
         try {
@@ -1088,7 +1088,7 @@ async function startScreenMirroring() {
         } catch (_) {}
         isUploadingFrame = false
       }
-    }, 100)
+    }, 180)
 
     stream.getVideoTracks()[0].onended = () => {
       stopScreenMirroring()

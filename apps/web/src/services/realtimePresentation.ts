@@ -136,8 +136,33 @@ class RealtimePresentationEngine {
     // 2. Pasang SSE untuk Push Instan jika didukung jaringan / browser
     if (typeof window !== 'undefined' && 'EventSource' in window) {
       try {
-        const sseUrl = `/api/v1/presentation-sessions/${encodeURIComponent(sessionId)}/stream`
-        this.eventSource = new EventSource(sseUrl)
+        const apiBase = api.defaults.baseURL || '/api/v1'
+        const sseUrl = `${apiBase}/presentation-sessions/${encodeURIComponent(sessionId)}/stream`
+        this.eventSource = new EventSource(sseUrl, { withCredentials: true })
+
+        this.eventSource.onopen = () => {
+          // Saat SSE aktif terhubung, kurangi beban polling agar koneksi tunnel lancar
+          this.currentPollIntervalMs = 2500
+          if (this.pollTimer) {
+            clearInterval(this.pollTimer)
+            this.pollTimer = setInterval(() => {
+              if (this.currentSessionId) this.pollSession(this.currentSessionId)
+            }, this.currentPollIntervalMs)
+          }
+        }
+
+        this.eventSource.onerror = () => {
+          // Jika SSE sempat drop/reconnecting, tingkatkan polling kembali ke 600ms
+          if (this.currentPollIntervalMs !== 600) {
+            this.currentPollIntervalMs = 600
+            if (this.pollTimer) {
+              clearInterval(this.pollTimer)
+              this.pollTimer = setInterval(() => {
+                if (this.currentSessionId) this.pollSession(this.currentSessionId)
+              }, this.currentPollIntervalMs)
+            }
+          }
+        }
 
         this.eventSource.onmessage = (event) => {
           try {
