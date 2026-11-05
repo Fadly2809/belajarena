@@ -55,14 +55,14 @@ export interface BossRig {
 
 const LASER_PALETTE = [0x38bdf8, 0x10b981, 0xfacc15, 0xc084fc, 0xf43f5e, 0x06b6d4];
 
-interface GlowingLaserGroup extends THREE.Group {
+export type GlowingLaserGroup = THREE.Group & {
   beamGroup: THREE.Group;
   coreMesh: THREE.Mesh;
   innerGlowMesh: THREE.Mesh;
   outerHaloMesh: THREE.Mesh;
   muzzleMesh: THREE.Mesh;
   flareMesh: THREE.Mesh;
-}
+};
 
 export class BossBattle3DScene {
   private engine: ThreeEngine;
