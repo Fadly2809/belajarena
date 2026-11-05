@@ -98,11 +98,11 @@ C. KELOMPOK LAPORAN & MATERI:
 - Menu siswa: Dashboard Siswa, Jadwal Pelajaran Saya, Presensi Saya, Ujian CBT Siswa, Tugas Saya, Rekap Nilai Saya, dan Gabung Sesi Live Presentasi / Edu-Games via PIN.
 `
 
-// Cache nama model yang berhasil ditemukan untuk efisiensi
-let cachedModelName = null
+// Cache nama-nama model yang berhasil dideteksi untuk efisiensi
+let cachedModelsList = null
 
-async function getSupportedGeminiModel(apiKey) {
-  if (cachedModelName) return cachedModelName
+async function getAvailableGeminiModels(apiKey) {
+  if (cachedModelsList && cachedModelsList.length > 0) return cachedModelsList
 
   try {
     const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`)
@@ -115,38 +115,47 @@ async function getSupportedGeminiModel(apiKey) {
 
       console.log('[Gemini API] Available models for this key:', generatingModels)
 
+      // Prioritaskan model generasi terbaru Google yang aktif pada key ini
       const preference = [
+        'gemini-2.5-flash',
+        'gemini-flash-latest',
+        'gemini-2.5-flash-lite',
+        'gemini-2.5-pro',
+        'gemini-pro-latest',
+        'gemini-3.5-flash',
+        'gemini-3-flash-preview',
+        'gemini-2.0-flash',
         'gemini-1.5-flash-latest',
         'gemini-1.5-flash',
-        'gemini-2.0-flash',
-        'gemini-2.0-flash-exp',
-        'gemini-1.5-flash-8b',
         'gemini-1.5-pro-latest',
-        'gemini-1.5-pro',
-        'gemini-pro'
+        'gemini-1.5-pro'
       ]
 
+      const prioritized = []
       for (const pref of preference) {
-        const match = generatingModels.find(m => m === pref || m.startsWith(pref))
-        if (match) {
-          cachedModelName = match
-          return match
+        if (generatingModels.includes(pref)) {
+          prioritized.push(pref)
+        }
+      }
+      for (const m of generatingModels) {
+        if (!prioritized.includes(m) && !m.includes('tts') && !m.includes('image') && !m.includes('transcribe') && !m.includes('robotics')) {
+          prioritized.push(m)
         }
       }
 
-      if (generatingModels.length > 0) {
-        cachedModelName = generatingModels[0]
-        return generatingModels[0]
+      if (prioritized.length > 0) {
+        cachedModelsList = prioritized
+        return prioritized
       }
     } else {
       const err = await listRes.text()
-      console.warn('[Gemini API] ListModels response:', listRes.status, err)
+      console.warn('[Gemini API] ListModels response failed:', listRes.status, err)
     }
   } catch (err) {
     console.warn('[Gemini API] Failed to query ListModels:', err.message)
   }
 
-  return 'gemini-1.5-flash-latest'
+  return ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-1.5-flash-latest', 'gemini-1.5-flash']
 }
 
 // Query Google Gemini API dengan Prompt Khusus Belajarena
@@ -200,81 +209,56 @@ ${BELAJARENA_KNOWLEDGE_BASE}`
   })
 
   // Dapatkan model terbaik yang tersedia untuk API key ini
-  const detectedModel = await getSupportedGeminiModel(apiKey)
-  const candidateModels = [
-    detectedModel,
-    'gemini-1.5-flash-latest',
-    'gemini-1.5-flash',
-    'gemini-2.0-flash',
-    'gemini-2.0-flash-exp',
-    'gemini-1.5-pro-latest',
-    'gemini-1.5-pro',
-    'gemini-pro'
-  ].filter((v, i, a) => a.indexOf(v) === i)
+  const candidateModels = await getAvailableGeminiModels(apiKey)
+  console.log('[Gemini API] Attempting generateContent with candidate models:', candidateModels.slice(0, 5))
 
   let lastError = null
 
   for (const model of candidateModels) {
-    const urls = [
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-      `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`
-    ]
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
+    try {
+      const payload = {
+        contents: [...contents],
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        generationConfig: {
+          temperature: 0.7,
+          topP: 0.95,
+          maxOutputTokens: 2048
+        }
+      }
 
-    for (const url of urls) {
-      try {
-        const payload = {
-          contents: [...contents],
-          generationConfig: {
-            temperature: 0.7,
-            topP: 0.95,
-            maxOutputTokens: 2048
-          }
-        }
-        // systemInstruction hanya untuk v1beta
-        if (url.includes('v1beta')) {
-          payload.systemInstruction = { parts: [{ text: systemPrompt }] }
-        } else {
-          // Pada v1 yang tidak punya systemInstruction, masukkan ke turn pertama
-          payload.contents = [
-            { role: 'user', parts: [{ text: `[PANDUAN SISTEM ASISTEN BELAJARENA]:\n${systemPrompt}` }] },
-            { role: 'model', parts: [{ text: 'Baik Pak Fadly, saya siap bertindak sebagai AI Chatbot Belajarena.' }] },
-            ...contents
-          ]
-        }
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
 
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          const candidate = data.candidates?.[0]
-          const replyText = candidate?.content?.parts?.[0]?.text
-          if (replyText) {
-            console.log(`[Gemini API] Successfully generated response using model: ${model}`)
-            cachedModelName = model
-            return replyText
-          }
-        } else {
-          const errText = await response.text()
-          lastError = new Error(`Gemini ${model} Error (${response.status}): ${errText}`)
-          // Jika 400 (bad request) atau 403 (invalid key / quota), jangan lanjut loop terus
-          if (response.status === 400 || response.status === 403) {
-            throw lastError
-          }
+      if (response.ok) {
+        const data = await response.json()
+        const candidate = data.candidates?.[0]
+        const replyText = candidate?.content?.parts?.[0]?.text
+        if (replyText) {
+          console.log(`[Gemini API] Successfully generated response using model: ${model}`)
+          return replyText
         }
-      } catch (e) {
-        lastError = e
-        if (e.message.includes('400') || e.message.includes('403')) {
-          throw e
+      } else {
+        const errText = await response.text()
+        console.warn(`[Gemini API] Model ${model} returned HTTP ${response.status}:`, errText)
+        lastError = new Error(`Gemini ${model} Error (${response.status}): ${errText}`)
+        // Jika 400 (bad request) atau 403 (invalid key / quota), jangan lanjut loop terus
+        if (response.status === 400 || response.status === 403) {
+          throw lastError
         }
+      }
+    } catch (e) {
+      lastError = e
+      if (e.message && (e.message.includes('400') || e.message.includes('403'))) {
+        throw e
       }
     }
   }
 
-  throw lastError || new Error('Gagal menghubungi Google Gemini API setelah mencoba berbagai endpoint.')
+  throw lastError || new Error('Gagal menghubungi Google Gemini API setelah mencoba model yang tersedia.')
 }
 
 // Built-in Expert Engine (Offline / Tanpa API Key) dengan Pemahaman Dialog Interaktif
