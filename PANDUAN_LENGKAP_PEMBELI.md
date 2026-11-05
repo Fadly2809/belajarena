@@ -41,11 +41,10 @@ Sebelum kelas dimulai, siapkan 3 hal sederhana berikut:
 ## 3. Menjalankan Aplikasi (1-Klik Siap)
 
 1. Buka folder `Belajarena` di laptop Anda.
-2. **Pengguna Windows:** Klik ganda (double click) file:
-   ```
-   1-KLIK-JALANKAN-WINDOWS.bat
-   ```
-   *(Untuk macOS/Linux: jalankan `./1-KLIK-JALANKAN-MAC.sh`)*.
+2. **Menjalankan Server (1-Klik):**
+   - **Pengguna macOS (MacBook/iMac):** Klik ganda *(double-click)* file `1-KLIK-JALANKAN.command`
+   - **Pengguna Windows:** Klik ganda *(double-click)* file `1-KLIK-JALANKAN-WINDOWS.bat`
+   - **Pengguna Linux:** Jalankan terminal `./1-KLIK-JALANKAN-MAC.sh`
 3. Jendela hitam (Terminal) akan muncul dan menjalankan server.
 4. Dalam 2–3 detik, browser laptop Anda akan otomatis membuka halaman login Belajarena:
    - **Alamat Local:** `http://localhost:8000`

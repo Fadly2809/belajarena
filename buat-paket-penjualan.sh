@@ -28,6 +28,8 @@ echo "🔹 [2/2] Mengompresi seluruh file ke 'belajarena-siap-jual.zip'..."
 rm -f belajarena-siap-jual.zip
 
 zip -r belajarena-siap-jual.zip \
+  1-KLIK-JALANKAN.command \
+  1-KLIK-DEV-MODE.command \
   1-KLIK-JALANKAN-WINDOWS.bat \
   INSTALL-WINDOWS.bat \
   DEV-MODE-WINDOWS.bat \
