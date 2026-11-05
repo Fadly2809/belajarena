@@ -1,14 +1,13 @@
 <template>
-  <div>
-    <!-- =========================================================================
-         HERO PRODUCT PAGE FULLSCREEN VIEW (Default View - 100dvh Desktop / Projector)
-         ========================================================================= -->
-    <div
-      v-if="currentView === 'hero'"
-      class="hero-container min-h-[100dvh] lg:h-[100dvh] w-full overflow-y-auto lg:overflow-hidden flex flex-col justify-between relative select-none text-white font-sans transition-colors duration-700 ease-out"
-      :style="{ background: currentTheme.gradient }"
-      :class="{ 'mode-ringan': reducedMotion }"
-    >
+  <!-- =========================================================================
+       HERO PRODUCT PAGE FULLSCREEN VIEW (Default View - 100dvh Desktop / Projector)
+       ========================================================================= -->
+  <div
+    v-if="currentView === 'hero'"
+    class="hero-container min-h-[100dvh] lg:h-[100dvh] w-full overflow-y-auto lg:overflow-hidden flex flex-col justify-between relative select-none text-white font-sans transition-colors duration-700 ease-out"
+    :style="{ background: currentTheme.gradient }"
+    :class="{ 'mode-ringan': reducedMotion }"
+  >
       <!-- Background Splatter Dots (CSS/SVG Light Effect, Hidden on Mode Ringan) -->
       <div v-if="!reducedMotion" class="absolute inset-0 pointer-events-none z-0 overflow-hidden">
         <svg class="w-full h-full opacity-40" xmlns="http://www.w3.org/2000/svg">
@@ -246,7 +245,7 @@
       <!-- =========================================================================
            CENTER HERO STAGE (3-Column Layout: Left Copy + Center Visual + Right Selector)
            ========================================================================= -->
-      <main class="relative z-10 flex-1 flex flex-col justify-center px-4 sm:px-8 lg:px-10 py-4 sm:py-6 max-w-[1440px] mx-auto w-full">
+      <main class="relative z-10 flex-1 flex flex-col justify-center px-4 sm:px-8 lg:px-10 py-3 sm:py-5 max-w-[1440px] mx-auto w-full">
         <!-- EMPTY STATE (Bila tidak ada materi yang cocok) -->
         <div
           v-if="filteredPresentations.length === 0"
@@ -277,7 +276,7 @@
           </div>
         </div>
 
-        <!-- 3-COLUMN SHOWCASE LAYOUT (Bila ada materi aktif) -->
+        <!-- 3-COLUMN SHOWCASE LAYOUT (Bila ada materi aktif - Seimbang & Fit Layar Persis Edu Games) -->
         <div v-else class="grid grid-cols-1 lg:grid-cols-12 items-center gap-6 sm:gap-8 lg:gap-8 w-full">
           <!-- -------------------------------------------------------------
                LEFT COLUMN (±25-30% lebar): Label, Judul Sangat Besar, Deskripsi, Tombol Aksi
@@ -290,9 +289,9 @@
               </span>
             </div>
 
-            <!-- Giant Presentation Title (Max 2-3 baris, ellipsis rapi) -->
+            <!-- Giant Presentation Title (Max 2 baris, ellipsis rapi) -->
             <div :key="`title-${currentPresentation.id}`" class="animate-text-title">
-              <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-[1.08] tracking-tight drop-shadow-md line-clamp-3">
+              <h1 class="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black text-white leading-[1.08] tracking-tight drop-shadow-md line-clamp-2">
                 {{ currentPresentation.title }}
               </h1>
               <p class="text-xs sm:text-sm font-extrabold text-white/80 tracking-wide mt-1 truncate">
@@ -300,20 +299,20 @@
               </p>
             </div>
 
-            <!-- Short 2-3 Line Material Description -->
+            <!-- Short 2 Line Material Description -->
             <div :key="`desc-${currentPresentation.id}`" class="animate-text-desc">
-              <p class="text-xs sm:text-sm text-white/90 leading-relaxed max-w-md drop-shadow-xs font-medium line-clamp-3">
+              <p class="text-xs sm:text-sm text-white/90 leading-relaxed max-w-md drop-shadow-xs font-medium line-clamp-2">
                 {{ currentPresentation.description || 'Slide presentasi interaktif dengan sinkronisasi proyektor cerdas dan mirroring langsung ke HP siswa.' }}
               </p>
             </div>
 
             <!-- Action Buttons Row (C7-C11) -->
-            <div :key="`cta-${currentPresentation.id}`" class="animate-text-cta flex items-center gap-2.5 pt-2 sm:pt-3 flex-wrap">
+            <div :key="`cta-${currentPresentation.id}`" class="animate-text-cta flex items-center gap-2 pt-1.5 sm:pt-2 flex-wrap">
               <!-- C7: Tombol Utama Buka Sesi Kelas (Pill, High Contrast, Disabled bila not ready) -->
               <button
                 @click="openLaunchModal(currentPresentation)"
                 :disabled="currentPresentation.status !== 'ready'"
-                class="px-6 sm:px-7 py-3 sm:py-3.5 rounded-full bg-white text-slate-950 font-black text-xs sm:text-sm tracking-wide shadow-2xl hover:bg-white/90 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed group"
+                class="px-5 sm:px-6 py-2.5 sm:py-3 rounded-full bg-white text-slate-950 font-black text-xs sm:text-sm tracking-wide shadow-2xl hover:bg-white/90 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed group"
                 :title="currentPresentation.status !== 'ready' ? 'Materi masih dalam proses atau diarsipkan' : 'Mulai tayangkan materi di proyektor kelas'"
               >
                 <span>▶️</span>
@@ -324,7 +323,7 @@
               <!-- C8: Tombol Sekunder Pratinjau Slide -->
               <button
                 @click="previewPresentation(currentPresentation)"
-                class="px-4 py-3 sm:py-3.5 rounded-full bg-black/25 hover:bg-black/40 text-white font-bold text-xs sm:text-sm border border-white/25 backdrop-blur-md hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                class="px-3.5 py-2.5 sm:py-3 rounded-full bg-black/25 hover:bg-black/40 text-white font-bold text-xs sm:text-sm border border-white/25 backdrop-blur-md hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
                 title="Pratinjau isi halaman slide"
               >
                 <span>👁️</span>
@@ -334,7 +333,7 @@
               <!-- C9: Tombol Sekunder Edit -->
               <button
                 @click="openEditModal(currentPresentation)"
-                class="px-4 py-3 sm:py-3.5 rounded-full bg-black/25 hover:bg-black/40 text-white font-bold text-xs sm:text-sm border border-white/25 backdrop-blur-md hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                class="px-3.5 py-2.5 sm:py-3 rounded-full bg-black/25 hover:bg-black/40 text-white font-bold text-xs sm:text-sm border border-white/25 backdrop-blur-md hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
                 title="Edit judul, rombel, dan slide materi"
               >
                 <span>✏️</span>
@@ -344,7 +343,7 @@
               <!-- C10: Ikon Duplikasi Slide -->
               <button
                 @click="duplicatePresentation(currentPresentation)"
-                class="p-3 sm:p-3.5 rounded-full bg-black/25 hover:bg-black/40 text-white/90 hover:text-white border border-white/25 backdrop-blur-md hover:scale-105 active:scale-95 transition cursor-pointer shadow-sm"
+                class="p-2.5 sm:p-3 rounded-full bg-black/25 hover:bg-black/40 text-white/90 hover:text-white border border-white/25 backdrop-blur-md hover:scale-105 active:scale-95 transition cursor-pointer shadow-sm"
                 title="Duplikasi Slide Modul Ini"
               >
                 📋
@@ -353,7 +352,7 @@
               <!-- C11: Ikon Hapus Materi (Konfirmasi seperti sekarang) -->
               <button
                 @click="deletePresentation(currentPresentation)"
-                class="p-3 sm:p-3.5 rounded-full bg-rose-600/30 hover:bg-rose-600/80 text-rose-200 hover:text-white border border-rose-400/30 backdrop-blur-md hover:scale-105 active:scale-95 transition cursor-pointer shadow-sm"
+                class="p-2.5 sm:p-3 rounded-full bg-rose-600/30 hover:bg-rose-600/80 text-rose-200 hover:text-white border border-rose-400/30 backdrop-blur-md hover:scale-105 active:scale-95 transition cursor-pointer shadow-sm"
                 title="Hapus Materi Presentasi"
               >
                 🗑️
@@ -362,23 +361,26 @@
           </div>
 
           <!-- -------------------------------------------------------------
-               CENTER COLUMN (±50% lebar): Kata Raksasa di Belakang + Pratinjau Slide Pertama Lebih Besar
+               CENTER COLUMN (±50% lebar): Kata Raksasa di Belakang + Pratinjau Slide Pertama (Fit Layar Pas)
                ------------------------------------------------------------- -->
-          <div class="lg:col-span-6 xl:col-span-6 relative flex items-center justify-center min-h-[300px] sm:min-h-[400px] lg:min-h-[480px] z-10 order-1 lg:order-2">
+          <div class="lg:col-span-6 xl:col-span-6 relative flex items-center justify-center min-h-[260px] sm:min-h-[320px] lg:min-h-[380px] z-10 order-1 lg:order-2">
             <!-- KATA RAKSASA DI TENGAH LAYAR DI BELAKANG VISUAL UTAMA -->
             <div class="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0 overflow-hidden">
               <span
                 :key="`giant-${currentPresentation.id}`"
                 class="font-black tracking-tighter uppercase text-white/[0.14] select-none leading-none animate-giant-word font-sans text-center px-2"
-                style="font-size: clamp(5.5rem, 18vw, 18rem);"
+                style="font-size: clamp(4.5rem, 15vw, 15rem);"
               >
                 {{ currentGiantWord }}
               </span>
             </div>
 
-            <!-- VISUAL UTAMA: PRATINJAU SLIDE PERTAMA MATERI LEBIH BESAR (HIGHLIGHT UTAMA) -->
-            <div :key="`visual-${currentPresentation.id}`" class="relative z-10 w-full max-w-xl sm:max-w-2xl lg:max-w-2xl xl:max-w-3xl aspect-video animate-visual-enter transform scale-100 sm:scale-105 lg:scale-110 xl:scale-115 transition-transform duration-500">
-              <div class="w-full h-full rounded-3xl overflow-hidden border-2 border-white/25 shadow-[0_30px_60px_rgba(0,0,0,0.7)] relative group flex flex-col justify-between bg-black/40 backdrop-blur-md">
+            <!-- VISUAL UTAMA: PRATINJAU SLIDE PERTAMA MATERI (FIT LAYAR SEIMBANG PERSIS EDU GAMES) -->
+            <div
+              :key="`visual-${currentPresentation.id}`"
+              class="relative z-10 w-full max-w-md sm:max-w-lg lg:max-w-xl xl:max-w-2xl max-h-[46vh] sm:max-h-[48vh] aspect-video animate-visual-enter transition-transform duration-500"
+            >
+              <div class="w-full h-full rounded-3xl overflow-hidden border-2 border-white/25 shadow-[0_25px_50px_rgba(0,0,0,0.6)] relative group flex flex-col justify-between bg-black/40 backdrop-blur-md">
                 <!-- Thumbnail Gambar Slide Pertama (Jika Ada Gambar/Visual Slide 1) -->
                 <div v-if="getFirstSlide(currentPresentation).image" class="absolute inset-0 bg-[#0c2b3d] flex items-center justify-center overflow-hidden">
                   <img
@@ -391,41 +393,41 @@
                   <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/60 pointer-events-none"></div>
 
                   <!-- Keterangan Slide 1 di bagian bawah gambar -->
-                  <div class="absolute bottom-3.5 left-4 right-4 z-10 flex items-center justify-between text-white pointer-events-none">
+                  <div class="absolute bottom-3 left-4 right-4 z-10 flex items-center justify-between text-white pointer-events-none">
                     <span class="text-xs sm:text-sm font-bold truncate max-w-[70%] drop-shadow text-white">
                       Slide 1 &bull; {{ getFirstSlide(currentPresentation).title }}
                     </span>
-                    <span class="font-mono text-[10px] sm:text-xs font-bold px-3 py-0.5 rounded-full bg-black/75 backdrop-blur-md text-[#f59e0b] border border-white/10 shrink-0">
+                    <span class="font-mono text-[10px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full bg-black/75 backdrop-blur-md text-[#f59e0b] border border-white/10 shrink-0">
                       {{ currentPresentation.slideCount || currentPresentation.slides?.length || 1 }} Slide
                     </span>
                   </div>
                 </div>
 
                 <!-- Thumbnail Tampilan Kanvas Slide Pertama (Jika Slide 1 Berupa Teks/Konten Modul) -->
-                <div v-else class="absolute inset-0 bg-gradient-to-br from-[#0c2b3d] via-[#10384f] to-[#082231] p-6 sm:p-8 flex flex-col justify-between overflow-hidden select-none">
+                <div v-else class="absolute inset-0 bg-gradient-to-br from-[#0c2b3d] via-[#10384f] to-[#082231] p-5 sm:p-7 flex flex-col justify-between overflow-hidden select-none">
                   <div class="absolute inset-0 opacity-15 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
 
                   <!-- Header Mini Kanvas Slide -->
-                  <div class="pt-6 flex items-center justify-between text-xs text-cyan-300 font-bold opacity-90 z-10">
+                  <div class="pt-5 flex items-center justify-between text-xs text-cyan-300 font-bold opacity-90 z-10">
                     <span class="tracking-wider uppercase">Slide 1 &bull; Pembuka</span>
                     <span class="font-mono text-[#f59e0b] font-bold">{{ currentPresentation.slideCount || currentPresentation.slides?.length || 1 }} Slide</span>
                   </div>
 
                   <!-- Body Mini Slide -->
-                  <div class="relative z-10 my-auto text-center px-4 py-2 transform transition-transform duration-500 ease-out group-hover:scale-105">
-                    <div class="w-14 h-14 mx-auto rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-2xl shadow-inner mb-3 text-white">
+                  <div class="relative z-10 my-auto text-center px-4 py-1.5 transform transition-transform duration-500 ease-out group-hover:scale-105">
+                    <div class="w-12 h-12 mx-auto rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-xl shadow-inner mb-2.5 text-white">
                       {{ getFirstSlide(currentPresentation).icon }}
                     </div>
-                    <h4 class="font-black text-base sm:text-lg lg:text-xl text-white line-clamp-2 leading-snug px-2 drop-shadow">
+                    <h4 class="font-black text-sm sm:text-base lg:text-lg text-white line-clamp-2 leading-snug px-2 drop-shadow">
                       {{ getFirstSlide(currentPresentation).title }}
                     </h4>
-                    <p class="text-xs sm:text-sm text-slate-300 line-clamp-2 mt-1.5 leading-relaxed max-w-md mx-auto">
+                    <p class="text-xs text-slate-300 line-clamp-2 mt-1 leading-relaxed max-w-md mx-auto">
                       {{ getFirstSlide(currentPresentation).content }}
                     </p>
                   </div>
 
                   <!-- Footer Mini Slide -->
-                  <div class="relative z-10 flex items-center justify-between text-[10px] text-slate-400 border-t border-white/10 pt-2.5">
+                  <div class="relative z-10 flex items-center justify-between text-[10px] text-slate-400 border-t border-white/10 pt-2">
                     <span class="truncate max-w-[65%]">{{ currentPresentation.title }}</span>
                     <span class="font-mono text-[#f59e0b] font-bold">16:9 Studio</span>
                   </div>
@@ -433,14 +435,14 @@
 
                 <!-- Floating Badges di Visual Utama (Wajib Selalu Terlihat) -->
                 <!-- Badge Mapel • Rombel di Kiri Atas -->
-                <span class="text-[10px] sm:text-xs uppercase font-extrabold tracking-wider absolute top-3.5 left-3.5 bg-black/60 backdrop-blur-md text-white px-3 py-1 rounded-xl border border-white/25 max-w-[65%] truncate z-20 shadow-md">
+                <span class="text-[10px] sm:text-xs uppercase font-extrabold tracking-wider absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white px-2.5 py-0.5 rounded-xl border border-white/25 max-w-[65%] truncate z-20 shadow-md">
                   {{ currentPresentation.subject }} &bull; {{ formatClassroomBadge(currentPresentation) }}
                 </span>
 
                 <!-- Badge Status di Kanan Atas ("Siap Ajar" / "Konversi..." / "Arsip") -->
                 <span
                   :class="[
-                    'text-[10px] sm:text-xs uppercase font-black absolute top-3.5 right-3.5 z-20 px-3 py-1 rounded-full shadow-md backdrop-blur-sm',
+                    'text-[10px] sm:text-xs uppercase font-black absolute top-3 right-3 z-20 px-2.5 py-0.5 rounded-full shadow-md backdrop-blur-sm',
                     currentPresentation.status === 'ready'
                       ? 'bg-emerald-500 text-white border border-emerald-400/40'
                       : currentPresentation.status === 'processing'
@@ -455,7 +457,7 @@
           </div>
 
           <!-- -------------------------------------------------------------
-               RIGHT COLUMN (±25% lebar): Pemilih Titik Warna + Chip Info Materi
+               RIGHT COLUMN (±25% lebar): Pemilih Titik Warna + Chip Info Materi (Pola Edu Games)
                ------------------------------------------------------------- -->
           <div class="lg:col-span-3 xl:col-span-3 flex flex-col justify-center text-left lg:text-right space-y-3 sm:space-y-4 z-20 order-3">
             <!-- "PILIH MATERI" Label -->
@@ -485,28 +487,6 @@
               </button>
             </div>
 
-            <!-- Vertical Thumbnail Strip Selector (Scrollable) -->
-            <div class="max-h-28 sm:max-h-36 overflow-y-auto space-y-1.5 custom-scroll pr-1">
-              <button
-                v-for="(item, idx) in filteredPresentations"
-                :key="item.id"
-                @click="selectPresentation(idx)"
-                class="w-full text-left p-2 rounded-xl border transition-all flex items-center gap-2.5 cursor-pointer backdrop-blur-md"
-                :class="idx === activePresentationIndex
-                  ? 'bg-white/25 border-white shadow-md ring-1 ring-white/50'
-                  : 'bg-black/20 border-white/10 opacity-70 hover:opacity-100 hover:bg-black/30'"
-              >
-                <div class="w-8 h-6 rounded bg-black/40 overflow-hidden shrink-0 flex items-center justify-center text-[10px]">
-                  <img v-if="getFirstSlide(item).image" :src="getFirstSlide(item).image" class="w-full h-full object-cover" />
-                  <span v-else>{{ getFirstSlide(item).icon }}</span>
-                </div>
-                <div class="min-w-0 flex-1">
-                  <p class="text-xs font-bold text-white truncate leading-tight">{{ item.title }}</p>
-                  <span class="text-[9px] text-white/70">{{ item.slideCount || item.slides?.length || 1 }} slide &bull; {{ item.subject }}</span>
-                </div>
-              </button>
-            </div>
-
             <!-- Active Material Name Indicator Under Dots -->
             <div>
               <p class="text-white font-black text-sm tracking-wide truncate">
@@ -517,17 +497,17 @@
               </p>
             </div>
 
-            <!-- Chip Info Materi Berbentuk Pill (Meniru Pemilih Ukuran Sepatu) -->
-            <div :key="`chips-${currentPresentation.id}`" class="space-y-1.5 w-full max-w-xs lg:ml-auto animate-text-desc">
+            <!-- Chip Info Materi Berbentuk Pill (Sama Persis dengan Edu Games: 3 Chip) -->
+            <div :key="`chips-${currentPresentation.id}`" class="space-y-2 w-full max-w-xs lg:ml-auto animate-text-desc">
               <div
                 v-for="(chip, cIdx) in currentChips"
                 :key="cIdx"
-                class="p-2 sm:p-2.5 rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md transition hover:bg-white/15 text-left shadow-xs"
+                class="p-2.5 sm:p-3 rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md transition hover:bg-white/15 text-left shadow-xs"
               >
                 <div class="text-[9px] uppercase font-extrabold tracking-wider text-white/60">
                   {{ chip.label }}
                 </div>
-                <div class="text-xs font-black text-white mt-0.5 truncate">
+                <div class="text-xs sm:text-sm font-black text-white mt-0.5 truncate">
                   {{ chip.value }}
                 </div>
               </div>
@@ -539,7 +519,7 @@
       <!-- =========================================================================
            BOTTOM BAR (Mini Cards Strip, Prev/Next Arrows, & "Lihat Semua Materi" Button)
            ========================================================================= -->
-      <footer class="relative z-30 px-4 sm:px-8 lg:px-12 py-3 sm:py-3.5 border-t border-white/10 backdrop-blur-sm flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+      <footer class="relative z-30 px-4 sm:px-8 lg:px-12 py-2.5 sm:py-3.5 border-t border-white/10 backdrop-blur-sm flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
         <!-- Mini Cards Strip + Navigation Arrows -->
         <div class="flex items-center gap-2 sm:gap-3 w-full sm:w-auto overflow-x-auto py-1 custom-scroll">
           <!-- Prev Arrow -->
@@ -1075,6 +1055,10 @@
       </div>
     </div>
 
+  <!-- =========================================================================
+       MODALS (TELEPORTED TO BODY FOR PROPER VIEWPORT LAYERING)
+       ========================================================================= -->
+  <Teleport to="body">
     <!-- =========================================================================
          MODAL 1: UNGGAH PRESENTASI (PPTX / PDF / FORM BARU) - Persis Original
          ========================================================================= -->
@@ -1644,7 +1628,7 @@
         </form>
       </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -1889,20 +1873,14 @@ function getGiantWord(item: any): string {
 
 const currentGiantWord = computed(() => getGiantWord(currentPresentation.value))
 
-// Info Chips Authentic Data
+// Info Chips Authentic Data (3 Chips Seimbang Persis Edu Games)
 const currentChips = computed(() => {
   const item = currentPresentation.value
   if (!item) return []
   return [
     { label: 'Jumlah Slide', value: `${item.slideCount || item.slides?.length || 1} Slide Interaktif` },
     { label: 'Mata Pelajaran', value: item.subject || 'Informatika' },
-    { label: 'Rombel Sasaran', value: formatClassroomBadge(item) },
-    {
-      label: 'Status Materi',
-      value: item.status === 'ready' ? 'Siap Presentasi' : item.status === 'processing' ? 'Konversi...' : 'Diarsipkan'
-    },
-    { label: 'Penggunaan Sesi', value: `Digunakan: ${item.sessionCount || 0}x Sesi` },
-    { label: 'Update Terakhir', value: item.updatedAt || 'Baru saja' }
+    { label: 'Rombel Sasaran', value: formatClassroomBadge(item) }
   ]
 })
 
