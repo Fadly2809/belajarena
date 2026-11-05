@@ -1,23 +1,30 @@
 #!/bin/bash
 
 # ==============================================================================
-# Belajarena - Script Peluncur Server Localhost
+# Belajarena - Script Peluncur Mode Pengembang (Dev Server Hot-Reload)
 # Menjalankan Backend API (Port 8000) dan Frontend Vite (Port 5173) secara bersamaan
 # ==============================================================================
 
-# Pastikan environment Node.js v20 tersedia
-export PATH="/Users/apple/.nvm/versions/node/v20.20.2/bin:$PATH"
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$DIR" || exit 1
 
-PROJECT_DIR="/Users/apple/Project"
-cd "$PROJECT_DIR" || exit 1
+# Deteksi Node.js jika belum ada di PATH
+if ! command -v node &> /dev/null; then
+    for NVM_PATH in "$HOME/.nvm/versions/node"/*; do
+        if [ -d "$NVM_PATH/bin" ]; then
+            export PATH="$NVM_PATH/bin:$PATH"
+            break
+        fi
+    done
+fi
 
 echo "========================================================"
-echo "  🚀 MEMULAI SERVER BELAJARENA LOCALHOST"
+echo "  🚀 MEMULAI BELAJARENA - MODE PENGEMBANG (DEV SERVER)"
 echo "========================================================"
 
 # Hentikan proses lama jika ada yang masih menggantung di port 8000 / 5173
-lsof -ti:8000 | xargs kill -9 2>/dev/null
-lsof -ti:5173 | xargs kill -9 2>/dev/null
+lsof -ti:8000 2>/dev/null | xargs kill -9 2>/dev/null
+lsof -ti:5173 2>/dev/null | xargs kill -9 2>/dev/null
 
 # 1. Jalankan Backend API Server di latar belakang
 echo "🔹 Menjalankan Backend API Server (Port 8000)..."
@@ -34,10 +41,9 @@ FRONTEND_PID=$!
 
 echo ""
 echo "========================================================"
-echo "  ✅ KEDUA SERVER TELAH AKTIF!"
+echo "  ✅ KEDUA SERVER DEV TELAH AKTIF!"
 echo "  👉 Akses Frontend Web : http://localhost:5173"
 echo "  👉 Akses Backend API  : http://localhost:8000"
-echo "  👉 Akses dari HP/WiFi : http://192.168.1.190:5173"
 echo "========================================================"
 echo "  Tekan [Ctrl + C] untuk menghentikan kedua server."
 echo "========================================================"
@@ -46,4 +52,3 @@ echo "========================================================"
 trap "echo ''; echo '🛑 Menghentikan server Belajarena...'; kill $BACKEND_PID $FRONTEND_PID 2>/dev/null; exit 0" SIGINT SIGTERM
 
 wait
-

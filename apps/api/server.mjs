@@ -404,6 +404,54 @@ if (!fs.existsSync(AVATARS_STORAGE_DIR)) {
   fs.mkdirSync(AVATARS_STORAGE_DIR, { recursive: true })
 }
 
+const WEB_DIST_DIR = path.resolve(__dirname, '..', 'web', 'dist')
+
+function serveStaticFile(req, res, filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return false
+    const stat = fs.statSync(filePath)
+    if (stat.isDirectory()) return false
+
+    const ext = path.extname(filePath).toLowerCase().replace('.', '')
+    const mimeTypes = {
+      html: 'text/html; charset=utf-8',
+      js: 'text/javascript; charset=utf-8',
+      mjs: 'text/javascript; charset=utf-8',
+      css: 'text/css; charset=utf-8',
+      json: 'application/json; charset=utf-8',
+      png: 'image/png',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      webp: 'image/webp',
+      svg: 'image/svg+xml',
+      ico: 'image/x-icon',
+      woff: 'font/woff',
+      woff2: 'font/woff2',
+      ttf: 'font/ttf',
+      mp3: 'audio/mpeg',
+      wav: 'audio/wav',
+      pdf: 'application/pdf',
+      wasm: 'application/wasm'
+    }
+    const mime = mimeTypes[ext] || 'application/octet-stream'
+    const isImmutable = filePath.includes('/assets/')
+    res.writeHead(200, {
+      'Content-Type': mime,
+      'Content-Length': stat.size,
+      'Cache-Control': isImmutable ? 'public, max-age=31536000, immutable' : 'no-cache',
+      'Access-Control-Allow-Origin': '*'
+    })
+    if (req.method === 'HEAD') {
+      res.end()
+      return true
+    }
+    fs.createReadStream(filePath).pipe(res)
+    return true
+  } catch (_) {
+    return false
+  }
+}
+
 function saveAvatarImage(dataUri, entityId = 'user', role = 'avatar') {
   if (typeof dataUri !== 'string') return null
   if (!dataUri.startsWith('data:image/')) {
@@ -718,6 +766,31 @@ const server = http.createServer(async (req, res) => {
   const query = Object.fromEntries(parsedUrl.searchParams.entries())
 
   try {
+    // -------------------------------------------------------------
+    // FRONTEND WEB DIST STATIC FILES & SPA FALLBACK (Localhost Single-Port Mode)
+    // -------------------------------------------------------------
+    const indexHtmlPath = path.join(WEB_DIST_DIR, 'index.html')
+    const hasWebDist = fs.existsSync(indexHtmlPath)
+
+    if (!pathname.startsWith('/api/') && pathname !== '/health' && pathname !== '/api/health' && hasWebDist) {
+      if (req.method === 'GET' || req.method === 'HEAD') {
+        const safePath = path.normalize(pathname).replace(/^(\.\.[/\\])+/, '')
+        const candidateFile = path.join(WEB_DIST_DIR, safePath)
+
+        if (candidateFile.startsWith(WEB_DIST_DIR) && fs.existsSync(candidateFile)) {
+          const stat = fs.statSync(candidateFile)
+          if (stat.isFile()) {
+            serveStaticFile(req, res, candidateFile)
+            return
+          }
+        }
+
+        // SPA Client-Side Routing Fallback (render index.html for Vue Router)
+        serveStaticFile(req, res, indexHtmlPath)
+        return
+      }
+    }
+
     // -------------------------------------------------------------
     // ROOT & HEALTH CHECK ROUTES (Direct browser / health check access)
     // -------------------------------------------------------------
@@ -9044,5 +9117,20 @@ const server = http.createServer(async (req, res) => {
 
 const PORT = process.env.PORT || 8000
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Belajarena API Server running at http://0.0.0.0:${PORT}`)
+  const localIp = getLocalNetworkIp()
+  console.log(`\n=====================================================================`)
+  console.log(`  🌟 BELAJARENA - PLATFORM PEMBELAJARAN DIGITAL & GAMIFIKASI 🌟`)
+  console.log(`=====================================================================`)
+  console.log(`  💻 Akses di Komputer Ini (Guru/Admin):`)
+  console.log(`     👉 http://localhost:${PORT}`)
+  if (localIp && localIp !== 'localhost') {
+    console.log(``)
+    console.log(`  📱 Akses Siswa / Perangkat Lain di Jaringan Wi-Fi yang Sama:`)
+    console.log(`     👉 http://${localIp}:${PORT}`)
+    console.log(`     (Siswa cukup buka browser di HP/Tablet dan ketik link di atas)`)
+  }
+  console.log(`\n  🔑 Akun Login Default:`)
+  console.log(`     - Akun Guru/Admin : fadly.arsandi@smpn6kendari.sch.id / password: password`)
+  console.log(`     - Akun Siswa      : 10527 / password: password`)
+  console.log(`=====================================================================\n`)
 })
