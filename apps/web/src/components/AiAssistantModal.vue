@@ -63,30 +63,44 @@
         <div v-if="showSettings" class="p-4 bg-slate-50 border-b border-slate-200 text-xs">
           <div class="flex items-center justify-between mb-2">
             <span class="font-bold text-slate-800 flex items-center gap-1.5">
-              <span>🔑</span> Pengaturan Kunci Gemini AI (Opsional)
+              <span>🔑</span> Kunci Google Gemini AI (Kecerdasan LLM Seperti ChatGPT)
             </span>
             <button @click="showSettings = false" class="text-slate-400 hover:text-slate-600">✕</button>
           </div>
-          <p class="text-[11px] text-slate-500 mb-2">
-            Secara bawaan sistem sudah terhubung dengan <strong>Mesin Pedagogik Belajarena</strong> khusus Kurikulum Merdeka SMPN 6 Kendari. Jika ingin menggunakan kecerdasan LLM cloud Google Gemini secara langsung, Anda dapat memasukkan API Key di bawah:
+          <p class="text-[11px] text-slate-500 mb-2 leading-relaxed">
+            Untuk mengaktifkan <strong>daya nalar generatif bebas & interaktif 100% seperti ChatGPT/Gemini</strong> (bisa berdialog dua arah, membuat soal dinamis tanpa batas, dan menjawab apapun), masukkan <strong>Google Gemini API Key gratis</strong> dari <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-600 underline font-bold">Google AI Studio (Gratis) ↗</a>:
           </p>
           <div class="flex items-center gap-2">
             <input
               v-model="customApiKeyInput"
               type="password"
-              placeholder="Masukkan Google Gemini API Key (AIzaSy...)"
+              placeholder="Masukkan Gemini API Key (AIzaSy...)"
               class="flex-1 px-3 py-2 bg-white rounded-xl border border-slate-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <button
               @click="saveCustomApiKey"
-              class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition"
+              class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition cursor-pointer"
             >
               Simpan
             </button>
           </div>
           <p v-if="apiKeySavedFeedback" class="text-[11px] text-emerald-600 font-semibold mt-1.5 flex items-center gap-1">
-            ✓ Kunci API berhasil diperbarui!
+            ✓ Kunci Gemini AI aktif! AI sekarang dapat berpikir dinamis penuh.
           </p>
+        </div>
+
+        <!-- Info Banner bila Gemini Key belum terpasang -->
+        <div v-if="!apiKey && !showSettings" class="px-4 py-2 bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-transparent border-b border-amber-200/60 flex items-center justify-between gap-2 text-[11px] text-amber-900">
+          <div class="flex items-center gap-1.5 truncate">
+            <span class="text-xs">⚡</span>
+            <span class="truncate">Ingin respon dinamis 100% seperti ChatGPT? Sambungkan Kunci Gemini API gratis.</span>
+          </div>
+          <button
+            @click="showSettings = true"
+            class="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold text-[10px] shrink-0 transition shadow-xs cursor-pointer"
+          >
+            Sambungkan →
+          </button>
         </div>
 
         <!-- Chat Messages Container -->

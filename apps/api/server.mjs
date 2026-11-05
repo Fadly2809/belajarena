@@ -12,6 +12,11 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const DB_PATH = path.join(__dirname, 'database', 'database.json')
 
+if (typeof process.loadEnvFile === 'function') {
+  try { process.loadEnvFile(path.join(__dirname, '.env')) } catch (_) {}
+  try { process.loadEnvFile(path.join(__dirname, '..', '..', '.env')) } catch (_) {}
+}
+
 function getLocalNetworkIp() {
   try {
     const interfaces = os.networkInterfaces()
@@ -8538,11 +8543,11 @@ const server = http.createServer(async (req, res) => {
           source = 'gemini'
         } catch (apiErr) {
           console.warn('Gemini API request failed, falling back to built-in pedagogical engine:', apiErr.message)
-          reply = generateBuiltInResponse(message, context)
+          reply = generateBuiltInResponse(message, context, history)
           source = 'built_in_fallback'
         }
       } else {
-        reply = generateBuiltInResponse(message, context)
+        reply = generateBuiltInResponse(message, context, history)
         source = 'built_in'
       }
 

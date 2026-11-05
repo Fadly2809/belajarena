@@ -46,9 +46,10 @@ const BELAJARENA_KNOWLEDGE_BASE = `
   1. Buka menu Live Presentasi (/presentations).
   2. Pilih modul materi yang sudah siap ajar.
   3. Klik tombol "▶️ Buka Sesi Kelas".
-  4. Pilih rombel kelas sasaran -> Klik "Mulai Tayang Langsung".
-  5. Bagikan PIN sesi kepada siswa. Siswa mengakses (/presentation-live/:code).
-  6. Guru masuk ke Layar Kontrol Studio Guru (/presentations/studio/:id) untuk memindah slide, melihat jumlah siswa terhubung, dan memantau respons siswa.
+  4. Pada jendela yang muncul, tentukan rombel kelas sasaran (misal: Kelas VII A).
+  5. Klik "Mulai Tayang Langsung" -> Sistem akan membuat sesi kelas dan menampilkan 6 Digit Kode PIN Sesi.
+  6. Bagikan PIN sesi kepada siswa. Siswa mengakses (/presentation-live/:code).
+  7. Guru masuk ke Layar Kontrol Studio Guru (/presentations/studio/:id) untuk memindah slide, melihat jumlah siswa terhubung, dan memantau respons siswa.
 - Cara Membuat / Mengunggah Materi Baru:
   1. Klik tombol "📤 Unggah / Buat Modul" di pojok kanan atas.
   2. Masukkan judul materi dan pilih mata pelajaran (Informatika / KKA).
@@ -104,7 +105,7 @@ async function callGeminiApi(apiKey, message, history = [], context = {}) {
   const totalClasses = context.totalClasses || 6
   const totalPresentations = context.totalPresentations || 8
 
-  const systemPrompt = `Anda adalah "AI Chatbot Belajarena", asisten resmi cerdas dan ramah dari platform digital Belajarena di SMP Negeri 6 Kendari.
+  const systemPrompt = `Anda adalah "AI Chatbot Belajarena", asisten resmi cerdas, interaktif, dan penuh inisiatif dari platform digital Belajarena di SMP Negeri 6 Kendari.
 Anda mendampingi Bapak Muhammad Fadly Akbar Arsandi, S.Pd. (Guru Informatika & KKA, NIP: 199509282020121003).
 
 INFORMASI KONTESKTUAL SAAT INI:
@@ -113,12 +114,25 @@ INFORMASI KONTESKTUAL SAAT INI:
 - Total Rombel Kelas: ${totalClasses} kelas (Kelas VII A - VII F)
 - Total Modul Presentasi: ${totalPresentations} modul
 
-PANDUAN MENJAWAB:
-1. Anda MENGUASAI 100% seluruh fitur, alur kerja, menu, dan navigasi website Belajarena sebagaimana tertera pada basis pengetahuan di bawah.
-2. Jawablah selalu dengan bahasa Indonesia yang ramah, santun, profesional, dan terstruktur rapi (gunakan judul markdown, poin-poin bold, tabel jika relevan, dan kotak tips).
-3. Bila guru bertanya "bagaimana cara...", berikan panduan langkah demi langkah (1, 2, 3...) yang jelas dan sebutkan nama tombol persis seperti di antarmuka web.
-4. SELALU sertakan tautan navigasi yang dapat diklik langsung oleh guru menggunakan format markdown [Nama Tautan →](/url-menu). Contoh: [Buka Bank Soal →](/question-bank) atau [Buka Live Presentasi →](/presentations).
-5. Bila guru meminta materi ajar atau soal, buatkan materi Kurikulum Merdeka Fase D (SMP) berkualitas tinggi, soal HOTS dengan stimulus, atau kode Python/Scratch yang rapi.
+ATURAN PERILAKU INTERAKTIF & REKREASI PERCAKAPAN (SEPERTI CHATGPT & GEMINI):
+1. BERPIKIR & MERESPON SECARA DINAMIS (MEMILIKI OTAK PENALARAN):
+   - Jangan pernah menjadi mesin kaku yang langsung membuang teks template jika permintaan pengguna masih umum!
+   - JIKA GURU MEMINTA SESUATU YANG BELUM SPESIFIK (contoh: "buatkan soal", "minta soal", "saya butuh kuis", "bikin modul ajar", "bikin kodingan"):
+     BERTANYALAH KEMBALI SECARA RAMAH DAN CERDAS untuk mengonfirmasi parameter yang dibutuhkan:
+     * Tanyakan mata pelajaran (Informatika atau KKA?)
+     * Tanyakan topik/bab materi apa?
+     * Tanyakan untuk kelas berapa (Kelas VII, VIII, atau IX?)
+     * Tanyakan berapa butir nomor soal yang diinginkan?
+     * Tanyakan bentuk soal (Pilihan Ganda HOTS dengan stimulus atau Essay/Uraian?)
+     Berikan pula contoh singkat agar guru tinggal memilih atau mengonfirmasi.
+   - JIKA GURU SUDAH MEMBERIKAN DETAIL (contoh: "buatkan 5 soal pilihan ganda HOTS Informatika kelas 7 bab Jaringan Komputer"):
+     Segera buatkan paket soal lengkap berkualitas tinggi dengan stimulus menarik, 4 pilihan opsi (A-D), kunci jawaban, dan pembahasan mendalam.
+2. MENJAGA KONTEKS MULTI-TURN (INGAT PERCAKAPAN SEBELUMNYA):
+   - Perhatikan riwayat chat (history). Jika sebelumnya Anda bertanya detail materi dan guru baru saja menjawabnya, langsung lanjutkan dengan materi yang diminta tanpa bertanya ulang.
+3. KUASAI 100% FITUR & NAVIGASI BELAJARENA:
+   - Jika guru bertanya seputar cara menggunakan fitur (Edu-Games, Live Presentasi, CBT, Bank Soal, Jadwal, Absensi, Siswa, dll.), berikan panduan langkah demi langkah (1, 2, 3...) yang runut dan SELALU sertakan tautan navigasi langsung berformat [Nama Menu →](/route-link).
+4. FORMAT GITHUB-FLAVORED MARKDOWN:
+   - Gunakan format teks yang rapi, tebal, tabel perbandingan jika relevan, dan blok kode bersintaks.
 
 ${BELAJARENA_KNOWLEDGE_BASE}`
 
@@ -142,7 +156,7 @@ ${BELAJARENA_KNOWLEDGE_BASE}`
       systemInstruction: { parts: [{ text: systemPrompt }] },
       contents,
       generationConfig: {
-        temperature: 0.6,
+        temperature: 0.7,
         topP: 0.95,
         maxOutputTokens: 2048
       }
@@ -161,316 +175,225 @@ ${BELAJARENA_KNOWLEDGE_BASE}`
   return replyText
 }
 
-// Built-in Expert Engine (Offline / Tanpa API Key) dengan Pemahaman Penuh Fitur Belajarena
-function generateBuiltInResponse(message, context = {}) {
-  const text = message.toLowerCase()
+// Built-in Expert Engine (Offline / Tanpa API Key) dengan Pemahaman Dialog Interaktif
+function generateBuiltInResponse(message, context = {}, history = []) {
+  const rawText = message.trim()
+  const text = rawText.toLowerCase()
   const currentRoute = context.currentRoute || '/dashboard'
 
-  // 1. INTENT: LIVE PRESENTASI / STUDIO / SLIDE / PROYEKTOR / MIRRORING
-  if (text.includes('presentasi') || text.includes('slide') || text.includes('studio') || text.includes('proyektor') || text.includes('mirroring') || text.includes('materi ajar')) {
-    if (text.includes('cara') || text.includes('mulai') || text.includes('buat') || text.includes('unggah') || text.includes('upload') || text.includes('jalankan')) {
-      return `### 📡 Panduan Lengkap Fitur Live Presentasi Interaktif
-Halo Pak Fadly! Menu **Live Presentasi** adalah salah satu fitur unggulan Belajarena yang dirancang khusus untuk memproyeksikan slide ke proyektor kelas sekaligus melakukan *real-time mirroring* ke layar HP seluruh siswa secara sinkron tanpa jeda.
+  // Periksa apakah pesan sebelumnya dari bot adalah pertanyaan klarifikasi soal
+  const lastBotMsg = history.length > 0 ? (history[history.length - 1].content || '').toLowerCase() : ''
+  const isFollowUpToQuestionClarification = lastBotMsg.includes('berapa butir nomor') || lastBotMsg.includes('mata pelajaran apa') || lastBotMsg.includes('topik / bab materi apa')
+
+  // -------------------------------------------------------------
+  // 1. INTENT: PERMINTAAN SOAL (DIALOG INTERAKTIF SEPERTI CHATGPT/GEMINI)
+  // -------------------------------------------------------------
+  const isAskingForQuestions = 
+    text.includes('soal') || 
+    text.includes('kuis') || 
+    text.includes('pertanyaan') || 
+    text.includes('ujian') || 
+    isFollowUpToQuestionClarification
+
+  if (isAskingForQuestions) {
+    // Deteksi parameter spesifik dalam pesan sekarang atau kombinasi follow-up
+    const hasTopic = 
+      text.includes('jaringan') || text.includes('internet') ||
+      text.includes('algoritma') || text.includes('pemrograman') || text.includes('scratch') || text.includes('python') ||
+      text.includes('komputer') || text.includes('hardware') || text.includes('software') || text.includes('sistem komputer') ||
+      text.includes('data') || text.includes('excel') || text.includes('analisis') ||
+      text.includes('ai') || text.includes('kecerdasan') || text.includes('prompt') || text.includes('vision') || text.includes('machine learning') ||
+      text.includes('etika') || text.includes('berpikir komputasional')
+
+    const hasCount = /\b(\d+)\s*(nomor|butir|soal)?\b/.test(text)
+    const hasGrade = text.includes('kelas 7') || text.includes('kelas vii') || text.includes('kelas 8') || text.includes('kelas viii') || text.includes('kelas 9') || text.includes('kelas ix')
+
+    // KASUS A: Permintaan masih umum (misal: "minta soal", "buatkan soal", "bikin soal", "butuh soal")
+    // -> BOT BERTANYA BALIK SEPERTI CHATGPT/GEMINI!
+    if (!hasTopic && !isFollowUpToQuestionClarification) {
+      return `### 🤖 Siap Membantu, Pak Fadly!
+
+Agar paket soal yang saya buatkan benar-benar tepat sasaran dan sesuai dengan tujuan pembelajaran Bapak di kelas, boleh saya konfirmasi beberapa detail berikut?
+
+1. 📚 **Mata Pelajaran**: Mau untuk **Informatika** atau **KKA (Koding & Kecerdasan Artifisial)**?
+2. 🎯 **Materi / Topik Utama**:
+   - *Informatika*: Berpikir Komputasional, Sistem Komputer, Jaringan Komputer & Internet, Analisis Data, atau Algoritma Pemrograman?
+   - *KKA*: Konsep Dasar AI, Machine Learning, Computer Vision, Prompt Engineering, atau Etika Digital AI?
+3. 🏫 **Tingkatan Kelas**: Kelas **VII**, **VIII**, atau **IX** SMP?
+4. 🔢 **Jumlah Nomor Soal**: Mau dibuatkan berapa butir? *(contoh: 3, 5, atau 10 nomor)*
+5. 📝 **Bentuk Soal**: Pilihan Ganda (A–D) HOTS dengan stimulus narasi/studi kasus, atau Soal Essay/Uraian?
 
 ---
 
-#### 🚀 Cara Memulai Sesi Live di Kelas:
-1. Buka menu [⭐ Live Presentasi →](/presentations).
-2. Pilih modul materi yang ingin diajarkan pada strip mini di bawah atau titik warna tema di sebelah kanan.
-3. Klik tombol utama **"▶️ Buka Sesi Kelas"**.
-4. Pada jendela yang muncul, tentukan rombel kelas sasaran (misal: Kelas VII A).
-5. Klik **"Mulai Tayang Langsung"** -> Sistem akan membuat sesi kelas dan menampilkan **6 Digit Kode PIN Sesi**.
-6. Ajak siswa membuka portal siswa di HP masing-masing dan memasukkan kode PIN tersebut.
-7. Masuk ke **Layar Kontrol Studio Guru** untuk mengendalikan pergantian slide. Setiap kali Bapak memindah slide, layar HP siswa akan berganti secara otomatis.
+> 💡 **Atau Bapak cukup ketik satu kalimat spesifik, contohnya:**  
+> *"Buatkan 5 butir soal pilihan ganda HOTS Informatika Kelas 7 materi Jaringan Komputer"*`
+    }
+
+    // KASUS B: Sudah ada topik spesifik (atau jawaban dari klarifikasi)
+    // -> GENERATE SOAL SPESIFIK SESUAI TOPIK YANG DIMINTA!
+    let detectedTopic = 'Informatika & KKA'
+    let subjectName = 'Informatika'
+    let sampleQuestions = []
+
+    if (text.includes('jaringan') || text.includes('internet')) {
+      detectedTopic = 'Jaringan Komputer dan Internet (JKI)'
+      subjectName = 'Informatika'
+      sampleQuestions = [
+        {
+          num: 1,
+          stimulus: 'Di Lab Komputer SMP Negeri 6 Kendari, 20 unit komputer dapat saling berbagi pakai printer tanpa harus memindahkan kabel colokan ke tiap komputer.',
+          question: 'Arsitektur jaringan komputer lokal yang paling tepat menggambarkan kondisi pemanfaatan perangkat di lab tersebut adalah...',
+          options: [
+            'A. WAN (Wide Area Network) berbasis satelit antar-wilayah.',
+            'B. LAN (Local Area Network) dengan mekanisme resource sharing perangkat.',
+            'C. PAN (Personal Area Network) nirkabel Bluetooth jarak sangat pendek.',
+            'D. MAN (Metropolitan Area Network) penghubung kantor dinas kota.'
+          ],
+          key: 'B',
+          expl: 'LAN (Local Area Network) mencakup area terbatas seperti gedung atau lab sekolah, memungkinkan resource sharing (berbagi printer, berkas, internet).'
+        },
+        {
+          num: 2,
+          stimulus: 'Siswa kelas VII ingin mencari referensi materi pelajaran di internet. Di bilah peramban (browser) muncul peringatan tanda gembok terbuka dengan protokol "http://" bukan "https://".',
+          question: 'Berdasarkan aspek keamanan data digital, langkah pencegahan paling tepat yang harus dilakukan siswa adalah...',
+          options: [
+            'A. Tetap memasukkan password akun karena peramban komputer lab sudah canggih.',
+            'B. Tidak memasukkan data sensitif (password/identitas) karena jalur transmisi data HTTP tidak terenkripsi.',
+            'C. Mematikan sambungan listrik komputer seketika agar tidak terkena radiasi.',
+            'D. Mengubah kabel LAN agar otomatis berubah menjadi protokol HTTPS.'
+          ],
+          key: 'B',
+          expl: 'Protokol HTTPS menggunakan enkripsi SSL/TLS untuk melindungi kerahasiaan data pengguna, sedangkan HTTP mentransmisikan data dalam bentuk plain text yang rentan disadap.'
+        },
+        {
+          num: 3,
+          stimulus: 'Seorang guru mengirimkan file modul ajar berukuran 5 MB ke ponsel seluruh siswa di kelas menggunakan sambungan Wi-Fi sekolah.',
+          question: 'Perangkat keras jaringan yang berfungsi memancarkan sinyal gelombang radio Wi-Fi di dalam ruangan kelas tersebut adalah...',
+          options: [
+            'A. Wireless Access Point (WAP)',
+            'B. Harddisk Eksternal',
+            'C. Power Supply Unit',
+            'D. VGA Card'
+          ],
+          key: 'A',
+          expl: 'Access Point adalah perangkat yang memancarkan sinyal nirkabel (Wi-Fi) sehingga perangkat laptop/ponsel dapat terhubung ke jaringan lokal sekolah.'
+        }
+      ]
+    } else if (text.includes('ai') || text.includes('kecerdasan') || text.includes('kka') || text.includes('prompt') || text.includes('vision')) {
+      detectedTopic = 'Koding dan Kecerdasan Artifisial (KKA) - Konsep & Etika AI'
+      subjectName = 'KKA (Koding & Kecerdasan Artifisial)'
+      sampleQuestions = [
+        {
+          num: 1,
+          stimulus: 'Model AI pengenal objek yang dilatih siswa kelas VII SMPN 6 Kendari selalu menandai botol plastik bening di atas rumput hijau sebagai "daun kering", padahal botol plastik di atas meja putih dikenali dengan sangat akurat.',
+          question: 'Penyebab utama terjadinya galat (error) pengenalan pada botol di atas rumput tersebut adalah...',
+          options: [
+            'A. Komputer lab kekurangan daya baterai saat proses pemindaian.',
+            'B. Fenomena background bias (bias latar belakang) karena data latih botol kurang variasi warna lingkungan.',
+            'C. Kamera web otomatis mengubah struktur atom plastik menjadi klorofil daun.',
+            'D. Algoritma AI menolak memproses benda tembus pandang.'
+          ],
+          key: 'B',
+          expl: 'Computer Vision mempelajari pola fitur pixel gambar. Jika sampel botol selalu berlatar meja putih, saat diletakkan di rumput model justru memproses warna rumput hijau sebagai daun.'
+        },
+        {
+          num: 2,
+          stimulus: 'Seorang siswa menuliskan instruksi prompt ke AI generatif: "Ceritakan komputer zaman dulu dong." Jawaban yang keluar terlalu panjang, bertele-tele, dan memuat dongeng fiksi.',
+          question: 'Berdasarkan teknik Prompt Engineering yang baik, revisi prompt mana yang paling efektif untuk kebutuhan belajar rangkuman sekolah?',
+          options: [
+            'A. "Tolong ceritakan sejarah komputer sebanyak mungkin sekarang."',
+            'B. "Buat rangkuman sejarah perkembangan komputer generasi 1 s.d. 5 dalam tabel perbandingan komponen utama dan tahun, bahasa ringkas untuk anak SMP."',
+            'C. "Jangan beri dongeng, pokoknya komputer saja."',
+            'D. "Apakah kamu tahu sejarah komputer? Ya atau tidak."'
+          ],
+          key: 'B',
+          expl: 'Prompt yang efektif harus memiliki konteks jelas, instruksi tugas spesifik, format keluaran (tabel perbandingan), dan persona sasaran pembaca (anak SMP).'
+        }
+      ]
+    } else {
+      // Default Algoritma / Sistem Komputer
+      detectedTopic = 'Algoritma Pemrograman & Berpikir Komputasional'
+      subjectName = 'Informatika'
+      sampleQuestions = [
+        {
+          num: 1,
+          stimulus: 'Siswa diminta membuat urutan logika algoritma: "Jika nilai tugas >= 75, maka TUNTAS, jika tidak maka REMEDIAL".',
+          question: 'Struktur kontrol pemrograman yang tepat untuk mengeksekusi logika pengambilan keputusan tersebut adalah...',
+          options: [
+            'A. Struktur Perulangan (Looping FOR/WHILE)',
+            'B. Struktur Percabangan Bersyarat (Selection IF-ELSE)',
+            'C. Struktur Variabel Array Statis',
+            'D. Struktur Deklarasi Komentar'
+          ],
+          key: 'B',
+          expl: 'Percabangan (IF-ELSE) digunakan ketika komputer harus memilih satu di antara dua atau lebih jalur aksi berdasarkan kondisi benar/salah.'
+        },
+        {
+          num: 2,
+          stimulus: 'Dalam pemrograman visual Scratch, sprite kucing ingin digerakkan maju 10 langkah sebanyak 5 kali berturut-turut tanpa menulis blok "gerak 10 langkah" berulang 5 kali.',
+          question: 'Blok perintah Scratch mana yang paling efisien digunakan?',
+          options: [
+            'A. Blok kontrol "ulangi (5) kali"',
+            'B. Blok gerak "lompat ke sembarang posisi"',
+            'C. Blok tampilan "katakan Halo!"',
+            'D. Blok sensor "jarak ke mouse"'
+          ],
+          key: 'A',
+          expl: 'Blok perulangan (loop repeat) menghemat penulisan kode dan menjalankan instruksi secara berulang sesuai jumlah iterasi yang ditentukan.'
+        }
+      ]
+    }
+
+    let questionsOutput = `### 📋 Paket Butir Soal HOTS — ${subjectName}\n`
+    questionsOutput += `**Topik Materi**: ${detectedTopic}  \n`
+    questionsOutput += `**Satuan Pendidikan**: SMP Negeri 6 Kendari  \n`
+    questionsOutput += `**Fase / Kelas**: Fase D (SMP)  \n`
+    questionsOutput += `**Penyusun**: Muhammad Fadly Akbar Arsandi, S.Pd.\n\n---\n\n`
+
+    sampleQuestions.forEach(q => {
+      questionsOutput += `#### Nomor ${q.num}: Analisis Kasus\n`
+      questionsOutput += `> **Stimulus:**\n> ${q.stimulus}\n\n`
+      questionsOutput += `**Pertanyaan:** ${q.question}\n`
+      q.options.forEach(opt => {
+        questionsOutput += `- ${opt}\n`
+      })
+      questionsOutput += `\n✅ **Kunci Jawaban:** **${q.key}**  \n`
+      questionsOutput += `💡 **Pembahasan:** ${q.expl}\n\n---\n\n`
+    })
+
+    questionsOutput += `> 📥 **Aksi Selanjutnya:** Bapak bisa langsung menambahkan butir soal ini ke Bank Soal Belajarena: [Buka Bank Soal →](/question-bank)\n\n`
+    questionsOutput += `*Apakah butir soal di atas sudah sesuai, atau Bapak ingin menambah jumlah nomor dan mengubah tingkat kesulitannya?*`
+
+    return questionsOutput
+  }
+
+  // -------------------------------------------------------------
+  // 2. INTENT: PERMINTAAN MODUL AJAR (BERTANYA DETAIL JIKA UMUM)
+  // -------------------------------------------------------------
+  if (text.includes('modul ajar') || text.includes('rpp') || text.includes('perangkat ajar')) {
+    if (!text.includes('elemen') && !text.includes('jp') && !text.includes('bab') && !text.includes('topik')) {
+      return `### 📘 Draf Perangkat Ajar Kurikulum Merdeka (Fase D SMP)
+Halo Pak Fadly! Saya siap merumuskan modul ajar yang lengkap dan terstruktur sesuai panduan Kurikulum Merdeka SMPN 6 Kendari.
+
+Agar modul ajar sesuai dengan target pertemuan minggu ini, mohon konfirmasi beberapa hal:
+1. **Mata Pelajaran**: **Informatika** atau **KKA**?
+2. **Elemen Capaian**: Berpikir Komputasional (BK), Teknologi Informasi & Komunikasi (TIK), Sistem Komputer (SK), Jaringan Komputer & Internet (JKI), Analisis Data (AD), atau Algoritma Pemrograman (AP)?
+3. **Sasaran Kelas & Alokasi Waktu**: Kelas VII, VIII, atau IX (berapa JP, misal 2 x 40 menit)?
+4. **Model Pembelajaran**: Mau menggunakan *Project-Based Learning (PjBL)*, *Problem-Based Learning (PBL)*, atau *Discovery Learning*?
 
 ---
 
-#### 📤 Cara Mengunggah Berkas Presentasi Baru (PPTX / PDF):
-1. Di halaman [Live Presentasi](/presentations), klik tombol **"📤 Unggah / Buat Modul"** di pojok kanan atas.
-2. Tuliskan **Judul Materi Pembelajaran** dan pilih **Mata Pelajaran** (Informatika atau KKA).
-3. Ceklis kelas mana saja yang diperuntukkan modul ini.
-4. Tarik (*drag and drop*) berkas slide presentasi Bapak (**format .pptx, .ppt, atau .pdf**).
-5. Sistem akan otomatis mengonversi halaman berkas menjadi slide interaktif 16:9 siap ajar.
-6. Klik **"Simpan & Proses Slide"**.
-
-> 💡 **Tips Guru:** Anda juga dapat melihat seluruh arsip file presentasi dalam mode katalog klasik dengan mengeklik tombol [Lihat Semua Materi (Katalog) →](/presentations?view=catalog).`
+> 💡 **Ketik cepat jika ingin langsung dibuatkan contoh lengkap:**  
+> *"Buatkan modul ajar Informatika Fase D elemen Algoritma Pemrograman 2 JP model PjBL"*`
     }
   }
 
-  // 2. INTENT: EDU-GAMES / BOSS BATTLE / GAME / KUIS INTERAKTIF
-  if (text.includes('game') || text.includes('edu-games') || text.includes('boss battle') || text.includes('fast quiz') || text.includes('memory') || text.includes('race') || text.includes('tower defense')) {
-    return `### 🎮 Panduan Fitur Edu-Games Belajarena
-Halo Pak Fadly! Belajarena menyediakan **5 Mode Game Edukasi Interaktif** berbasis 100dvh fullscreen yang terhubung langsung dengan Bank Soal Informatika & KKA:
-
----
-
-#### 🕹️ 5 Pilihan Mode Edu-Games:
-1. **⚔️ Boss Battle 3D Arena**: Seluruh siswa di kelas bekerja sama mengalahkan monster glitch raksasa (Robot Glitch / Golem Api). Setiap jawaban benar siswa menembakkan laser dan mengurangi HP Boss!
-2. **⚡ Fast Quiz**: Kuis adu kecepatan dan ketepatan kilat dengan papan skor langsung (*real-time leaderboard*).
-3. **🃏 Memory Match**: Mengasah daya ingat siswa dengan mencocokkan kartu pasangan konsep & istilah komputer.
-4. **🏎️ Class Race**: Balapan mobil di sirkuit siber berkecepatan tinggi yang ditentukan oleh ketepatan menjawab soal.
-5. **🏰 Tower Defense**: Menjaga menara lab komputer dari serangan bot menggunakan energi dari jawaban kuis yang tepat.
-
----
-
-#### 📋 Langkah Menjalankan Edu-Games di Kelas:
-1. Buka menu [⭐ Edu-Games →](/games).
-2. Geser atau klik game yang ingin dimainkan, lalu klik tombol **"🚀 Main Sekarang"**.
-3. Pilih paket bank soal yang sudah dibuat sebelumnya (soal Informatika / KKA).
-4. Tentukan rombel kelas yang bertanding.
-5. Klik **"Mulai Sesi Permainan"** -> Layar akan menampilkan PIN Sesi game.
-6. Siswa memasukkan PIN dari HP masing-masing dan memilih avatar chibi karakter mereka.
-7. Tampilkan layar proyektor di depan kelas untuk menghidupkan suasana kompetisi belajar yang seru!
-
-> 🔗 **Tautan Cepat:** [Buka Halaman Edu-Games Sekarang →](/games)`
-  }
-
-  // 3. INTENT: BANK SOAL / IMPORT SOAL / WORD / EXCEL / OCR KAMERA
-  if (text.includes('bank soal') || text.includes('import soal') || text.includes('unggah soal') || text.includes('word') || text.includes('excel') || text.includes('ocr') || text.includes('tesseract')) {
-    return `### 📝 Panduan Manajemen Bank Soal & Smart Import
-Halo Pak Fadly! Belajarena memiliki modul **Bank Soal Cerdas** yang memudahkan pembuatan dan pengorganisasian butir asesmen formatif maupun sumatif.
-
----
-
-#### ⚡ 3 Cara Praktis Mengisi Bank Soal:
-1. **Input Manual Interaktif**:
-   - Buka menu [Pusat Bank Soal →](/question-bank).
-   - Klik tombol **"+ Buat Butir Soal Baru"**.
-   - Masukkan stimulus teks/gambar, pertanyaan, pilihan opsi A-D, kunci jawaban, dan pembahasan.
-
-2. **Smart Import dari Berkas Word (.docx) atau Excel (.xlsx)**:
-   - Klik tombol **"📥 Impor Soal (Word / Excel / OCR)"**.
-   - Pilih berkas soal Word atau Excel dari laptop Bapak.
-   - Sistem akan otomatis membedah butir soal, opsi jawaban, dan kunci jawaban secara instan.
-
-3. **OCR Foto Buku / Kertas Cetak**:
-   - Jika Bapak memiliki lembar soal cetak fisik, cukup foto atau unggah gambarnya.
-   - Engine OCR Tesseract Belajarena akan memindai teks soal dan memasukkannya ke draf soal secara otomatis.
-
----
-
-> 💡 **Keterkaitan Modul:** Soal-soal di Bank Soal dapat langsung dipakai untuk **Ujian CBT** maupun sesi **Edu-Games Boss Battle**.
-> 🔗 **Tautan Cepat:** [Buka Bank Soal Belajarena →](/question-bank)`
-  }
-
-  // 4. INTENT: UJIAN CBT / ULANGAN HARIAN / TOKEN / ANTI-CURANG
-  if (text.includes('cbt') || text.includes('ujian') || text.includes('ulangan') || text.includes('token') || text.includes('curang')) {
-    return `### 🖥️ Panduan Penyelenggaraan Ujian CBT Online
-Halo Pak Fadly! Menu **Ujian CBT** memungkinkan Bapak menyelenggarakan asesmen formatif dan sumatif secara tertib, aman, dan otomatis ternilai.
-
----
-
-#### 📋 Langkah Menyelenggarakan Ujian CBT:
-1. Buka menu [Pusat Ujian CBT →](/cbt).
-2. Klik tombol **"+ Jadwalkan Ujian Baru"**.
-3. Tuliskan judul ujian (misal: *Ulangan Harian 1: Perangkat Keras Komputer*).
-4. Pilih rombel kelas sasaran dan mata pelajaran (Informatika / KKA).
-5. Pilih paket soal dari Bank Soal yang telah disiapkan.
-6. Tentukan durasi pengerjaan (misal: 60 menit) dan aktifkan opsi **"Acak Urutan Soal & Pilihan"**.
-7. Sistem akan mengenerate **Token Ujian** (misal: \`INF7-CBT\`).
-8. Bagikan token kepada siswa saat waktu ujian dimulai.
-
----
-
-#### 🛡️ Fitur Proteksi Anti-Curang (Tab-Switch Detection):
-- Aplikasi CBT Belajarena secara otomatis mendeteksi bila siswa mencoba membuka tab baru, mencari jawaban di internet, atau berpindah aplikasi di ponsel/laptop.
-- Pelanggaran akan dicatat di log pemantauan guru dan layar ujian siswa dapat terkunci otomatis jika melebihi batas toleransi.
-
-> 🔗 **Tautan Cepat:** [Buka Menu Ujian CBT →](/cbt)`
-  }
-
-  // 5. INTENT: JADWAL MENGAJAR / JURNAL PERTEMUAN
-  if (text.includes('jadwal') || text.includes('jurnal') || text.includes('pertemuan') || text.includes('minggu')) {
-    return `### 📆 Panduan Jadwal Mengajar & Jurnal Mingguan
-Halo Pak Fadly! Belajarena menerapkan sistem **Jadwal Mingguan Rutin Tetap**, sehingga Bapak tidak perlu membuat jadwal baru berulang-ulang setiap minggu.
-
----
-
-#### 📌 Struktur Menu Jadwal:
-- Buka menu [Jadwal & Jurnal Mengajar →](/schedule).
-- **Tab 1: Jadwal Mingguan Rutin (Master)**:
-  Berisi slot mengajar tetap Bapak dari hari **Senin s.d. Jumat**. Jadwal ini otomatis berulang setiap pekan selama satu semester aktif.
-- **Tab 2: Info & Jurnal Pertemuan (Minggu 1 - 16)**:
-  Digunakan untuk mencatat agenda capaian materi ajar, catatan refleksi kelas, dan kendala pembelajaran per pertemuan secara berkala.
-
-> 🔗 **Tautan Cepat:** [Buka Jadwal & Jurnal Mengajar →](/schedule)`
-  }
-
-  // 6. INTENT: ABSENSI / KEHADIRAN SISWA
-  if (text.includes('absen') || text.includes('absensi') || text.includes('kehadiran') || text.includes('presensi')) {
-    return `### 📋 Panduan Presensi & Absensi Siswa
-Halo Pak Fadly! Pencatatan kehadiran siswa di Belajarena terintegrasi langsung dengan data kelas dan ledger nilai akhir.
-
----
-
-#### 📝 Cara Melakukan Presensi Kelas:
-1. Buka menu [Absensi Siswa →](/attendance).
-2. Pilih kelas yang sedang diajar (misal: Kelas VII A) dan pilih tanggal pertemuan hari ini.
-3. Tandai status kehadiran tiap siswa:
-   - 🟢 **Hadir** (H)
-   - 🟡 **Sakit** (S)
-   - 🔵 **Izin** (I)
-   - 🔴 **Alpa** (A)
-4. Terdapat tombol cepat **"Tandai Semua Hadir"** untuk mempercepat proses presensi.
-5. Klik **"Simpan Presensi"**. Persentase kehadiran kelas akan langsung terakumulasi secara otomatis di ledger rapor.
-
-> 🔗 **Tautan Cepat:** [Buka Menu Absensi Siswa →](/attendance)`
-  }
-
-  // 7. INTENT: REKAP NILAI / LEDGER / RAPOR / KKM / KKTP
-  if (text.includes('nilai') || text.includes('ledger') || text.includes('rekap') || text.includes('rapor') || text.includes('kktp') || text.includes('kkm')) {
-    return `### 📊 Panduan Rekapitulasi Nilai & Ledger Rapor
-Halo Pak Fadly! Belajarena menyediakan sistem pembukuan nilai komprehensif yang menggabungkan seluruh komponen asesmen Kurikulum Merdeka.
-
----
-
-#### 📂 2 Menu Laporan Nilai:
-1. **Rekap Nilai Ulangan ([Buka Rekap CBT →](/reports/exam-events))**:
-   Menganalisis hasil pengerjaan setiap sesi ujian CBT, lengkap dengan rata-rata nilai, daya pembeda soal, dan daftar siswa yang tuntas/belum tuntas.
-2. **Rekap Nilai Siswa / Ledger Komprehensif ([Buka Ledger Nilai →](/grades))**:
-   Menggabungkan seluruh bobot nilai:
-   - Rata-rata Nilai Ulangan Harian CBT
-   - Rata-rata Nilai Tugas & Proyek Koding
-   - Nilai Partisipasi Edu-Games
-   - Persentase Kehadiran Siswa
-   - Dilengkapi tombol **"📥 Ekspor ke Excel"** untuk pencetakan rapor semester.
-
-> 🎯 **Standar Ketuntasan (KKTP):** Untuk mata pelajaran Informatika dan KKA Fase D di SMP Negeri 6 Kendari, standar ketercapaian minimal berada pada rentang skor **75 - 78**.`
-  }
-
-  // 8. INTENT: KELAS & DATA SISWA / MANAJEMEN SISWA
-  if (text.includes('kelas') || text.includes('siswa') || text.includes('rombel') || text.includes('nis') || text.includes('kartu pelajar')) {
-    return `### 👥 Panduan Manajemen Kelas & Data Siswa
-Halo Pak Fadly! Belajarena memudahkan pengelolaan rombel belajar dan data profil seluruh peserta didik di SMP Negeri 6 Kendari.
-
----
-
-#### 🏫 Fitur yang Tersedia:
-- **Manajemen Kelas ([Buka Manajemen Kelas →](/classes))**:
-  Mengatur daftar rombel kelas aktif (Kelas VII A, VII B, VII C, VII D, VII E, VII F), wali kelas pengampu, dan kuota kelas.
-- **Data Siswa ([Buka Data Siswa →](/students))**:
-  - Melihat direktori seluruh siswa beserta nomor NIS dan NISN.
-  - Mengubah foto profil avatar siswa atau memperbarui kontak orang tua.
-  - Mencetak **Kartu Pelajar Digital** yang dilengkapi kode QR untuk absensi cepat.
-  - Memfilter siswa per rombel kelas secara langsung.
-
-> 🔗 **Tautan Cepat:** [Kelola Data Siswa →](/students) &bull; [Kelola Rombel Kelas →](/classes)`
-  }
-
-  // 9. INTENT: TUGAS SISWA / PENUGASAN
-  if (text.includes('tugas') || text.includes('tenggat') || text.includes('penugasan') || text.includes('pr')) {
-    return `### 📂 Panduan Tugas Siswa Belajarena
-Halo Pak Fadly! Modul Tugas Siswa memungkinkan pemberian tugas terstruktur dengan sistem unggah berkas langsung dari HP atau komputer siswa.
-
----
-
-#### 📝 Cara Membuat Tugas Baru:
-1. Buka menu [Tugas Siswa →](/assignments).
-2. Klik tombol **"+ Berikan Tugas Baru"**.
-3. Masukkan judul tugas (misal: *Latihan Membuat Diagram Alir Algoritma Percabangan*).
-4. Pilih kelas sasaran dan tentukan batas akhir pengumpulan (*deadline*).
-5. Tuliskan instruksi pengerjaan dan lampirkan lembar kerja bila ada.
-6. Siswa dapat melihat tugas di akun mereka, mengunggah jawaban (PDF/Foto/Dokumen), dan Bapak dapat langsung memberikan nilai dan feedback di portal ini.
-
-> 🔗 **Tautan Cepat:** [Buka Modul Tugas Siswa →](/assignments)`
-  }
-
-  // 10. INTENT: CARA LOGIN SISWA / APLIKASI SISWA
-  if (text.includes('login siswa') || text.includes('portal siswa') || text.includes('apk') || text.includes('aplikasi siswa') || text.includes('akun siswa')) {
-    return `### 📱 Panduan Akses Portal & Aplikasi Siswa
-Halo Pak Fadly! Siswa dapat mengakses Belajarena melalui dua jalur yang sangat fleksibel:
-
----
-
-#### 1. Masuk Menggunakan Akun Siswa (Web / APK Android):
-- Buka tautan portal: [Portal Siswa Belajarena →](/student).
-- Siswa memasukkan **Username / Nomor NIS** (misal: \`24001\`).
-- Kata sandi bawaan siswa: \`123456\` (siswa dapat mengganti kata sandi di profil mereka).
-- Di dalam portal, siswa dapat melihat jadwal pelajaran, mengerjakan ujian CBT, mengumpulkan tugas, dan melihat rekapan nilai mereka.
-
-#### 2. Masuk Cepat Tanpa Login (Khusus Sesi Live Kelas):
-- Saat Bapak memulai **Live Presentasi** atau **Edu-Games**, sistem mengeluarkan **Kode PIN 6 Digit**.
-- Siswa tidak wajib login akun; cukup membuka halaman sesi dan memasukkan kode PIN tersebut untuk langsung terhubung ke layar kelas secara instan.
-
-> 🔗 **Tautan Portal Siswa:** [Buka Portal Siswa →](/student)`
-  }
-
-  // 11. INTENT: STRUKTUR MENU BARU / NAVIGASI SISTEM
-  if (text.includes('menu') || text.includes('struktur') || text.includes('fitur') || text.includes('navigasi') || text.includes('apa saja') || text.includes('bantuan')) {
-    return `### 🧭 Peta Lengkap Menu & Fitur Website Belajarena
-Halo Pak Fadly! Sesuai rancangan tata letak modern Belajarena, sistem difokuskan pada **2 Fitur Utama Unggulan**, sementara seluruh menu penunjang dikelompokkan rapi di dalam **Pusat Akademik**:
-
----
-
-#### ⭐ FITUR UTAMA UNGGULAN:
-- [🎮 Edu-Games (/games)](/games): 5 arena permainan edukasi (Boss Battle 3D, Fast Quiz, Memory Match, Class Race, Tower Defense).
-- [📡 Live Presentasi (/presentations)](/presentations): Studio tayang materi proyektor dengan mirroring langsung ke HP siswa.
-
-#### 📁 PUSAT AKADEMIK (/academic):
-- **Kelas & Siswa**: [Manajemen Kelas](/classes) &bull; [Data Siswa](/students) &bull; [Jadwal Mingguan](/schedule) &bull; [Absensi Siswa](/attendance)
-- **Penilaian & Tugas**: [Bank Soal](/question-bank) &bull; [Ujian CBT](/cbt) &bull; [Tugas Siswa](/assignments) &bull; [Mapping BAB & TP](/curriculum/mapping)
-- **Laporan & Materi**: [Rekap Nilai Ulangan](/reports/exam-events) &bull; [Rekap Nilai Siswa (Ledger)](/grades) &bull; [Live Ranking](/ranking) &bull; [Pustaka Materi Ajar](/presentations?view=catalog)
-
-#### ⚙️ PENGATURAN:
-- [Profil Guru & Sandi (/profile)](/profile) &bull; Pengaturan Sekolah SMPN 6 Kendari
-
-> 💬 *Silakan ketik pertanyaan spesifik seputar fitur di atas, dan saya siap memandu Bapak langkah demi langkah!*`
-  }
-
-  // 12. INTENT: SOAL HOTS / BUTIR SOAL / ASESMEN KURIKULUM MERDEKA
-  if (text.includes('soal') || text.includes('asesmen') || text.includes('hots')) {
-    return `### 📋 Paket Butir Soal HOTS — Informatika & KKA (Fase D SMP)
-**Mata Pelajaran**: KKA (Koding dan Kecerdasan Artifisial)  
-**Satuan Pendidikan**: SMP Negeri 6 Kendari  
-**Tingkat Kognitif**: C4 (Menganalisis) & C5 (Mengevaluasi)
-
----
-
-#### Butir Soal 1: Analisis Model Computer Vision
-> **Stimulus:**
-> Sekelompok siswa kelas VII A di Lab Komputer SMP Negeri 6 Kendari sedang melatih model kecerdasan artifisial menggunakan *Teachable Machine* untuk membedakan sampah plastik dan daun kering. Dari 100 data uji, model mengenali 92 gambar dengan benar, namun keliru mendeteksi botol plastik bening di atas rumput sebagai daun.
-
-**Pertanyaan:** Mengapa model kecerdasan artifisial tersebut mengalami kesalahan klasifikasi pada botol plastik bening di atas rumput?
-- **A.** Daya komputasi komputer lab kurang memadai untuk memproses gambar berwarna.
-- **B.** Model AI mempelajari fitur warna hijau latar belakang (*background bias*) karena variasi data latih kurang beragam.
-- **C.** Sensor kamera digital secara otomatis mengubah pixel plastik menjadi daun.
-- **D.** Algoritma AI hanya bisa mendeteksi benda padat yang tidak tembus cahaya.
-
-✅ **Kunci Jawaban:** **B**  
-💡 **Pembahasan:** Kesalahan tersebut merupakan fenomena klasik *background bias* pada *Computer Vision*. Model mengasosiasikan warna hijau rumput dengan label "daun". Solusinya adalah menambah variasi data latih botol plastik dengan berbagai latar belakang.
-
----
-
-> 📥 *Bapak bisa langsung menyalin butir soal ini dan menambahkannya ke Bank Soal melalui tautan ini:* [Buka Bank Soal →](/question-bank)`
-  }
-
-  // 13. INTENT: MODUL AJAR / RPP KURIKULUM MERDEKA
-  if (text.includes('modul ajar') || text.includes('rpp') || text.includes('perangkat ajar')) {
-    return `### 📘 Draf Modul Ajar Kurikulum Merdeka (Fase D SMP)
-**Mata Pelajaran**: Informatika / KKA  
-**Satuan Pendidikan**: SMP Negeri 6 Kendari  
-**Penyusun**: Muhammad Fadly Akbar Arsandi, S.Pd. (NIP: 199509282020121003)  
-**Elemen**: Algoritma dan Pemrograman (AP) & Berpikir Komputasional (BK)  
-**Alokasi Waktu**: 2 JP (2 x 40 Menit)
-
----
-
-#### 1. TUJUAN PEMBELAJARAN (TP):
-1. Peserta didik mampu menjelaskan konsep dasar logika percabangan (\`if-else\`) dalam pemecahan masalah sehari-hari.
-2. Peserta didik mampu merancang program visual block / script sederhana yang merespons input kondisi secara akurat.
-
-#### 2. LANGKAH PEMBELAJARAN (MODEL: PROJECT-BASED LEARNING):
-- **Pendahuluan (10 Menit)**: Salam pembuka, presensi via [Menu Absensi Belajarena](/attendance), apersepsi logika komputer.
-- **Kegiatan Inti (60 Menit)**:
-  1. Guru mendemonstrasikan slide pengantar melalui [Live Presentasi Belajarena](/presentations).
-  2. Siswa membuka komputer lab dan menyelesaikan tantangan koding berpasangan.
-  3. Siswa menguji pemahaman dengan kuis interaktif di [Edu-Games Belajarena](/games).
-- **Penutup (10 Menit)**: Refleksi capaian belajar, tindak lanjut pengayaan materi di portal siswa.`
-  }
-
-  // 14. INTENT: KODING PYTHON / SCRATCH
-  if (text.includes('koding') || text.includes('python') || text.includes('scratch') || text.includes('program') || text.includes('kode')) {
-    return `### 💻 Contoh Script Python Praktikum Siswa SMPN 6 Kendari
+  // -------------------------------------------------------------
+  // 3. INTENT: KODING PYTHON / SCRATCH / PEMROGRAMAN
+  // -------------------------------------------------------------
+  if (text.includes('koding') || text.includes('coding') || text.includes('python') || text.includes('scratch') || text.includes('program') || text.includes('kode') || text.includes('script')) {
+    if (text.includes('python') || text.includes('scratch') || text.includes('contoh')) {
+      return `### 💻 Contoh Script Praktikum Siswa SMPN 6 Kendari
 **Topik**: Logika Percabangan Nilai Kelulusan Proyek Komputasi  
 **Guru Pengampu**: Muhammad Fadly Akbar Arsandi, S.Pd.
 
@@ -482,7 +405,7 @@ Halo Pak Fadly! Sesuai rancangan tata letak modern Belajarena, sistem difokuskan
 nama = input("Nama Siswa : ")
 nilai = float(input("Nilai Proyek Koding (0-100): "))
 
-print("\n--- HASIL EVALUASI ---")
+print("\\n--- HASIL EVALUASI ---")
 if nilai >= 85:
     status = "Istimewa - Sangat Mahir (Kategori A)"
 elif nilai >= 75:
@@ -494,30 +417,137 @@ print(f"Siswa: {nama} | Status: {status}")
 \`\`\`
 
 > 💡 **Praktikum Lab:** Mintalah siswa menjalankan kode ini di IDLE Python atau VS Code di lab komputer dan memasukkan nilai mereka masing-masing.`
+    }
+
+    return `### 💻 Bantuan Praktikum Koding & Pemrograman
+Halo Pak Fadly! Belajarena mendukung materi koding ramah siswa SMP.
+
+Mau saya bantu buatkan contoh kode untuk topik apa?
+1. **Bahasa Pemrograman**: Mau berbasis visual (**Scratch / MakeCode Block**) atau teks (**Python**)?
+2. **Topik Materi**:
+   - Logika Runtunan (Sekuensial)
+   - Logika Percabangan (\`if-elif-else\`)
+   - Perulangan (\`for\` / \`while\`)
+   - Variabel dan Operasi Hitung Nilai
+3. **Tingkat Kesulitan**: Pemula (Kelas VII) atau Lanjutan (Kelas VIII-IX)?`
   }
 
-  // 15. DEFAULT RESPONS KONSULTASI LENGKAP
+  // -------------------------------------------------------------
+  // 4. INTENT: PANDUAN LIVE PRESENTASI
+  // -------------------------------------------------------------
+  if (text.includes('presentasi') || text.includes('slide') || text.includes('studio') || text.includes('proyektor') || text.includes('mirroring')) {
+    return `### 📡 Panduan Lengkap Fitur Live Presentasi Interaktif
+Halo Pak Fadly! Menu **Live Presentasi** adalah fitur unggulan Belajarena untuk memproyeksikan slide ke proyektor kelas dengan sinkronisasi real-time mirroring langsung ke HP siswa.
+
+---
+
+#### 🚀 Cara Memulai Sesi Live di Kelas:
+1. Buka menu [⭐ Live Presentasi →](/presentations).
+2. Pilih modul materi yang ingin diajarkan.
+3. Klik tombol utama **"▶️ Buka Sesi Kelas"**.
+4. Tentukan rombel kelas sasaran (misal: Kelas VII A).
+5. Klik **"Mulai Tayang Langsung"** -> Sistem membuat sesi dan menampilkan **6 Digit PIN Sesi**.
+6. Siswa memasukkan PIN di portal siswa (/presentation-live/:code).
+7. Guru mengontrol slide via [Studio Guru](/presentations) dan seluruh layar HP siswa berganti seketika tanpa delay.
+
+> 📤 **Unggah Modul Baru:** Klik tombol [Unggah / Buat Modul](/presentations) di pojok kanan atas untuk mengunggah file PPTX/PDF.`
+  }
+
+  // -------------------------------------------------------------
+  // 5. INTENT: EDU-GAMES
+  // -------------------------------------------------------------
+  if (text.includes('game') || text.includes('edu-games') || text.includes('boss battle') || text.includes('kuis') || text.includes('fast quiz')) {
+    return `### 🎮 Panduan Fitur Edu-Games Belajarena
+Belajarena menyediakan **5 Mode Game Edukasi Interaktif** (100dvh fullscreen) yang terhubung langsung dengan Bank Soal:
+
+1. **⚔️ Boss Battle 3D**: Seluruh siswa sekelas bekerja sama mengalahkan Boss Monster dengan menjawab kuis di HP.
+2. **⚡ Fast Quiz**: Kuis adu kecepatan dan ketepatan kilat dengan papan skor real-time.
+3. **🃏 Memory Match**: Mencocokkan kartu pasangan istilah & konsep komputer.
+4. **🏎️ Class Race**: Balapan sirkuit siber berbasis ketepatan jawaban kuis.
+5. **🏰 Tower Defense**: Menjaga menara lab dari bot dengan energi dari jawaban kuis.
+
+> 🚀 **Langkah:** Buka [⭐ Edu-Games →](/games) -> Pilih Game -> Klik "Main Sekarang" -> Pilih paket Bank Soal -> Dapatkan PIN Sesi untuk siswa!`
+  }
+
+  // -------------------------------------------------------------
+  // 6. INTENT: BANK SOAL & SMART IMPORT
+  // -------------------------------------------------------------
+  if (text.includes('bank soal') || text.includes('import') || text.includes('word') || text.includes('excel') || text.includes('ocr')) {
+    return `### 📝 Panduan Manajemen Bank Soal & Smart Import
+Belajarena menyediakan 3 cara praktis untuk menyusun bank soal:
+
+1. **Input Manual**: Buka [Bank Soal →](/question-bank) -> Klik **"+ Buat Butir Soal Baru"**.
+2. **Smart Import Word (.docx) / Excel (.xlsx)**: Klik tombol **"📥 Impor Soal"** dan unggah berkas dari laptop Bapak.
+3. **OCR Foto Buku / Lembar Cetak**: Cukup foto lembar soal cetak fisik; OCR Belajarena akan mengekstrak teksnya secara instan.
+
+> 🔗 **Tautan Cepat:** [Buka Bank Soal Belajarena →](/question-bank)`
+  }
+
+  // -------------------------------------------------------------
+  // 7. INTENT: UJIAN CBT
+  // -------------------------------------------------------------
+  if (text.includes('cbt') || text.includes('token') || text.includes('anti-curang')) {
+    return `### 🖥️ Panduan Penyelenggaraan Ujian CBT Online
+Langkah menyelenggarakan ujian CBT di Belajarena:
+1. Buka menu [Pusat Ujian CBT →](/cbt).
+2. Klik **"+ Jadwalkan Ujian Baru"** -> Masukkan judul dan pilih kelas sasaran.
+3. Pilih paket soal dari Bank Soal dan atur durasi pengerjaan.
+4. Sistem akan menghasilkan **Token Ujian** untuk dibagikan kepada siswa saat ujian dimulai.
+5. Dilengkapi sistem **Anti-Curang (Tab-Switch Detection)** otomatis.
+
+> 🔗 **Tautan Cepat:** [Buka Menu Ujian CBT →](/cbt)`
+  }
+
+  // -------------------------------------------------------------
+  // 8. INTENT: JADWAL & ABSENSI
+  // -------------------------------------------------------------
+  if (text.includes('jadwal') || text.includes('jurnal')) {
+    return `### 📆 Jadwal Mengajar & Jurnal Mingguan
+Buka menu [Jadwal & Jurnal Mengajar →](/schedule):
+- **Tab 1: Jadwal Mingguan Rutin**: Slot mengajar tetap Senin–Jumat yang otomatis berulang tiap pekan.
+- **Tab 2: Info & Jurnal Pertemuan (Minggu 1-16)**: Catatan capaian ajar dan refleksi per pertemuan.
+
+> 🔗 [Buka Jadwal & Jurnal →](/schedule)`
+  }
+
+  if (text.includes('absen') || text.includes('kehadiran') || text.includes('presensi')) {
+    return `### 📋 Presensi & Absensi Siswa
+Buka menu [Absensi Siswa →](/attendance):
+1. Pilih kelas yang sedang diajar dan tanggal pertemuan.
+2. Tandai Hadir (H), Sakit (S), Izin (I), atau Alpa (A).
+3. Ada tombol cepat **"Tandai Semua Hadir"**.
+4. Klik **"Simpan Presensi"**; rekapan otomatis tersimpan ke ledger nilai.
+
+> 🔗 [Buka Absensi Siswa →](/attendance)`
+  }
+
+  // -------------------------------------------------------------
+  // 9. INTENT: NILAI & LEDGER
+  // -------------------------------------------------------------
+  if (text.includes('nilai') || text.includes('ledger') || text.includes('rekap') || text.includes('rapor')) {
+    return `### 📊 Rekapitulasi Nilai & Ledger Rapor
+- **Rekap Nilai Ulangan ([Buka Rekap CBT →](/reports/exam-events))**: Analisis butir soal CBT dan daya pembeda.
+- **Rekap Nilai Siswa / Ledger ([Buka Ledger Nilai →](/grades))**: Nilai akhir komprehensif (CBT + Tugas + Proyek Koding + Absensi) siap ekspor ke Excel.
+
+> 🎯 **Standar KKTP**: Informatika & KKA Fase D minimal **75 - 78**.`
+  }
+
+  // -------------------------------------------------------------
+  // 10. DEFAULT / PERCAKAPAN UMUM
+  // -------------------------------------------------------------
   return `### 🤖 Asisten AI Belajarena — SMP Negeri 6 Kendari
 Halo Bapak **Muhammad Fadly Akbar Arsandi, S.Pd.!** (NIP: 199509282020121003)  
 Guru Mata Pelajaran **Informatika & KKA** di SMP Negeri 6 Kendari.
 
-Mengenai pertanyaan Bapak: **"${message}"**
+Mengenai: **"${rawText}"**
 
-Berikut panduan cepat fitur terkait di platform Belajarena:
+Bagaimana saya bisa membantu Bapak hari ini?
+- 📋 Mau membuat paket butir soal kuis atau ulangan? *(Ketik: "Buatkan soal Informatika" atau "Buatkan soal KKA")*
+- 📘 Butuh bantuan draf Modul Ajar Kurikulum Merdeka? *(Ketik: "Buatkan modul ajar")*
+- 📡 Panduan menjalankan [Live Presentasi](/presentations) atau [Edu-Games](/games)?
+- 🖥️ Pengaturan [Ujian CBT](/cbt) atau [Bank Soal](/question-bank)?
 
-1. **Navigasi Fitur Website:**
-   - Ingin menayangkan materi proyektor dengan mirroring ke HP siswa? [Buka Live Presentasi →](/presentations)
-   - Ingin menjalankan kuis game interaktif (Boss Battle 3D, Fast Quiz, Race)? [Buka Edu-Games →](/games)
-   - Ingin membuat soal, import Word/Excel, atau asesmen CBT? [Buka Bank Soal →](/question-bank) atau [Buka Ujian CBT →](/cbt)
-   - Ingin melihat rekapitulasi nilai akhir siswa? [Buka Rekap Nilai Siswa →](/grades)
-   - Ingin memeriksa jadwal dan jurnal pertemuan mingguan? [Buka Jadwal & Jurnal →](/schedule)
-
-2. **Bantuan Pedagogik & Perangkat Ajar:**
-   - Ketik **"Buatkan soal HOTS KKA"** untuk paket butir soal lengkap dengan stimulus dan kunci jawaban.
-   - Ketik **"Draf modul ajar informatika"** untuk perangkat ajar resmi Kurikulum Merdeka Fase D.
-   - Ketik **"Script Python praktikum"** untuk materi koding lab komputer siswa SMP.
-
-> 💡 *Bapak dapat bertanya tentang cara menggunakan bagian manapun dari website Belajarena atau meminta bantuan pembuatan materi ajar. Saya siap membantu setiap saat!*`
+> 💡 *Silakan beritahu saya kebutuhan Bapak secara santai layaknya berbicara dengan asisten pribadi!*`
 }
 
 export { callGeminiApi, generateBuiltInResponse }
