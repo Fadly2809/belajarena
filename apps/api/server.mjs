@@ -8543,7 +8543,8 @@ const server = http.createServer(async (req, res) => {
           source = 'gemini'
         } catch (apiErr) {
           console.warn('Gemini API request failed, falling back to built-in pedagogical engine:', apiErr.message)
-          reply = generateBuiltInResponse(message, context, history)
+          const fallbackText = generateBuiltInResponse(message, context, history)
+          reply = `${fallbackText}\n\n---\n> ⚠️ *Info Sambungan Gemini:* Terjadi kendala saat menghubungi Google Gemini API (\`${apiErr.message.replace(/[\n\r]+/g, ' ').slice(0, 160)}\`). Respons di atas dijawab menggunakan Pedagogical Assistant Engine Belajarena.`
           source = 'built_in_fallback'
         }
       } else {

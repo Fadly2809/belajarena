@@ -163,7 +163,7 @@
                 isAkademikHeaderActive
                   ? 'bg-transparent text-[#0c2b3d] font-bold'
                   : (isCurrentRouteInAkademik()
-                      ? 'bg-transparent text-white font-semibold hover:bg-white/5'
+                      ? 'bg-transparent text-blue-200 font-semibold hover:bg-white/5'
                       : 'text-slate-300 hover:text-white hover:bg-white/10')
               ]"
             >
@@ -174,7 +174,7 @@
                 <span class="text-base">📁</span>
                 <span
                   class="text-sm tracking-wide truncate transition-colors duration-200"
-                  :class="isAkademikHeaderActive ? 'text-[#0c2b3d] font-bold' : (isCurrentRouteInAkademik() ? 'text-white font-semibold' : 'text-slate-300 group-hover:text-white')"
+                  :class="isAkademikHeaderActive ? 'text-[#0c2b3d] font-bold' : (isCurrentRouteInAkademik() ? 'text-blue-200 font-semibold' : 'text-slate-300 group-hover:text-white')"
                 >
                   Akademik
                 </span>
@@ -1015,8 +1015,24 @@ function isCurrentRouteInAkademik(): boolean {
   return list.some(p => route.path.startsWith(p))
 }
 
+function isRouteInAkademikSubnav(): boolean {
+  for (const item of filteredLaporanMateri.value) {
+    if (isRouteActive(item.to)) return true
+  }
+  for (const item of filteredPenilaianTugas.value) {
+    if (isRouteActive(item.to)) return true
+  }
+  for (const item of filteredKelasSiswa.value) {
+    if (isRouteActive(item.to)) return true
+  }
+  return false
+}
+
 const isAkademikHeaderActive = computed(() => {
-  return route.path === '/academic' || (isCurrentRouteInAkademik() && !isAkademikOpen.value)
+  if (route.path === '/academic' || route.path.startsWith('/academic')) return true
+  if (isCurrentRouteInAkademik() && !isAkademikOpen.value) return true
+  if (isCurrentRouteInAkademik() && isAkademikOpen.value && !isRouteInAkademikSubnav()) return true
+  return false
 })
 
 // Sliding Active Nav Indicator (Smooth physics transition)
@@ -1042,30 +1058,38 @@ function getActiveElement(): HTMLElement | null {
     if (hubEl && hubEl.offsetParent !== null) return hubEl
   }
 
-  // 1. Check specific sub-routes first (most specific to least specific)
-  for (const item of filteredLaporanMateri.value) {
-    if (isRouteActive(item.to)) {
-      const el = navItemDomMap.get(item.to)
-      if (el && el.offsetParent !== null) return el
+  // Hub Page (/academic)
+  if (route.path === '/academic' || route.path.startsWith('/academic')) {
+    const el = sidebarOpen.value ? navItemDomMap.get('akademik-header') : navItemDomMap.get('/academic')
+    if (el && el.offsetParent !== null) return el
+  }
+
+  // 1. If accordion is OPEN, check child sub-routes first:
+  if (isAkademikOpen.value) {
+    for (const item of filteredLaporanMateri.value) {
+      if (isRouteActive(item.to)) {
+        const el = navItemDomMap.get(item.to)
+        if (el && el.offsetParent !== null) return el
+      }
+    }
+
+    for (const item of filteredPenilaianTugas.value) {
+      if (isRouteActive(item.to)) {
+        const el = navItemDomMap.get(item.to)
+        if (el && el.offsetParent !== null) return el
+      }
+    }
+
+    for (const item of filteredKelasSiswa.value) {
+      if (isRouteActive(item.to)) {
+        const el = navItemDomMap.get(item.to)
+        if (el && el.offsetParent !== null) return el
+      }
     }
   }
 
-  for (const item of filteredPenilaianTugas.value) {
-    if (isRouteActive(item.to)) {
-      const el = navItemDomMap.get(item.to)
-      if (el && el.offsetParent !== null) return el
-    }
-  }
-
-  for (const item of filteredKelasSiswa.value) {
-    if (isRouteActive(item.to)) {
-      const el = navItemDomMap.get(item.to)
-      if (el && el.offsetParent !== null) return el
-    }
-  }
-
-  // If in Akademik but accordion closed, highlight Akademik header
-  if (isCurrentRouteInAkademik() && !isAkademikOpen.value) {
+  // If in Akademik but accordion closed (or active subroute not directly in sidebar), highlight Akademik header
+  if (isCurrentRouteInAkademik()) {
     const headerEl = navItemDomMap.get('akademik-header')
     if (headerEl && headerEl.offsetParent !== null) return headerEl
   }
@@ -1091,12 +1115,6 @@ function getActiveElement(): HTMLElement | null {
   // Dashboard
   if (isRouteActive('/dashboard')) {
     const el = navItemDomMap.get('/dashboard')
-    if (el && el.offsetParent !== null) return el
-  }
-
-  // Hub Page (/academic)
-  if (route.path === '/academic') {
-    const el = sidebarOpen.value ? navItemDomMap.get('akademik-header') : navItemDomMap.get('/academic')
     if (el && el.offsetParent !== null) return el
   }
 
@@ -1132,7 +1150,7 @@ function updateIndicatorPosition(immediate = false) {
 
 function handleNavClick(to: string) {
   nextTick(() => {
-    const targetKey = to === '/academic' && sidebarOpen.value ? 'akademik-header' : to
+    const targetKey = (to === '/academic' || to.startsWith('/academic')) && sidebarOpen.value ? 'akademik-header' : to
     const el = navItemDomMap.get(targetKey)
     if (el && navContainerRef.value) {
       const containerRect = navContainerRef.value.getBoundingClientRect()
@@ -1150,7 +1168,9 @@ function handleNavClick(to: string) {
 function toggleAkademik() {
   isAkademikOpen.value = !isAkademikOpen.value
   nextTick(() => {
-    setTimeout(updateIndicatorPosition, 200)
+    updateIndicatorPosition()
+    setTimeout(updateIndicatorPosition, 80)
+    setTimeout(updateIndicatorPosition, 220)
   })
 }
 

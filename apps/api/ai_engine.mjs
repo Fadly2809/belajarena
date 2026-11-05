@@ -98,6 +98,57 @@ C. KELOMPOK LAPORAN & MATERI:
 - Menu siswa: Dashboard Siswa, Jadwal Pelajaran Saya, Presensi Saya, Ujian CBT Siswa, Tugas Saya, Rekap Nilai Saya, dan Gabung Sesi Live Presentasi / Edu-Games via PIN.
 `
 
+// Cache nama model yang berhasil ditemukan untuk efisiensi
+let cachedModelName = null
+
+async function getSupportedGeminiModel(apiKey) {
+  if (cachedModelName) return cachedModelName
+
+  try {
+    const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`)
+    if (listRes.ok) {
+      const data = await listRes.json()
+      const models = data.models || []
+      const generatingModels = models
+        .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
+        .map(m => m.name.replace(/^models\//, ''))
+
+      console.log('[Gemini API] Available models for this key:', generatingModels)
+
+      const preference = [
+        'gemini-1.5-flash-latest',
+        'gemini-1.5-flash',
+        'gemini-2.0-flash',
+        'gemini-2.0-flash-exp',
+        'gemini-1.5-flash-8b',
+        'gemini-1.5-pro-latest',
+        'gemini-1.5-pro',
+        'gemini-pro'
+      ]
+
+      for (const pref of preference) {
+        const match = generatingModels.find(m => m === pref || m.startsWith(pref))
+        if (match) {
+          cachedModelName = match
+          return match
+        }
+      }
+
+      if (generatingModels.length > 0) {
+        cachedModelName = generatingModels[0]
+        return generatingModels[0]
+      }
+    } else {
+      const err = await listRes.text()
+      console.warn('[Gemini API] ListModels response:', listRes.status, err)
+    }
+  } catch (err) {
+    console.warn('[Gemini API] Failed to query ListModels:', err.message)
+  }
+
+  return 'gemini-1.5-flash-latest'
+}
+
 // Query Google Gemini API dengan Prompt Khusus Belajarena
 async function callGeminiApi(apiKey, message, history = [], context = {}) {
   const currentRoute = context.currentRoute || '/dashboard'
@@ -148,31 +199,82 @@ ${BELAJARENA_KNOWLEDGE_BASE}`
     parts: [{ text: message }]
   })
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: systemPrompt }] },
-      contents,
-      generationConfig: {
-        temperature: 0.7,
-        topP: 0.95,
-        maxOutputTokens: 2048
-      }
-    })
-  })
+  // Dapatkan model terbaik yang tersedia untuk API key ini
+  const detectedModel = await getSupportedGeminiModel(apiKey)
+  const candidateModels = [
+    detectedModel,
+    'gemini-1.5-flash-latest',
+    'gemini-1.5-flash',
+    'gemini-2.0-flash',
+    'gemini-2.0-flash-exp',
+    'gemini-1.5-pro-latest',
+    'gemini-1.5-pro',
+    'gemini-pro'
+  ].filter((v, i, a) => a.indexOf(v) === i)
 
-  if (!response.ok) {
-    const errText = await response.text()
-    throw new Error(`Gemini API Error: ${response.status} - ${errText}`)
+  let lastError = null
+
+  for (const model of candidateModels) {
+    const urls = [
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`
+    ]
+
+    for (const url of urls) {
+      try {
+        const payload = {
+          contents: [...contents],
+          generationConfig: {
+            temperature: 0.7,
+            topP: 0.95,
+            maxOutputTokens: 2048
+          }
+        }
+        // systemInstruction hanya untuk v1beta
+        if (url.includes('v1beta')) {
+          payload.systemInstruction = { parts: [{ text: systemPrompt }] }
+        } else {
+          // Pada v1 yang tidak punya systemInstruction, masukkan ke turn pertama
+          payload.contents = [
+            { role: 'user', parts: [{ text: `[PANDUAN SISTEM ASISTEN BELAJARENA]:\n${systemPrompt}` }] },
+            { role: 'model', parts: [{ text: 'Baik Pak Fadly, saya siap bertindak sebagai AI Chatbot Belajarena.' }] },
+            ...contents
+          ]
+        }
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          const candidate = data.candidates?.[0]
+          const replyText = candidate?.content?.parts?.[0]?.text
+          if (replyText) {
+            console.log(`[Gemini API] Successfully generated response using model: ${model}`)
+            cachedModelName = model
+            return replyText
+          }
+        } else {
+          const errText = await response.text()
+          lastError = new Error(`Gemini ${model} Error (${response.status}): ${errText}`)
+          // Jika 400 (bad request) atau 403 (invalid key / quota), jangan lanjut loop terus
+          if (response.status === 400 || response.status === 403) {
+            throw lastError
+          }
+        }
+      } catch (e) {
+        lastError = e
+        if (e.message.includes('400') || e.message.includes('403')) {
+          throw e
+        }
+      }
+    }
   }
 
-  const data = await response.json()
-  const candidate = data.candidates?.[0]
-  const replyText = candidate?.content?.parts?.[0]?.text
-  if (!replyText) throw new Error('Jawaban kosong dari Gemini API')
-  return replyText
+  throw lastError || new Error('Gagal menghubungi Google Gemini API setelah mencoba berbagai endpoint.')
 }
 
 // Built-in Expert Engine (Offline / Tanpa API Key) dengan Pemahaman Dialog Interaktif
