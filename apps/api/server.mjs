@@ -8514,6 +8514,16 @@ const server = http.createServer(async (req, res) => {
       const message = (body.message || '').trim()
       const history = body.history || []
       const apiKey = (body.apiKey || process.env.GEMINI_API_KEY || '').trim()
+      const context = {
+        ...(body.context || {}),
+        totalStudents: (db.students || []).length,
+        totalClasses: (db.classrooms || []).length,
+        totalPresentations: (db.presentations || []).length,
+        totalQuestions: (db.questions || []).length,
+        totalExams: (db.exams || []).length,
+        activePresentationSession: (db.presentationSessions || []).find(s => s.status === 'active'),
+        activeGameSession: (db.gameSessions || []).find(s => s.status === 'active')
+      }
 
       if (!message) {
         return sendJson(res, 400, { status: 'error', message: 'Pesan tidak boleh kosong.' })
@@ -8524,15 +8534,15 @@ const server = http.createServer(async (req, res) => {
 
       if (apiKey) {
         try {
-          reply = await callGeminiApi(apiKey, message, history)
+          reply = await callGeminiApi(apiKey, message, history, context)
           source = 'gemini'
         } catch (apiErr) {
           console.warn('Gemini API request failed, falling back to built-in pedagogical engine:', apiErr.message)
-          reply = generateBuiltInResponse(message)
+          reply = generateBuiltInResponse(message, context)
           source = 'built_in_fallback'
         }
       } else {
-        reply = generateBuiltInResponse(message)
+        reply = generateBuiltInResponse(message, context)
         source = 'built_in'
       }
 

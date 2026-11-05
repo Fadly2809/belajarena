@@ -111,7 +111,13 @@ export function useAiAssistant() {
       const response = await api.post('/ai/chat', {
         message: textToSend,
         history: historyPayload,
-        apiKey: apiKey.value
+        apiKey: apiKey.value,
+        context: {
+          currentRoute: typeof window !== 'undefined' ? window.location.pathname : '',
+          teacherName: 'Muhammad Fadly Akbar Arsandi, S.Pd.',
+          school: 'SMP Negeri 6 Kendari',
+          nip: '199509282020121003'
+        }
       })
 
       const data = response.data?.data

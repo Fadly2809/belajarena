@@ -463,18 +463,8 @@
           </div>
         </div>
 
-        <!-- Right: Asisten AI, Notification, Date/Time & Profile -->
+        <!-- Right: Notification, Date/Time & Profile -->
         <div class="flex items-center gap-4 sm:gap-6">
-          <!-- Asisten AI Quick Trigger in Navbar -->
-          <button
-            @click="openAssistant()"
-            class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white font-bold text-xs shadow-md shadow-blue-500/20 hover:opacity-95 hover:scale-102 transition"
-            title="Buka Asisten AI Guru (Informatika & KKA)"
-          >
-            <span class="text-sm">🤖</span>
-            <span class="hidden sm:inline">Asisten AI</span>
-          </button>
-
           <!-- Notification Bell with Pop-up Dropdown -->
           <div class="relative" ref="notificationDropdownRef">
             <button
@@ -615,6 +605,18 @@
         <p>© 2026 Belajarena · SMP Negeri 6 Kendari · Muhammad Fadly Akbar Arsandi, S.Pd. (NIP: 199509282020121003)</p>
         <p class="font-medium text-slate-500">Informatika & KKA · Versi 2.5.0</p>
       </footer>
+
+      <!-- Floating AI Chatbot Circular Button (Global across all pages) -->
+      <div class="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-40">
+        <button
+          @click="openAssistant()"
+          class="w-14 h-14 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 text-white flex items-center justify-center text-2xl shadow-xl hover:scale-110 active:scale-95 transition-all ring-4 ring-white animate-pulse-gentle shadow-blue-500/30 cursor-pointer group"
+          title="Tanya AI Chatbot Belajarena"
+        >
+          <span>🤖</span>
+          <span class="sr-only">Buka AI Chatbot Belajarena</span>
+        </button>
+      </div>
 
       <!-- Global AI Pedagogical Assistant Modal -->
       <AiAssistantModal />

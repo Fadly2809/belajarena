@@ -181,5 +181,8 @@ function formatInline(text: string): string {
   // Inline Code
   res = res.replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded bg-slate-100 text-blue-700 font-mono text-[11px] font-semibold">$1</code>')
 
+  // Links [label](url)
+  res = res.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-600 hover:text-blue-800 font-bold underline inline-flex items-center gap-0.5">$1 ↗</a>')
+
   return res
 }

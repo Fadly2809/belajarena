@@ -595,17 +595,6 @@
         </div>
       </div>
     </div>
-
-    <!-- 5. FLOATING AI TUTOR BOT BUTTON -->
-    <div class="fixed bottom-6 right-6 z-40">
-      <button
-        @click="openAiTutor()"
-        class="w-14 h-14 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 text-white flex items-center justify-center text-2xl shadow-xl hover:scale-110 transition-transform ring-4 ring-white animate-pulse-gentle shadow-blue-500/30"
-        title="Asisten AI Guru (Informatika & KKA) Belajarena"
-      >
-        🤖
-      </button>
-    </div>
   </div>
 </template>
 

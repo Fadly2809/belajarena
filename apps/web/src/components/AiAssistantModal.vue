@@ -220,11 +220,13 @@ const apiKeySavedFeedback = ref(false)
 const copiedId = ref<string | null>(null)
 
 const quickChips = [
+  { icon: '📡', label: 'Cara Live Presentasi', prompt: 'Bagaimana cara memulai sesi Live Presentasi dan menghubungkannya ke HP siswa?' },
+  { icon: '🎮', label: 'Cara Main Edu-Games', prompt: 'Bagaimana langkah menjalankan Edu-Games Boss Battle 3D di kelas?' },
+  { icon: '📝', label: 'Panduan Bank Soal & CBT', prompt: 'Bagaimana cara membuat Bank Soal, import dari Word/Excel, dan menyelenggarakan Ujian CBT?' },
   { icon: '📋', label: '5 Soal HOTS KKA', prompt: 'Buatkan 5 butir soal pilihan ganda HOTS lengkap dengan stimulus dan kunci jawaban untuk mata pelajaran KKA (Koding dan Kecerdasan Artifisial) Kelas VII SMPN 6 Kendari.' },
   { icon: '📘', label: 'Modul Ajar Informatika', prompt: 'Buatkan draf Modul Ajar Kurikulum Merdeka Fase D untuk mata pelajaran Informatika elemen Algoritma dan Pemrograman 2 JP di SMP Negeri 6 Kendari.' },
   { icon: '💻', label: 'Script Python SMP', prompt: 'Berikan contoh program Python sederhana yang menarik untuk diajarkan di Lab Komputer siswa SMP kelas VII beserta penjelasan baris per baris kodenya.' },
-  { icon: '🤖', label: 'Ide Proyek AI & Vision', prompt: 'Berikan 3 ide proyek praktikum Kecerdasan Artifisial (AI) yang ramah siswa SMP menggunakan kamera/webcam di Lab Komputer.' },
-  { icon: '📊', label: 'Panduan KKTP & Rubrik', prompt: 'Bagaimana perumusan Kriteria Ketercapaian Tujuan Pembelajaran (KKTP) berbasis rubrik berskala untuk proyek koding siswa SMP?' }
+  { icon: '🤖', label: 'Ide Proyek AI & Vision', prompt: 'Berikan 3 ide proyek praktikum Kecerdasan Artifisial (AI) yang ramah siswa SMP menggunakan kamera/webcam di Lab Komputer.' }
 ]
 
 function submitMessage() {
