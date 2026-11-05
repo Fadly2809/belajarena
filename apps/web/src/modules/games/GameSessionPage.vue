@@ -619,15 +619,15 @@
       </div>
 
       <div class="flex justify-center gap-3">
-        <router-link to="/dashboard" class="btn btn-primary text-xs px-5 py-2.5 font-bold shadow-md flex items-center gap-1.5">
-          <span>🏠</span>
-          <span>Kembali ke Dashboard</span>
+        <router-link :to="{ path: '/reports/exam-events', query: route.params.id ? { session_id: String(route.params.id) } : undefined }" class="btn btn-primary text-xs px-5 py-2.5 font-bold shadow-md flex items-center gap-1.5">
+          <span>📊</span>
+          <span>Buka Dashboard Hasil Ulangan</span>
         </router-link>
         <router-link to="/games" class="btn btn-secondary text-xs px-5 py-2.5">
           Menu Edu-Games
         </router-link>
         <router-link to="/reports/grades" class="btn btn-secondary text-xs px-5 py-2.5">
-          Rekap Nilai Raport →
+          Rekap Nilai Rapor →
         </router-link>
       </div>
     </div>

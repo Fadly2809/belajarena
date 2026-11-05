@@ -1187,7 +1187,7 @@
 
           <div v-if="isUploading" class="space-y-1">
             <div class="flex justify-between text-[10px] font-bold text-slate-600">
-              <span>Memproses Konversi Slide...</span>
+              <span>{{ uploadStatusText || 'Memproses Konversi Slide...' }}</span>
               <span>{{ uploadProgress }}%</span>
             </div>
             <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
@@ -1632,7 +1632,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
@@ -1935,6 +1935,7 @@ const isDragging = ref(false)
 const selectedFile = ref<File | null>(null)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const uploadProgress = ref(0)
+const uploadStatusText = ref('')
 const isUploading = ref(false)
 
 const launchingItem = ref<any>(null)
@@ -2310,6 +2311,10 @@ async function parsePptxSlides(file: File): Promise<Array<{ title: string; conte
 
 async function parsePdfSlides(file: File): Promise<Array<{ title: string; content: string; image?: string }>> {
   try {
+    uploadStatusText.value = 'Mempersiapkan mesin ekstraksi dokumen PDF...'
+    uploadProgress.value = 40
+    await nextTick()
+
     const arrayBuffer = await file.arrayBuffer()
     const pdfjsModule: any = await import('pdfjs-dist/legacy/build/pdf.js')
     const pdfjsLib = pdfjsModule.default || pdfjsModule
@@ -2330,12 +2335,16 @@ async function parsePdfSlides(file: File): Promise<Array<{ title: string; conten
     const slides: Array<{ title: string; content: string; image?: string }> = []
 
     for (let i = 1; i <= numPages; i++) {
+      uploadStatusText.value = `Mengonversi halaman ${i} dari ${numPages}...`
+      uploadProgress.value = 40 + Math.round((i / numPages) * 35)
+      await nextTick()
+
       const page = await pdfDoc.getPage(i)
       
       // Hitung skala adaptif agar tampilan tajam namun ukuran payload tetap efisien
       const baseViewport = page.getViewport({ scale: 1.0 })
       const maxDim = Math.max(baseViewport.width, baseViewport.height)
-      const targetScale = Math.min(1.5, Math.max(0.75, 1400 / maxDim))
+      const targetScale = Math.min(1.5, Math.max(0.75, 1280 / maxDim))
       const viewport = page.getViewport({ scale: targetScale })
 
       const canvas = document.createElement('canvas')
@@ -2346,7 +2355,7 @@ async function parsePdfSlides(file: File): Promise<Array<{ title: string; conten
       let imageDataUrl = ''
       if (ctx) {
         await page.render({ canvasContext: ctx, viewport }).promise
-        imageDataUrl = canvas.toDataURL('image/jpeg', 0.82)
+        imageDataUrl = canvas.toDataURL('image/jpeg', 0.80)
       }
 
       let pageText = ''
@@ -2413,7 +2422,8 @@ async function submitUpload() {
     return
   }
   isUploading.value = true
-  uploadProgress.value = 35
+  uploadProgress.value = 25
+  uploadStatusText.value = 'Mempersiapkan data materi...'
 
   try {
     let finalSlides: Array<{ title: string; content?: string; image?: string }> = [
@@ -2429,14 +2439,18 @@ async function submitUpload() {
       const ext = selectedFile.value.name.split('.').pop()?.toLowerCase() || ''
       fileType = ext
       if (ext === 'pptx') {
-        uploadProgress.value = 50
+        uploadProgress.value = 40
+        uploadStatusText.value = 'Mengekstrak slide berkas PPTX...'
+        await nextTick()
         const extracted = await parsePptxSlides(selectedFile.value)
         if (!extracted || extracted.length === 0) {
           throw new Error('Ekstraksi berkas PPTX tidak menghasilkan slide yang valid. Pastikan format berkas didukung dan tidak terenkripsi.')
         }
         finalSlides = extracted
       } else if (ext === 'pdf') {
-        uploadProgress.value = 50
+        uploadProgress.value = 40
+        uploadStatusText.value = 'Mengekstrak halaman berkas PDF...'
+        await nextTick()
         const extracted = await parsePdfSlides(selectedFile.value)
         if (!extracted || extracted.length === 0) {
           throw new Error('Ekstraksi berkas PDF tidak menghasilkan halaman yang valid.')
@@ -2471,9 +2485,33 @@ async function submitUpload() {
       status: 'ready'
     }
 
-    uploadProgress.value = 80
-    await api.post('/presentations', payload)
+    uploadProgress.value = 85
+    uploadStatusText.value = 'Menyimpan materi ke server Belajarena...'
+    await nextTick()
+
+    // Resilient save with automatic retry on temporary network drop
+    let postSuccess = false
+    let lastPostErr = null
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        await api.post('/presentations', payload, { timeout: 60000 })
+        postSuccess = true
+        break
+      } catch (postErr: any) {
+        lastPostErr = postErr
+        if (attempt === 1 && (postErr.message === 'Network Error' || postErr.code === 'ERR_NETWORK' || !postErr.response)) {
+          console.warn('Percobaan pertama simpan presentasi gagal, mencoba ulang...', postErr)
+          uploadStatusText.value = 'Menghubungkan ulang ke server...'
+          await new Promise(r => setTimeout(r, 1000))
+        } else {
+          throw postErr
+        }
+      }
+    }
+
     uploadProgress.value = 100
+    uploadStatusText.value = 'Materi berhasil disimpan!'
+    await nextTick()
 
     showUploadModal.value = false
     selectedFile.value = null
@@ -2489,11 +2527,14 @@ async function submitUpload() {
     let errorMsg = err.response?.data?.message || err.message || 'Terjadi kesalahan sistem'
     if (err.isAxiosError && (err.message === 'Network Error' || err.code === 'ERR_NETWORK' || !err.response)) {
       errorMsg = 'Koneksi ke backend server terputus (Network Error). Pastikan server Belajarena aktif di port 8000.'
+    } else if (err.response?.status === 413) {
+      errorMsg = 'Ukuran berkas melebihi batas server (Maksimal 100 MB).'
     }
     alert('Gagal menyimpan presentasi: ' + errorMsg)
   } finally {
     isUploading.value = false
     uploadProgress.value = 0
+    uploadStatusText.value = ''
   }
 }
 

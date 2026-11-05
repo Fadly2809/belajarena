@@ -64,7 +64,7 @@
           v-if="isSessionOngoing"
           @click="confirmStopSession"
           class="px-3.5 py-1 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
-          title="Hentikan sesi game yang sedang berlangsung"
+          title="Hentikan sesi game yang sedang berlangsung dan buka hasil ulangan"
         >
           <span>⏹️</span>
           <span>Stop Sesi</span>
@@ -72,21 +72,21 @@
         <button
           v-else
           @click="confirmCloseAndExit"
-          class="px-3.5 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
-          title="Tutup & Keluar dari sesi game"
+          class="px-3.5 py-1 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
+          title="Tutup & Buka Dashboard Hasil Ulangan"
         >
-          <span>🚪</span>
-          <span>Tutup Sesi</span>
+          <span>📊</span>
+          <span>Hasil Ulangan</span>
         </button>
 
-        <!-- Tombol Keluar Langsung ke Edu-Games (Selalu Tersedia) -->
+        <!-- Tombol Buka Hasil Ulangan -->
         <button
           @click="handleTeacherExit"
           class="px-3 py-1 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition flex items-center gap-1.5 border border-white/15 cursor-pointer"
-          title="Keluar dari arena battle dan kembali ke ringkasan Edu-Games"
+          title="Buka dashboard hasil ulangan kelas"
         >
-          <span>🎮</span>
-          <span>Ke Edu-Games</span>
+          <span>📋</span>
+          <span>Hasil Ulangan</span>
         </button>
 
         <router-link
@@ -194,6 +194,15 @@
                 <h2 class="text-xl sm:text-2xl font-black text-amber-300 tracking-wider mt-0.5">
                   BOSS DIKALAHKAN!
                 </h2>
+                <div class="mt-2.5 flex items-center justify-center gap-2">
+                  <button
+                    @click="confirmCloseAndExit"
+                    class="px-5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs transition shadow-lg flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span>📊</span>
+                    <span>Buka Dashboard Hasil Ulangan →</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -206,8 +215,17 @@
                 {{ state?.passedCount }} dari {{ state?.officialCount }} siswa tuntas ({{ notPassedCount }} siswa belum mencapai KKM).
               </p>
               <p class="text-[11px] text-white/70 mt-0.5">
-                Boss tertawa! Guru dapat membuka sesi remedial untuk siswa yang belum tuntas.
+                Pertempuran selesai. Seluruh skor tersimpan ke rekap rapor.
               </p>
+              <div class="mt-2.5 flex items-center justify-center gap-2">
+                <button
+                  @click="confirmCloseAndExit"
+                  class="px-5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs transition shadow-lg flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>📊</span>
+                  <span>Buka Dashboard Hasil Ulangan →</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -521,6 +539,15 @@
                 <h2 class="text-xl sm:text-2xl font-black text-amber-300 tracking-wider mt-0.5">
                   BOSS DIKALAHKAN!
                 </h2>
+                <div class="mt-2.5 flex items-center justify-center gap-2">
+                  <button
+                    @click="confirmCloseAndExit"
+                    class="px-5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs transition shadow-lg flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span>📊</span>
+                    <span>Buka Dashboard Hasil Ulangan →</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -533,8 +560,17 @@
                 {{ state?.passedCount }} dari {{ state?.officialCount }} siswa tuntas ({{ notPassedCount }} siswa belum mencapai KKM).
               </p>
               <p class="text-[11px] text-white/70 mt-0.5">
-                Boss tertawa! Guru dapat membuka sesi remedial untuk siswa yang belum tuntas.
+                Pertempuran selesai. Seluruh skor tersimpan ke rekap rapor.
               </p>
+              <div class="mt-2.5 flex items-center justify-center gap-2">
+                <button
+                  @click="confirmCloseAndExit"
+                  class="px-5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs transition shadow-lg flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>📊</span>
+                  <span>Buka Dashboard Hasil Ulangan →</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -643,10 +679,10 @@
               </button>
               <button
                 v-else
-                class="btn-action bg-emerald-600 hover:bg-emerald-500 font-black"
+                class="btn-action bg-amber-500 hover:bg-amber-400 text-slate-950 font-black"
                 @click="confirmCloseAndExit"
               >
-                <span>🚪</span> Tutup Sesi & Ke Edu-Games
+                <span>📊</span> Buka Dashboard Hasil Ulangan
               </button>
 
               <button
@@ -870,11 +906,9 @@
               <span>Durasi: <strong class="text-white">{{ clock }}</strong></span>
             </div>
             <div class="flex items-center gap-2">
-              <router-link to="/reports/exam-events" class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold transition">
-                Lihat Rekap Nilai
-              </router-link>
-              <button @click="confirmCloseAndExit" class="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black transition shadow-lg cursor-pointer">
-                Selesai & Ke Dashboard
+              <button @click="confirmCloseAndExit" class="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black transition shadow-lg cursor-pointer flex items-center gap-1.5">
+                <span>📊</span>
+                <span>Buka Dashboard Hasil Ulangan</span>
               </button>
             </div>
           </div>
@@ -1487,36 +1521,53 @@ function forceTimeout() {
 }
 
 async function confirmStopSession() {
-  if (confirm('Apakah Anda yakin ingin menghentikan sesi game yang sedang berlangsung? Skor akhir dan hasil ulangan kelas akan difinalisasi ke rapor.')) {
+  if (confirm('Apakah Anda yakin ingin menghentikan sesi game yang sedang berlangsung? Skor akhir dan hasil ulangan kelas akan difinalisasi ke rekap nilai.')) {
+    const sId = joinCode.value || String(route.params.id || '')
     stopActiveSession('Dihentikan oleh guru')
-    if (joinCode.value) {
-      await api.post(`/ulangan-gamifikasi/sessions/${joinCode.value}/stop`, {}).catch(() => {})
+    if (sId && sId !== 'active') {
+      await api.post(`/ulangan-gamifikasi/sessions/${sId}/stop`, {}).catch(() => {})
     }
     clearActiveSession()
-    router.push('/games')
+    if (sId && sId !== 'active') {
+      router.push({ path: '/reports/exam-events', query: { session_id: sId } })
+    } else {
+      router.push('/reports/exam-events')
+    }
   }
 }
 
 function confirmCloseAndExit() {
-  if (confirm('Tutup sesi game ini dan kembali ke ringkasan Edu-Games?')) {
-    clearActiveSession()
-    router.push('/games')
+  const sId = joinCode.value || String(route.params.id || '')
+  clearActiveSession()
+  if (sId && sId !== 'active') {
+    router.push({ path: '/reports/exam-events', query: { session_id: sId } })
+  } else {
+    router.push('/reports/exam-events')
   }
 }
 
 function handleTeacherExit() {
+  const sId = joinCode.value || String(route.params.id || '')
   if (isSessionOngoing.value) {
-    if (confirm('Sesi game masih berlangsung. Ingin menghentikan sesi dan kembali ke ringkasan Edu-Games? (Klik "Cancel" jika ingin tetap berada di arena game)')) {
+    if (confirm('Sesi game masih berlangsung. Ingin menghentikan sesi dan buka dashboard hasil ulangan?')) {
       stopActiveSession('Dihentikan oleh guru')
-      if (joinCode.value) {
-        api.post(`/ulangan-gamifikasi/sessions/${joinCode.value}/stop`, {}).catch(() => {})
+      if (sId && sId !== 'active') {
+        api.post(`/ulangan-gamifikasi/sessions/${sId}/stop`, {}).catch(() => {})
       }
       clearActiveSession()
-      router.push('/games')
+      if (sId && sId !== 'active') {
+        router.push({ path: '/reports/exam-events', query: { session_id: sId } })
+      } else {
+        router.push('/reports/exam-events')
+      }
     }
   } else {
     clearActiveSession()
-    router.push('/games')
+    if (sId && sId !== 'active') {
+      router.push({ path: '/reports/exam-events', query: { session_id: sId } })
+    } else {
+      router.push('/reports/exam-events')
+    }
   }
 }
 

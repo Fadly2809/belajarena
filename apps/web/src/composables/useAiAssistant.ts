@@ -40,7 +40,11 @@ function loadHistory(): ChatMessage[] {
     const saved = localStorage.getItem(STORAGE_KEY_HISTORY)
     if (saved) {
       const parsed = JSON.parse(saved)
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Bersihkan pesan error koneksi gemini-pro usang dari riwayat lama
+        const cleaned = parsed.filter((m: ChatMessage) => !m.content?.includes('gemini-pro'))
+        if (cleaned.length > 0) return cleaned
+      }
     }
   } catch (e) {
     console.warn('Failed to parse saved AI history:', e)

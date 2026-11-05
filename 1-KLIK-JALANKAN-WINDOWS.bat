@@ -51,3 +51,4 @@ node apps\api\server.mjs
 echo.
 echo Server telah dimatikan.
 pause
+

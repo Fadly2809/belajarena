@@ -83,9 +83,11 @@
 
           <button
             @click="goBack"
-            class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition cursor-pointer"
+            class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition cursor-pointer flex items-center gap-1"
+            title="Buka dashboard hasil ulangan balapan kelas"
           >
-            Keluar
+            <span>📊</span>
+            <span>Hasil Ulangan</span>
           </button>
         </div>
       </div>
@@ -390,13 +392,14 @@
           </div>
         </div>
 
-        <!-- Tombol Kembali -->
+        <!-- Tombol Hasil Ulangan -->
         <div class="flex items-center gap-3 mt-4">
           <button
             @click="goBack"
-            class="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm border border-slate-700 transition"
+            class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-sm shadow-lg transition flex items-center gap-2 cursor-pointer"
           >
-            Kembali ke Daftar Game
+            <span>📊</span>
+            <span>Buka Dashboard Hasil Ulangan</span>
           </button>
         </div>
       </section>
@@ -592,7 +595,11 @@ async function confirmMoveMember(targetTeamId: string) {
 }
 
 function goBack() {
-  router.push('/games')
+  if (sessionId && sessionId !== 'active') {
+    router.push({ path: '/reports/exam-events', query: { session_id: sessionId } })
+  } else {
+    router.push('/reports/exam-events')
+  }
 }
 
 onMounted(async () => {

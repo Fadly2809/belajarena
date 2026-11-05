@@ -172,3 +172,4 @@ Simpan file, lalu restart server Belajarena.
 Paket ini disiapkan secara lengkap untuk pembeli resmi. Anda berhak menggunakannya di sekolah atau institusi pendidikan Anda, menyesuaikan data sekolah, mata pelajaran, serta logo sesuai kebutuhan.
 
 *Dibuat dengan ❤️ untuk kemajuan pendidikan digital Indonesia.*
+

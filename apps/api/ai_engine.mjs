@@ -101,6 +101,15 @@ C. KELOMPOK LAPORAN & MATERI:
 // Cache nama-nama model yang berhasil dideteksi untuk efisiensi
 let cachedModelsList = null
 
+const STABLE_DEFAULT_MODELS = [
+  'gemini-1.5-flash',
+  'gemini-1.5-flash-latest',
+  'gemini-2.0-flash',
+  'gemini-1.5-pro',
+  'gemini-1.5-pro-latest',
+  'gemini-1.5-flash-8b'
+]
+
 async function getAvailableGeminiModels(apiKey) {
   if (cachedModelsList && cachedModelsList.length > 0) return cachedModelsList
 
@@ -112,23 +121,20 @@ async function getAvailableGeminiModels(apiKey) {
       const generatingModels = models
         .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
         .map(m => m.name.replace(/^models\//, ''))
+        // Buang model lama yang telah didegradasi / dinonaktifkan Google
+        .filter(m => !m.startsWith('gemini-pro') && !m.startsWith('gemini-1.0') && !m.includes('bison'))
 
       console.log('[Gemini API] Available models for this key:', generatingModels)
 
-      // Prioritaskan model generasi terbaru Google yang aktif pada key ini
+      // Prioritaskan model generasi modern Google yang stabil dan terbukti aktif
       const preference = [
-        'gemini-2.5-flash',
-        'gemini-flash-latest',
-        'gemini-2.5-flash-lite',
-        'gemini-2.5-pro',
-        'gemini-pro-latest',
-        'gemini-3.5-flash',
-        'gemini-3-flash-preview',
-        'gemini-2.0-flash',
-        'gemini-1.5-flash-latest',
         'gemini-1.5-flash',
+        'gemini-1.5-flash-latest',
+        'gemini-2.0-flash',
+        'gemini-1.5-pro',
         'gemini-1.5-pro-latest',
-        'gemini-1.5-pro'
+        'gemini-1.5-flash-8b',
+        'gemini-2.0-flash-exp'
       ]
 
       const prioritized = []
@@ -138,7 +144,7 @@ async function getAvailableGeminiModels(apiKey) {
         }
       }
       for (const m of generatingModels) {
-        if (!prioritized.includes(m) && !m.includes('tts') && !m.includes('image') && !m.includes('transcribe') && !m.includes('robotics')) {
+        if (!prioritized.includes(m) && !m.includes('tts') && !m.includes('image') && !m.includes('transcribe') && !m.includes('robotics') && !m.includes('embed')) {
           prioritized.push(m)
         }
       }
@@ -155,7 +161,7 @@ async function getAvailableGeminiModels(apiKey) {
     console.warn('[Gemini API] Failed to query ListModels:', err.message)
   }
 
-  return ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-1.5-flash-latest', 'gemini-1.5-flash']
+  return STABLE_DEFAULT_MODELS
 }
 
 // Query Google Gemini API dengan Prompt Khusus Belajarena
@@ -198,6 +204,7 @@ ${BELAJARENA_KNOWLEDGE_BASE}`
 
   const contents = []
   for (const h of history) {
+    if (!h.content) continue
     contents.push({
       role: h.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: h.content }]
@@ -208,9 +215,9 @@ ${BELAJARENA_KNOWLEDGE_BASE}`
     parts: [{ text: message }]
   })
 
-  // Dapatkan model terbaik yang tersedia untuk API key ini
+  // Dapatkan model terbaik yang tersedia untuk API key ini (Prioritas: gemini-1.5-flash)
   const candidateModels = await getAvailableGeminiModels(apiKey)
-  console.log('[Gemini API] Attempting generateContent with candidate models:', candidateModels.slice(0, 5))
+  console.log('[Gemini API] Attempting generateContent with candidate models:', candidateModels.slice(0, 4))
 
   let lastError = null
 
@@ -244,15 +251,23 @@ ${BELAJARENA_KNOWLEDGE_BASE}`
       } else {
         const errText = await response.text()
         console.warn(`[Gemini API] Model ${model} returned HTTP ${response.status}:`, errText)
-        lastError = new Error(`Gemini ${model} Error (${response.status}): ${errText}`)
-        // Jika 400 (bad request) atau 403 (invalid key / quota), jangan lanjut loop terus
-        if (response.status === 400 || response.status === 403) {
+        let parsedMessage = errText
+        try {
+          const parsed = JSON.parse(errText)
+          if (parsed.error?.message) {
+            parsedMessage = parsed.error.message
+          }
+        } catch (_) {}
+
+        lastError = new Error(`Gemini ${model} (${response.status}): ${parsedMessage}`)
+        // Jika 400 (bad request/invalid key) atau 403 (permission) atau 429 (quota), jangan coba model lain karena pasti sama
+        if (response.status === 400 || response.status === 403 || response.status === 429) {
           throw lastError
         }
       }
     } catch (e) {
       lastError = e
-      if (e.message && (e.message.includes('400') || e.message.includes('403'))) {
+      if (e.message && (e.message.includes('400') || e.message.includes('403') || e.message.includes('429') || e.message.includes('API_KEY_INVALID'))) {
         throw e
       }
     }

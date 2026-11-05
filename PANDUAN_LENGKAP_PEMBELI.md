@@ -158,3 +158,4 @@ Belajarena dilengkapi asisten kecerdasan artifisial yang dapat diakses melalui t
 ---
 
 *Selamat mengajar dengan Belajarena! Ciptakan suasana kelas digital yang hidup, interaktif, dan penuh semangat!*
+

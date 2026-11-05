@@ -89,16 +89,18 @@
           <button
             v-if="gameState?.status === 'in_progress'"
             @click="finishGame"
-            class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition cursor-pointer"
+            class="px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition cursor-pointer"
           >
-            Selesaikan
+            Selesaikan & Simpan
           </button>
 
           <button
             @click="goBack"
-            class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition cursor-pointer"
+            class="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition cursor-pointer flex items-center gap-1"
+            title="Buka dashboard hasil ulangan"
           >
-            Keluar
+            <span>📊</span>
+            <span>Hasil Ulangan</span>
           </button>
         </div>
       </div>
@@ -106,6 +108,21 @@
 
     <!-- MAIN BODY: PETA ARENA TD JALUR S -->
     <main class="flex-1 p-4 lg:p-6 flex flex-col gap-5 max-w-7xl mx-auto w-full relative">
+      <!-- OVERLAY GAME SELESAI -->
+      <div v-if="gameState?.status === 'completed'" class="p-6 rounded-2xl bg-slate-900/90 border-2 border-amber-400 text-center shadow-2xl space-y-3 animate-fade-in my-2">
+        <span class="text-4xl">🏆</span>
+        <h2 class="text-2xl font-black text-white">SESI PERMAINAN SELESAI</h2>
+        <p class="text-xs text-slate-300">Pertempuran telah berakhir. Seluruh nilai peserta telah otomatis tersimpan ke rekap rapor.</p>
+        <div class="flex items-center justify-center gap-3 pt-2">
+          <button
+            @click="goBack"
+            class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-sm shadow-lg transition flex items-center gap-2 cursor-pointer"
+          >
+            <span>📊</span>
+            <span>Buka Dashboard Hasil Ulangan</span>
+          </button>
+        </div>
+      </div>
       <!-- Efek Layar Serangan Gabungan (Combo Strike Effect) -->
       <transition enter-active-class="transition duration-500 ease-out" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-300 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
         <div v-if="showComboAlert" class="absolute inset-0 z-40 bg-indigo-950/60 backdrop-blur-xs flex items-center justify-center pointer-events-none">
@@ -541,11 +558,16 @@ async function sellTower(slotId: number) {
 }
 
 async function finishGame() {
-  if (!confirm('Yakin ingin menyelesaikan sesi permainan sekarang?')) return
+  if (!confirm('Yakin ingin menyelesaikan sesi permainan sekarang? Nilai siswa akan difinalisasi ke rekap rapor.')) return
   try {
     const res = await api.post(`/ulangan-gamifikasi/sessions/${sessionId}/finish`, {})
     if (res.data?.data) {
       gameState.value = res.data.data
+    }
+    if (sessionId && sessionId !== 'active') {
+      router.push({ path: '/reports/exam-events', query: { session_id: sessionId } })
+    } else {
+      router.push('/reports/exam-events')
     }
   } catch (err: any) {
     alert(err?.response?.data?.message || 'Gagal menyelesaikan sesi')
@@ -553,7 +575,21 @@ async function finishGame() {
 }
 
 function goBack() {
-  router.push('/games')
+  if (gameState.value?.status === 'completed') {
+    if (sessionId && sessionId !== 'active') {
+      router.push({ path: '/reports/exam-events', query: { session_id: sessionId } })
+    } else {
+      router.push('/reports/exam-events')
+    }
+  } else {
+    if (confirm('Sesi permainan masih berlangsung. Ingin keluar dan buka hasil ulangan?')) {
+      if (sessionId && sessionId !== 'active') {
+        router.push({ path: '/reports/exam-events', query: { session_id: sessionId } })
+      } else {
+        router.push('/reports/exam-events')
+      }
+    }
+  }
 }
 
 onMounted(async () => {

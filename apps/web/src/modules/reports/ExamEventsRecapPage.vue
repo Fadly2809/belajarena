@@ -123,7 +123,9 @@
       <div
         v-for="session in filteredSessions"
         :key="session.id"
-        class="bg-white rounded-2xl border border-slate-200 shadow-xs hover:border-slate-300 transition overflow-hidden"
+        :id="'session-card-' + session.id"
+        class="bg-white rounded-2xl border transition overflow-hidden"
+        :class="expandedSessionId === session.id ? 'border-amber-400 ring-4 ring-amber-400/20 shadow-lg' : 'border-slate-200 shadow-xs hover:border-slate-300'"
       >
         <!-- Card Header -->
         <div class="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 bg-slate-50/50">
@@ -855,9 +857,29 @@ onMounted(async () => {
   if (route.query.subject_id) {
     selectedSubjectId.value = String(route.query.subject_id)
   }
-  if (route.query.session_id) {
-    expandedSessionId.value = String(route.query.session_id)
-  }
   await fetchSessions()
+
+  const qSessionId = route.query.session_id ? String(route.query.session_id) : null
+  if (qSessionId) {
+    const targetSession = sessions.value.find(s => s.id === qSessionId)
+    if (targetSession) {
+      // Pastikan sesi ini terlihat dan tidak tersaring keluar oleh filter lama
+      selectedClassId.value = ''
+      selectedSubjectId.value = ''
+      selectedStatus.value = ''
+      searchQuery.value = ''
+      expandedSessionId.value = targetSession.id
+
+      // Scroll halus ke kartu sesi tersebut
+      setTimeout(() => {
+        const el = document.getElementById('session-card-' + targetSession.id)
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      }, 300)
+    } else {
+      expandedSessionId.value = qSessionId
+    }
+  }
 })
 </script>

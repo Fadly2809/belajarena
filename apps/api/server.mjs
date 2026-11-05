@@ -114,7 +114,7 @@ function isAllowedProxyDomain(urlStr) {
   }
 }
 
-const MAX_BODY_SIZE = 25 * 1024 * 1024 // 25 MB
+const MAX_BODY_SIZE = 100 * 1024 * 1024 // 100 MB
 
 // Ensure database dir exists
 const dbDir = path.join(__dirname, 'database')
@@ -642,7 +642,7 @@ function parseBody(req) {
       size += chunk.length
       if (size > MAX_BODY_SIZE) {
         exceeded = true
-        const err = new Error('Payload Too Large: Ukuran payload melebihi batas 25 MB')
+        const err = new Error('Payload Too Large: Ukuran berkas materi melebihi batas 100 MB')
         err.status = 413
         req.pause()
         return reject(err)
@@ -8637,8 +8637,18 @@ const server = http.createServer(async (req, res) => {
           source = 'gemini'
         } catch (apiErr) {
           console.warn('Gemini API request failed, falling back to built-in pedagogical engine:', apiErr.message)
+          let userFriendlyHint = apiErr.message || ''
+          if (userFriendlyHint.includes('API_KEY_INVALID') || userFriendlyHint.includes('API key not valid')) {
+            userFriendlyHint = 'API Key Google Gemini tidak valid. Harap periksa kunci di Google AI Studio (aistudio.google.com).'
+          } else if (userFriendlyHint.includes('429') || userFriendlyHint.includes('RESOURCE_EXHAUSTED')) {
+            userFriendlyHint = 'Batas kuota gratis Google Gemini telah tercapai (Rate Limit). Coba beberapa saat lagi atau gunakan API key lain.'
+          } else if (userFriendlyHint.includes('403') || userFriendlyHint.includes('PERMISSION_DENIED')) {
+            userFriendlyHint = 'Akses Google Gemini API ditolak (Permission Denied). Pastikan Generative Language API aktif.'
+          } else {
+            userFriendlyHint = userFriendlyHint.replace(/[\n\r]+/g, ' ').slice(0, 140)
+          }
           const fallbackText = generateBuiltInResponse(message, context, history)
-          reply = `${fallbackText}\n\n---\n> ⚠️ *Info Sambungan Gemini:* Terjadi kendala saat menghubungi Google Gemini API (\`${apiErr.message.replace(/[\n\r]+/g, ' ').slice(0, 160)}\`). Respons di atas dijawab menggunakan Pedagogical Assistant Engine Belajarena.`
+          reply = `${fallbackText}\n\n---\n> ⚠️ *Info Sambungan Gemini:* Terjadi kendala saat menghubungi Google Gemini API (${userFriendlyHint}). Respons di atas dijawab menggunakan Pedagogical Assistant Engine Belajarena.`
           source = 'built_in_fallback'
         }
       } else {
@@ -9105,10 +9115,7 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 404, { status: 'error', message: `Route ${req.method} ${pathname} not found` })
   } catch (err) {
     if (err && (err.status === 413 || err.statusCode === 413)) {
-      try { res.setHeader('Connection', 'close') } catch (_) {}
-      sendJson(res, 413, { status: 'error', message: err.message || 'Payload Too Large: Ukuran payload melebihi batas 25 MB' })
-      setTimeout(() => { try { req.destroy() } catch (_) {} }, 50)
-      return
+      return sendJson(res, 413, { status: 'error', message: err.message || 'Payload Too Large: Ukuran berkas materi melebihi batas 100 MB' })
     }
     console.error('API Server Error:', err)
     return sendJson(res, 500, { status: 'error', message: 'Internal Server Error', error: String(err) })
