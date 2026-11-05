@@ -521,7 +521,11 @@ router.beforeEach(async (to, from, next) => {
     return
   }
 
-  const isStudent = authStore.user?.role === 'student' || authStore.user?.is_student
+  const isStudent =
+    authStore.user?.role === 'student' ||
+    authStore.user?.is_student === true ||
+    authStore.hasRole('student') ||
+    !!authStore.user?.nis
 
   if (to.meta.requiresGuest && authStore.isAuthenticated) {
     if (isStudent) {
@@ -534,30 +538,37 @@ router.beforeEach(async (to, from, next) => {
 
   // Proteksi akun siswa agar selalu berada di portal siswa / modul siswa yang diizinkan dan tidak mengakses modul guru
   if (authStore.isAuthenticated && isStudent) {
+    // Jika siswa membuka /profile, arahkan ke tab profil di Portal Siswa
+    if (to.path === '/profile') {
+      next({ path: '/student', query: { tab: 'profile' } })
+      return
+    }
+
+    // Jika siswa membuka root / atau /dashboard atau /academic, alihkan langsung ke portal siswa
+    if (to.path === '/' || to.path === '/dashboard' || to.path === '/academic') {
+      next({ path: '/student' })
+      return
+    }
+
+    // Rute yang secara sah boleh diakses oleh siswa
     const isStudentAllowed =
       to.path === '/student' ||
       to.path.startsWith('/student/') ||
-      to.path === '/dashboard' ||
-      to.path === '/academic' ||
-      to.path === '/games' ||
-      to.path.startsWith('/games/') ||
-      to.path === '/presentations' ||
       to.path.startsWith('/presentation-live/') ||
       to.path.startsWith('/presentation/live/') ||
-      to.path === '/schedule' ||
-      to.path === '/attendance' ||
-      to.path === '/cbt' ||
-      to.path.startsWith('/cbt/') ||
-      to.path === '/assignments' ||
-      to.path.startsWith('/assignments/') ||
-      to.path === '/reports/exam-events' ||
-      to.path === '/reports/grades' ||
+      to.path.startsWith('/exam/') ||
+      to.path.startsWith('/cbt/result/') ||
+      to.path.startsWith('/cbt/student/') ||
+      to.path.includes('/student') ||
+      to.path.startsWith('/games/session/') ||
+      to.path.startsWith('/games/ulangan-harian/play') ||
+      to.path.startsWith('/games/class-race/play') ||
+      to.path.startsWith('/games/tower-defense/play') ||
       to.path === '/rankings' ||
-      to.path === '/profile' ||
       to.name === 'not-found'
 
     if (!isStudentAllowed) {
-      next({ path: '/academic' })
+      next({ path: '/student' })
       return
     }
   }

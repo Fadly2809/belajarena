@@ -34,8 +34,30 @@ export const useAuthStore = defineStore('auth', () => {
   const initialized = ref(false)
 
   const isAuthenticated = computed(() => !!user.value || !!localStorage.getItem('auth_token'))
-  const userRoles = computed(() => user.value?.roles ?? [])
+  const userRoles = computed(() => {
+    const roles: string[] = []
+    if (Array.isArray(user.value?.roles)) {
+      roles.push(...user.value.roles)
+    }
+    if (user.value?.role && !roles.includes(user.value.role)) {
+      roles.push(user.value.role)
+    }
+    if (user.value?.is_student && !roles.includes('student')) {
+      roles.push('student')
+    }
+    return roles
+  })
   const userPermissions = computed(() => user.value?.permissions ?? [])
+
+  const isStudent = computed(() => {
+    if (!user.value) return false
+    return (
+      user.value.role === 'student' ||
+      user.value.is_student === true ||
+      userRoles.value.includes('student') ||
+      !!user.value.nis
+    )
+  })
 
   function hasRole(role: string | string[]): boolean {
     const roles = Array.isArray(role) ? role : [role]
@@ -250,6 +272,7 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     userRoles,
     userPermissions,
+    isStudent,
     hasRole,
     hasPermission,
     isSuperAdmin,

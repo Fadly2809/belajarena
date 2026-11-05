@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen flex bg-[#e8edf2] text-slate-800 font-sans">
+  <div v-if="!isStudent" class="min-h-screen flex bg-[#e8edf2] text-slate-800 font-sans">
     <!-- Deep Petrol Sidebar (Desktop & Tablet) -->
     <aside
       class="fixed inset-y-0 left-0 z-30 hidden md:flex flex-col bg-[#0c2b3d] transition-all duration-300"
@@ -666,6 +666,9 @@
       </RouterLink>
     </nav>
   </div>
+  <div v-else class="min-h-screen bg-[#e8edf2] flex items-center justify-center p-4">
+    <div class="spinner w-8 h-8 border-[#0c2b3d]"></div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -693,7 +696,14 @@ const userAvatar = computed(() => {
   return authStore.user?.avatar_url || authStore.user?.avatar_path || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'
 })
 
-const isStudent = computed(() => authStore.hasRole('student'))
+const isStudent = computed(() => {
+  return (
+    authStore.user?.role === 'student' ||
+    authStore.user?.is_student === true ||
+    authStore.hasRole('student') ||
+    !!authStore.user?.nis
+  )
+})
 const userClassOrRole = computed(() => {
   if (isStudent.value) return 'Kelas XI IPA 1'
   return 'Guru Informatika & KKA'
@@ -831,6 +841,10 @@ const mainContentStyle = computed(() => {
 
 let clockInterval: any = null
 onMounted(() => {
+  if (isStudent.value) {
+    router.replace('/student')
+    return
+  }
   checkMobile()
   updateClock()
   loadNotifications()
@@ -839,6 +853,16 @@ onMounted(() => {
   window.addEventListener('resize', onWindowResize)
   updateIndicatorPosition(true)
 })
+
+watch(
+  () => isStudent.value,
+  (val) => {
+    if (val) {
+      router.replace('/student')
+    }
+  },
+  { immediate: true }
+)
 onUnmounted(() => {
   if (clockInterval) clearInterval(clockInterval)
   window.removeEventListener('click', handleClickOutside)

@@ -1016,6 +1016,11 @@ const server = http.createServer(async (req, res) => {
     if ((pathname === '/api/v1/profile' || pathname === '/api/v1/auth/profile') && req.method === 'GET') {
       const user = getAuthUser(req)
       if (!user) return sendJson(res, 401, { status: 'error', message: 'Unauthenticated' })
+      if (user.role === 'student' || user.is_student) {
+        const student = (db.students || []).find(s => s.id === user.id) || user
+        const { password: _, ...safeStudent } = student
+        return sendJson(res, 200, { status: 'success', data: safeStudent })
+      }
       const { password: _, ...safeUser } = user
       return sendJson(res, 200, { status: 'success', data: safeUser })
     }
@@ -1025,7 +1030,23 @@ const server = http.createServer(async (req, res) => {
       if (!authUser) {
         return sendJson(res, 401, { status: 'error', message: 'Unauthenticated' })
       }
-      const targetUser = (db.users || []).find(u => u.id === authUser.id)
+      if (authUser.role === 'student' || authUser.is_student) {
+        const targetStudent = (db.students || []).find(s => s.id === authUser.id)
+        if (!targetStudent) {
+          return sendJson(res, 404, { status: 'error', message: 'Siswa tidak ditemukan' })
+        }
+        const body = await parseBody(req)
+        if (body.name !== undefined && String(body.name).trim()) targetStudent.name = String(body.name).trim()
+        if (body.phone !== undefined) targetStudent.phone = String(body.phone).trim()
+        if (body.email !== undefined) targetStudent.email = String(body.email).trim()
+        if (body.address !== undefined) targetStudent.address = String(body.address).trim()
+        if (body.parent_name !== undefined) targetStudent.parent_name = String(body.parent_name).trim()
+        if (body.parent_phone !== undefined) targetStudent.parent_phone = String(body.parent_phone).trim()
+        saveDb()
+        const { password: _, ...safeStudent } = targetStudent
+        return sendJson(res, 200, { status: 'success', message: 'Data profil siswa berhasil diperbarui.', data: safeStudent })
+      }
+      const targetUser = (db.users || []).find(u => u.id === authUser.id) || (db.students || []).find(s => s.id === authUser.id)
       if (!targetUser) {
         return sendJson(res, 404, { status: 'error', message: 'User tidak ditemukan' })
       }
@@ -1128,7 +1149,7 @@ const server = http.createServer(async (req, res) => {
       if (!authUser) {
         return sendJson(res, 401, { status: 'error', message: 'Unauthenticated' })
       }
-      const targetUser = (db.users || []).find(u => u.id === authUser.id)
+      const targetUser = (db.users || []).find(u => u.id === authUser.id) || (db.students || []).find(s => s.id === authUser.id)
       if (!targetUser) {
         return sendJson(res, 404, { status: 'error', message: 'User tidak ditemukan' })
       }

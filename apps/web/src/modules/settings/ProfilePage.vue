@@ -290,10 +290,12 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
 import { compressImageFile } from '@/utils/imageHelper'
 
+const router = useRouter()
 const authStore = useAuthStore()
 
 const profile = ref({
@@ -400,6 +402,17 @@ async function handleRemoveAvatar() {
 }
 
 onMounted(() => {
+  const isStudent =
+    authStore.user?.role === 'student' ||
+    authStore.user?.is_student === true ||
+    authStore.hasRole('student') ||
+    !!authStore.user?.nis
+
+  if (isStudent) {
+    router.replace({ path: '/student', query: { tab: 'profile' } })
+    return
+  }
+
   loadProfile()
 })
 

@@ -822,8 +822,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, reactive, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
 import { realtimeBossBattle } from '@/services/realtimeBossBattle'
@@ -831,6 +831,7 @@ import { getActiveBattleDispatch } from '@/modules/games/bossBattle/sessionStore
 import { compressImageFile } from '@/utils/imageHelper'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 
 const loading = ref(true)
@@ -1172,6 +1173,11 @@ async function handleLogout() {
 }
 
 onMounted(async () => {
+  const tabQuery = (route.query.tab as string) || ''
+  if (['home', 'tasks', 'report', 'materials', 'leaderboard', 'profile'].includes(tabQuery)) {
+    currentTab.value = tabQuery as any
+  }
+
   loading.value = true
   await Promise.all([
     fetchStudentProfile(),
@@ -1198,6 +1204,15 @@ onMounted(async () => {
     handlePortalBattleStart(activeDispatch)
   }
 })
+
+watch(
+  () => route.query.tab,
+  (newTab) => {
+    if (typeof newTab === 'string' && ['home', 'tasks', 'report', 'materials', 'leaderboard', 'profile'].includes(newTab)) {
+      currentTab.value = newTab as any
+    }
+  }
+)
 
 onUnmounted(() => {
   clearInterval(broadcastInterval)
