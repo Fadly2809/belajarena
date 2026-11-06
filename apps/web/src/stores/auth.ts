@@ -38,6 +38,7 @@ export interface User {
   nis?: string
   nip?: string
   subject?: string
+  subjects?: string[]
   classroom_id?: string
   classroom_name?: string
 }
@@ -305,11 +306,12 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function updateProfile(data: Partial<User & { password?: string; current_password?: string; nip?: string; nuptk?: string; phone?: string; subject?: string }>) {
+  async function updateProfile(data: Partial<User & { password?: string; current_password?: string; nip?: string; nuptk?: string; phone?: string; subject?: string; subjects?: string[] }>) {
     loading.value = true
     try {
       const response = await api.put('/profile', data)
       user.value = response.data.data
+      resetClassroomsCache()
       localStorage.setItem('auth_user', JSON.stringify(response.data.data))
       return { success: true, message: response.data?.message || 'Profil berhasil diperbarui' }
     } catch (error: any) {

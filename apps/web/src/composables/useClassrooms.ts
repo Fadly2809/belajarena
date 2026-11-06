@@ -71,17 +71,18 @@ export function getAvailableSubjectsForClass(classIdOrNameOrObj?: any): Teaching
   }
   try {
     const authStore = useAuthStore()
-    const userSub = authStore.user?.subject
-    if (userSub && userSub.trim()) {
-      return [
-        {
-          id: 'sub-user-active',
-          code: userSub.replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase() || 'MAPEL',
-          name: userSub.trim(),
-          kkm: 75,
-          kktp: 75
-        }
-      ]
+    const userSubs: string[] = Array.isArray((authStore.user as any)?.subjects) && (authStore.user as any).subjects.length > 0
+      ? (authStore.user as any).subjects
+      : (authStore.user?.subject ? authStore.user.subject.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean) : [])
+
+    if (userSubs.length > 0) {
+      return userSubs.map((subName, idx) => ({
+        id: `sub-user-${idx + 1}`,
+        code: subName.replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase() || 'MAPEL',
+        name: subName,
+        kkm: 75,
+        kktp: 75
+      }))
     }
   } catch {}
 
@@ -152,17 +153,18 @@ export async function fetchSubjects(force = false): Promise<TeachingSubject[]> {
   // Fallback to auth user subject
   try {
     const authStore = useAuthStore()
-    const userSub = authStore.user?.subject
-    if (userSub && userSub.trim()) {
-      subjects.value = [
-        {
-          id: 'sub-user-active',
-          code: userSub.replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase() || 'MAPEL',
-          name: userSub.trim(),
-          kkm: 75,
-          kktp: 75
-        }
-      ]
+    const userSubs: string[] = Array.isArray((authStore.user as any)?.subjects) && (authStore.user as any).subjects.length > 0
+      ? (authStore.user as any).subjects
+      : (authStore.user?.subject ? authStore.user.subject.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean) : [])
+
+    if (userSubs.length > 0) {
+      subjects.value = userSubs.map((subName, idx) => ({
+        id: `sub-user-${idx + 1}`,
+        code: subName.replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase() || 'MAPEL',
+        name: subName,
+        kkm: 75,
+        kktp: 75
+      }))
       subjectsLoaded.value = true
       return subjects.value
     }

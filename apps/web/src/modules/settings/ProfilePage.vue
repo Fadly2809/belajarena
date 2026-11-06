@@ -112,9 +112,17 @@
             Guru Mata Pelajaran
           </span>
         </div>
-        <p class="text-xs sm:text-sm text-slate-600 font-medium">
-          Mata Pelajaran: <strong class="text-slate-800 font-bold">{{ profile.subject || authStore.user?.subject || 'Belum Diatur' }}</strong>
-        </p>
+        <div class="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 pt-0.5">
+          <span class="text-xs text-slate-600 font-medium">Mata Pelajaran:</span>
+          <span v-if="selectedSubjects.length === 0" class="text-xs text-slate-400 font-semibold italic">Belum Diatur</span>
+          <span
+            v-for="sub in selectedSubjects"
+            :key="sub"
+            class="px-2.5 py-0.5 rounded-lg bg-blue-50 border border-blue-200/80 text-blue-700 font-bold text-xs"
+          >
+            {{ sub }}
+          </span>
+        </div>
         <div class="flex flex-wrap items-center justify-center sm:justify-start gap-3 pt-1 text-xs text-slate-500">
           <span>🏫 <strong class="text-slate-700">{{ currentSchoolName }}</strong></span>
           <span>&bull;</span>
@@ -194,16 +202,82 @@
               />
             </div>
 
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">Mata Pelajaran yang Diampu</label>
-              <input
-                v-model="profile.subject"
-                type="text"
-                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-slate-800 font-semibold text-xs transition"
-                placeholder="Contoh: Matematika, Bahasa Indonesia, Informatika, dll."
-                required
-              />
-              <p class="text-[10px] text-slate-400 mt-1">Mata pelajaran yang Anda ampu untuk kelas, jadwal rutin, modul ajar, dan penilaian rapor.</p>
+            <!-- Multi-Select Mata Pelajaran -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <label class="block font-bold text-slate-700 text-xs">
+                  Mata Pelajaran yang Diampu <span class="text-rose-500">*</span>
+                </label>
+                <span class="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
+                  {{ selectedSubjects.length }} Mapel Dipilih
+                </span>
+              </div>
+
+              <!-- Daftar Mapel Terpilih (Chips yang bisa dihapus) -->
+              <div class="p-3 bg-slate-50 border border-slate-200/80 rounded-2xl min-h-[52px]">
+                <div v-if="selectedSubjects.length === 0" class="text-[11px] text-slate-400 font-medium py-1 text-center">
+                  Belum ada mapel dipilih. Klik pilihan mapel di bawah atau ketik nama mapel kustom.
+                </div>
+                <div v-else class="flex flex-wrap gap-1.5">
+                  <span
+                    v-for="sub in selectedSubjects"
+                    :key="sub"
+                    class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#0c2b3d] text-white text-xs font-bold shadow-xs animate-in fade-in zoom-in-95"
+                  >
+                    <span>📚 {{ sub }}</span>
+                    <button
+                      type="button"
+                      @click="removeSubject(sub)"
+                      class="hover:bg-rose-500 hover:text-white rounded-full w-4 h-4 inline-flex items-center justify-center text-[10px] ml-0.5 transition cursor-pointer"
+                      title="Hapus mapel ini"
+                    >
+                      ✕
+                    </button>
+                  </span>
+                </div>
+              </div>
+
+              <!-- Pilihan Rekomendasi Cepat (Kurikulum Merdeka / SMP) -->
+              <div>
+                <span class="text-[10px] font-bold uppercase text-slate-400 block mb-1.5">Pilihan Cepat Mapel Standar (Klik untuk Memilih/Membatalkan):</span>
+                <div class="flex flex-wrap gap-1.5">
+                  <button
+                    v-for="sub in standardSubjects"
+                    :key="sub"
+                    type="button"
+                    @click="toggleSubject(sub)"
+                    class="px-2.5 py-1 rounded-lg text-[11px] font-bold border transition flex items-center gap-1 cursor-pointer"
+                    :class="selectedSubjects.includes(sub)
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                      : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300 hover:bg-blue-50/50'"
+                  >
+                    <span>{{ selectedSubjects.includes(sub) ? '✓' : '+' }}</span>
+                    <span>{{ sub }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Input Mapel Kustom / Tambahan Lainnya -->
+              <div class="flex gap-2 pt-1">
+                <input
+                  v-model="customSubjectInput"
+                  type="text"
+                  class="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 placeholder-slate-400"
+                  placeholder="Ketik nama mapel lain (misal: Robotika, Bahasa Sunda, dll)..."
+                  @keydown.enter.prevent="addCustomSubject"
+                />
+                <button
+                  type="button"
+                  @click="addCustomSubject"
+                  class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs transition cursor-pointer flex items-center gap-1"
+                >
+                  <span>+</span> Tambah
+                </button>
+              </div>
+
+              <p class="text-[10px] text-slate-500 leading-relaxed">
+                💡 Guru dapat mengampu lebih dari 1 mata pelajaran sekaligus. Seluruh mapel yang dipilih akan otomatis tersedia saat pembuatan modul ajar, jadwal mingguan rutin, bank soal, kuis/CBT, dan rekap nilai rapor.
+              </p>
             </div>
 
             <div>
@@ -321,6 +395,67 @@ const profile = ref({
   avatar_url: authStore.user?.avatar_url || authStore.user?.avatar_path || ''
 })
 
+// Multi-Select Subjects State
+const selectedSubjects = ref<string[]>([])
+const customSubjectInput = ref('')
+
+const standardSubjects = [
+  'Informatika',
+  'Koding dan Kecerdasan Artifisial (KKA)',
+  'Matematika',
+  'Ilmu Pengetahuan Alam (IPA)',
+  'Ilmu Pengetahuan Sosial (IPS)',
+  'Bahasa Indonesia',
+  'Bahasa Inggris',
+  'Pendidikan Pancasila (PPKn)',
+  'Pendidikan Agama & Budi Pekerti',
+  'PJOK',
+  'Seni Budaya',
+  'Prakarya'
+]
+
+function parseSubjects(subVal: any): string[] {
+  if (Array.isArray(subVal)) return subVal.map(s => String(s).trim()).filter(Boolean)
+  if (typeof subVal === 'string' && subVal.trim()) {
+    return subVal.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean)
+  }
+  return []
+}
+
+function syncSelectedSubjects(data: any) {
+  const list = parseSubjects(data.subjects || data.subject)
+  selectedSubjects.value = list
+  profile.value.subject = list.join(', ')
+}
+
+function toggleSubject(sub: string) {
+  const idx = selectedSubjects.value.findIndex(s => s.toLowerCase() === sub.toLowerCase())
+  if (idx >= 0) {
+    selectedSubjects.value.splice(idx, 1)
+  } else {
+    selectedSubjects.value.push(sub)
+  }
+  profile.value.subject = selectedSubjects.value.join(', ')
+}
+
+function removeSubject(sub: string) {
+  const idx = selectedSubjects.value.findIndex(s => s.toLowerCase() === sub.toLowerCase())
+  if (idx >= 0) {
+    selectedSubjects.value.splice(idx, 1)
+    profile.value.subject = selectedSubjects.value.join(', ')
+  }
+}
+
+function addCustomSubject() {
+  const trimmed = customSubjectInput.value.trim()
+  if (!trimmed) return
+  if (!selectedSubjects.value.some(s => s.toLowerCase() === trimmed.toLowerCase())) {
+    selectedSubjects.value.push(trimmed)
+    profile.value.subject = selectedSubjects.value.join(', ')
+  }
+  customSubjectInput.value = ''
+}
+
 const passwordForm = ref({
   current: '',
   new: '',
@@ -346,8 +481,8 @@ async function loadProfile() {
       profile.value.nip = u.nip || profile.value.nip
       profile.value.nuptk = u.nuptk || ''
       profile.value.phone = u.phone || profile.value.phone
-      profile.value.subject = u.subject || (authStore.user as any)?.subject || ''
       profile.value.avatar_url = u.avatar_url || u.avatar_path || ''
+      syncSelectedSubjects(u)
     }
   } catch {
     // Fallback to authStore
@@ -356,8 +491,8 @@ async function loadProfile() {
       profile.value.email = authStore.user.email || profile.value.email
       profile.value.nip = (authStore.user as any).nip || profile.value.nip
       profile.value.phone = (authStore.user as any).phone || profile.value.phone
-      profile.value.subject = (authStore.user as any)?.subject || ''
       profile.value.avatar_url = authStore.user.avatar_url || authStore.user.avatar_path || ''
+      syncSelectedSubjects(authStore.user)
     }
   }
 }
@@ -435,7 +570,14 @@ onMounted(() => {
 async function handleUpdateProfile() {
   profileSuccessMsg.value = ''
   profileErrorMsg.value = ''
+
+  if (selectedSubjects.value.length === 0) {
+    profileErrorMsg.value = 'Silakan pilih atau tambahkan minimal 1 mata pelajaran yang Anda ampu.'
+    return
+  }
+
   savingProfile.value = true
+  profile.value.subject = selectedSubjects.value.join(', ')
 
   try {
     const res = await authStore.updateProfile({
@@ -444,11 +586,12 @@ async function handleUpdateProfile() {
       nip: profile.value.nip,
       nuptk: profile.value.nuptk,
       subject: profile.value.subject,
+      subjects: selectedSubjects.value,
       phone: profile.value.phone
     })
 
     if (res.success) {
-      profileSuccessMsg.value = 'Data profil pendidik berhasil diperbarui dan tersimpan!'
+      profileSuccessMsg.value = 'Data profil pendidik dan mata pelajaran berhasil diperbarui!'
       await authStore.fetchUser()
       await loadProfile()
     } else {

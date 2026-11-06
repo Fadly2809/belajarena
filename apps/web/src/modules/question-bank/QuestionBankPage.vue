@@ -863,13 +863,20 @@
                 </button>
               </div>
 
-              <!-- Pilih Tingkat Kelas, Judul Materi, & Rombel Target untuk Soal yang Diimpor -->
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-surface-50 rounded-xl border border-surface-200">
+              <!-- Pilih Tingkat Kelas, Mata Pelajaran, Judul Materi, & Rombel Target untuk Soal yang Diimpor -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 p-3 bg-surface-50 rounded-xl border border-surface-200">
                 <div>
-                  <label class="label font-bold text-surface-700">Tingkat Kelas Target</label>
+                  <label class="label font-bold text-surface-700">Tingkat Kelas</label>
                   <select v-model="batchUploadGrade" class="input text-xs font-semibold">
-                    <option value="7">📘 Kelas 7 (KKA)</option>
-                    <option value="9">📕 Kelas 9 (Informatika)</option>
+                    <option value="7">Kelas 7</option>
+                    <option value="8">Kelas 8</option>
+                    <option value="9">Kelas 9</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="label font-bold text-surface-700">Mata Pelajaran</label>
+                  <select v-model="batchUploadSubjectId" class="input text-xs font-semibold">
+                    <option v-for="s in subjects" :key="s.id" :value="s.id">{{ s.name }}</option>
                   </select>
                 </div>
                 <div>
@@ -878,13 +885,13 @@
                     v-model="batchUploadTopic"
                     type="text"
                     class="input text-xs font-medium"
-                    placeholder="Contoh: Berpikir Komputasional"
+                    placeholder="Contoh: Bab 1 Materi Pokok"
                   />
                 </div>
                 <div>
-                  <label class="label font-bold text-surface-700">Rombel Khusus (Opsional)</label>
+                  <label class="label font-bold text-surface-700">Rombel Khusus</label>
                   <select v-model="batchUploadClassroom" class="input text-xs">
-                    <option value="">Semua Rombel di Tingkat Ini</option>
+                    <option value="">Semua Rombel</option>
                     <option v-for="c in classrooms.filter(cl => String(cl.grade_level) === batchUploadGrade)" :key="c.id" :value="c.id">
                       {{ c.name }}
                     </option>
@@ -1182,7 +1189,8 @@ async function saveOcrQuestion() {
 const uploadedFileName = ref('')
 const parsedQuestionsList = ref<ParsedQuestion[]>([])
 const batchUploadGrade = ref('7')
-const batchUploadTopic = ref('Berpikir Komputasional')
+const batchUploadSubjectId = ref('')
+const batchUploadTopic = ref('Bab 1')
 const batchUploadClassroom = ref('')
 const savingBatch = ref(false)
 
@@ -1195,7 +1203,8 @@ function resetUploadedFile() {
   uploadedFileName.value = ''
   parsedQuestionsList.value = []
   batchUploadGrade.value = '7'
-  batchUploadTopic.value = 'Berpikir Komputasional'
+  batchUploadSubjectId.value = subjects.value[0]?.id || ''
+  batchUploadTopic.value = 'Bab 1'
   batchUploadClassroom.value = ''
   savingBatch.value = false
 }
@@ -1234,15 +1243,16 @@ async function processUploadFile(file: File) {
 async function saveUploadedQuestions() {
   if (parsedQuestionsList.value.length === 0) return
   savingBatch.value = true
+  const chosenSub = subjects.value.find(s => s.id === batchUploadSubjectId.value) || subjects.value[0]
   try {
     await api.post('/questions/batch', {
       questions: parsedQuestionsList.value.map(q => ({
         content: q.content,
         grade: batchUploadGrade.value,
-        subject_id: batchUploadGrade.value === '7' ? 'sub-kka' : 'sub-inf',
-        subject_name: batchUploadGrade.value === '7' ? 'KKA' : 'Informatika',
-        topic: batchUploadTopic.value || q.topic || (batchUploadGrade.value === '7' ? 'Logika Pemrograman Dasar' : 'Berpikir Komputasional'),
-        element: batchUploadTopic.value || q.topic || (batchUploadGrade.value === '7' ? 'Logika Pemrograman Dasar' : 'Berpikir Komputasional'),
+        subject_id: chosenSub?.id || (batchUploadGrade.value === '7' ? 'sub-kka' : 'sub-inf'),
+        subject_name: chosenSub?.name || (batchUploadGrade.value === '7' ? 'KKA' : 'Informatika'),
+        topic: batchUploadTopic.value || q.topic || 'Materi Pokok',
+        element: batchUploadTopic.value || q.topic || 'Materi Pokok',
         classroom_id: batchUploadClassroom.value || undefined,
         options: (q.options || []).map((o, idx) => ({
           label: ['A', 'B', 'C', 'D', 'E'][idx],
@@ -1465,12 +1475,12 @@ async function deleteQuestion(q: Question) {
 async function loadSubjects() {
   try {
     const res = await api.get('/subjects', { params: { per_page: 100 } })
-    subjects.value = res.data.data || []
+    subjects.value = res.data?.data || []
   } catch {
-    subjects.value = [
-      { id: 'sub-kka', name: 'KKA (Koding & Kecerdasan Artifisial)' },
-      { id: 'sub-inf', name: 'Informatika' },
-    ]
+    subjects.value = []
+  }
+  if (subjects.value.length > 0 && !batchUploadSubjectId.value) {
+    batchUploadSubjectId.value = subjects.value[0].id
   }
 }
 

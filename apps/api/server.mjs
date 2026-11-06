@@ -1440,24 +1440,33 @@ const server = http.createServer(async (req, res) => {
       if (body.nuptk !== undefined) targetUser.nuptk = String(body.nuptk).trim()
       if (body.phone !== undefined) targetUser.phone = String(body.phone).trim()
       if (body.secondary_email !== undefined) targetUser.secondary_email = String(body.secondary_email).trim()
-      if (body.subject !== undefined) {
-        targetUser.subject = String(body.subject).trim()
-        if (targetUser.school_id && targetUser.subject) {
+      if (body.subjects !== undefined || body.subject !== undefined) {
+        let subjectList = []
+        if (Array.isArray(body.subjects)) {
+          subjectList = body.subjects.map(s => String(s).trim()).filter(Boolean)
+        } else if (body.subject !== undefined) {
+          subjectList = String(body.subject).split(/[,;\n]+/).map(s => s.trim()).filter(Boolean)
+        }
+        targetUser.subjects = subjectList
+        targetUser.subject = subjectList.join(', ')
+
+        if (targetUser.school_id && subjectList.length > 0) {
           db.subjects = db.subjects || []
-          const existing = db.subjects.find(s => s.school_id === targetUser.school_id)
-          if (existing) {
-            existing.name = targetUser.subject
-            existing.code = targetUser.subject.replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase() || 'MAPEL'
-          } else {
-            db.subjects.push({
-              id: `sub-${targetUser.school_id}-${Date.now().toString(36)}`,
-              name: targetUser.subject,
-              code: targetUser.subject.replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase() || 'MAPEL',
-              school_id: targetUser.school_id,
-              kktp: 75,
-              kkm: 75,
-              created_at: new Date().toISOString()
-            })
+          for (const subName of subjectList) {
+            const exists = db.subjects.some(
+              s => s.school_id === targetUser.school_id && s.name.toLowerCase() === subName.toLowerCase()
+            )
+            if (!exists) {
+              db.subjects.push({
+                id: `sub-${targetUser.school_id}-${Math.random().toString(36).slice(2, 7)}`,
+                name: subName,
+                code: subName.replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase() || 'MAPEL',
+                school_id: targetUser.school_id,
+                kktp: 75,
+                kkm: 75,
+                created_at: new Date().toISOString()
+              })
+            }
           }
         }
       }
@@ -2316,20 +2325,30 @@ const server = http.createServer(async (req, res) => {
       db.subjects = db.subjects || []
       let result = db.subjects.filter(s => s.school_id === currentSchoolId)
 
-      // Jika belum ada data mapel untuk sekolah ini tapi guru memiliki subject di profilnya
-      if (result.length === 0 && authUser?.subject) {
-        const generatedSub = {
-          id: `sub-${currentSchoolId || 'sch'}-1`,
-          name: authUser.subject,
-          code: authUser.subject.replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase() || 'MAPEL',
-          school_id: currentSchoolId,
-          kktp: 75,
-          kkm: 75,
-          created_at: new Date().toISOString()
+      // Sinkronisasi jika guru memiliki mata pelajaran di profilnya
+      const userSubjects = Array.isArray(authUser?.subjects) && authUser.subjects.length > 0
+        ? authUser.subjects
+        : (authUser?.subject ? authUser.subject.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean) : [])
+
+      if (userSubjects.length > 0) {
+        let changed = false
+        for (const subName of userSubjects) {
+          if (!result.some(s => s.name.toLowerCase() === subName.toLowerCase())) {
+            const newSub = {
+              id: `sub-${currentSchoolId || 'sch'}-${Math.random().toString(36).slice(2, 7)}`,
+              name: subName,
+              code: subName.replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase() || 'MAPEL',
+              school_id: currentSchoolId,
+              kktp: 75,
+              kkm: 75,
+              created_at: new Date().toISOString()
+            }
+            db.subjects.push(newSub)
+            result.push(newSub)
+            changed = true
+          }
         }
-        db.subjects.push(generatedSub)
-        saveDb()
-        result = [generatedSub]
+        if (changed) saveDb()
       }
 
       return sendJson(res, 200, { status: 'success', data: result })
