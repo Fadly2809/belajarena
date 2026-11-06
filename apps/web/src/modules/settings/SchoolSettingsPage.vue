@@ -7,22 +7,23 @@
           <span>🏛️</span> Pengaturan Satuan Pendidikan
         </h1>
         <p class="text-slate-600 text-sm mt-1 font-medium">
-          Kelola profil sekolah aktif serta daftar satuan pendidikan multi-tenant di platform Belajarena
+          Kelola profil resmi satuan pendidikan, nomor pokok sekolah nasional (NPSN), KKTP, serta akun pendidik sekolah Anda
         </p>
       </div>
       <div class="flex items-center gap-2">
         <button
+          v-if="isWebsiteAdmin"
           @click="showAddModal = true"
           class="px-3.5 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-800 font-bold text-xs border border-blue-200 transition flex items-center gap-1.5"
         >
-          <span>➕</span> <span>Tambah Sekolah</span>
+          <span>➕</span> <span>Tambah Sekolah (Admin Website)</span>
         </button>
         <button
           @click="saveSchoolSettings"
           :disabled="isSaving"
           class="px-4 py-2.5 rounded-xl bg-[#0c2b3d] hover:bg-[#082231] text-white font-bold text-xs shadow-md transition flex items-center gap-2"
         >
-          <span>💾</span> <span>{{ isSaving ? 'Menyimpan...' : 'Simpan Profil Aktif' }}</span>
+          <span>💾</span> <span>{{ isSaving ? 'Menyimpan...' : 'Simpan Profil Sekolah' }}</span>
         </button>
       </div>
     </div>
@@ -36,8 +37,8 @@
       <button @click="successMsg = ''" class="text-emerald-600 hover:text-emerald-900 font-bold">✕</button>
     </div>
 
-    <!-- MULTI-TENANT SCHOOL LIST CARD -->
-    <div class="card space-y-4 border border-blue-100 bg-gradient-to-br from-white via-white to-blue-50/30">
+    <!-- MULTI-TENANT SCHOOL LIST CARD (Hanya tampil untuk Akun Admin Website) -->
+    <div v-if="isWebsiteAdmin" class="card space-y-4 border border-blue-100 bg-gradient-to-br from-white via-white to-blue-50/30">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 border-b border-slate-100">
         <div>
           <h2 class="font-bold text-surface-900 text-sm flex items-center gap-2">
@@ -422,6 +423,14 @@ import { useAuthStore, type SchoolInfo } from '@/stores/auth'
 
 const authStore = useAuthStore()
 
+const isWebsiteAdmin = computed(() => {
+  return Boolean(
+    authStore.isSuperAdmin() ||
+    authStore.user?.role === 'superadmin' ||
+    (Array.isArray(authStore.user?.roles) && authStore.user.roles.includes('superadmin'))
+  )
+})
+
 const isSaving = ref(false)
 const isAdding = ref(false)
 const showAddModal = ref(false)
@@ -591,11 +600,14 @@ async function handleDeleteTeacher(teacher: any) {
 }
 
 onMounted(async () => {
-  await Promise.all([
-    fetchSchoolsList(),
+  const promises: Promise<any>[] = [
     loadActiveSchool(),
     fetchTeachersList()
-  ])
+  ]
+  if (isWebsiteAdmin.value) {
+    promises.push(fetchSchoolsList())
+  }
+  await Promise.all(promises)
 })
 
 async function saveSchoolSettings() {
@@ -611,7 +623,9 @@ async function saveSchoolSettings() {
       authStore.setSchool(res.data.data)
     }
     successMsg.value = 'Profil satuan pendidikan dan KKTP berhasil disimpan!'
-    await fetchSchoolsList()
+    if (isWebsiteAdmin.value) {
+      await fetchSchoolsList()
+    }
   } catch (err: any) {
     console.error('Failed to save school settings:', err)
     alert('Gagal menyimpan pengaturan: ' + (err.response?.data?.message || err.message))

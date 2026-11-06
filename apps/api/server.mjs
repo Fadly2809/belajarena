@@ -1339,41 +1339,8 @@ const server = http.createServer(async (req, res) => {
       }
       db.users.push(newUser)
 
-      // Inisialisasi rombel kelas awal untuk sekolah baru sesuai jenjangnya
-      db.classrooms = db.classrooms || []
-      let defaultClasses = []
-      if (level === 'sd') {
-        defaultClasses = [
-          { id: `cls-${schoolId}-1a`, name: 'Kelas 1 A', grade_level: 1, school_id: schoolId, capacity: 32, student_count: 0 },
-          { id: `cls-${schoolId}-2a`, name: 'Kelas 2 A', grade_level: 2, school_id: schoolId, capacity: 32, student_count: 0 },
-          { id: `cls-${schoolId}-3a`, name: 'Kelas 3 A', grade_level: 3, school_id: schoolId, capacity: 32, student_count: 0 },
-          { id: `cls-${schoolId}-4a`, name: 'Kelas 4 A', grade_level: 4, school_id: schoolId, capacity: 32, student_count: 0 },
-          { id: `cls-${schoolId}-5a`, name: 'Kelas 5 A', grade_level: 5, school_id: schoolId, capacity: 32, student_count: 0 },
-          { id: `cls-${schoolId}-6a`, name: 'Kelas 6 A', grade_level: 6, school_id: schoolId, capacity: 32, student_count: 0 }
-        ]
-      } else if (level === 'sma' || level === 'smk') {
-        defaultClasses = [
-          { id: `cls-${schoolId}-10a`, name: 'X A', grade_level: 10, school_id: schoolId, capacity: 36, student_count: 0 },
-          { id: `cls-${schoolId}-11a`, name: 'XI A', grade_level: 11, school_id: schoolId, capacity: 36, student_count: 0 },
-          { id: `cls-${schoolId}-12a`, name: 'XII A', grade_level: 12, school_id: schoolId, capacity: 36, student_count: 0 }
-        ]
-      } else {
-        defaultClasses = [
-          { id: `cls-${schoolId}-7a`, name: 'VII A', grade_level: 7, school_id: schoolId, capacity: 32, student_count: 0 },
-          { id: `cls-${schoolId}-8a`, name: 'VIII A', grade_level: 8, school_id: schoolId, capacity: 32, student_count: 0 },
-          { id: `cls-${schoolId}-9a`, name: 'IX A', grade_level: 9, school_id: schoolId, capacity: 32, student_count: 0 }
-        ]
-      }
-      db.classrooms.push(...defaultClasses)
-
-      // Inisialisasi mata pelajaran awal
-      db.subjects = db.subjects || []
-      const defaultSubjects = [
-        { id: `sub-${schoolId}-inf`, name: 'Informatika', code: 'INF', school_id: schoolId, kktp: 75 },
-        { id: `sub-${schoolId}-kka`, name: 'Koding & Kecerdasan Artifisial (KKA)', code: 'KKA', school_id: schoolId, kktp: 75 },
-        { id: `sub-${schoolId}-umum`, name: 'Mata Pelajaran Umum', code: 'UMUM', school_id: schoolId, kktp: 75 }
-      ]
-      db.subjects.push(...defaultSubjects)
+      // Data rombel kelas, siswa, jadwal, tugas, dan ulangan untuk sekolah baru diawali kosong (clean slate)
+      // Pengelola sekolah baru akan membuat rombel kelas & mengelola siswa sendiri melalui menu Data Master
 
       // Generate token login otomatis
       const token = 'agd_token_' + crypto.randomBytes(24).toString('hex')
@@ -1582,14 +1549,14 @@ const server = http.createServer(async (req, res) => {
     // -------------------------------------------------------------
     if (pathname === '/api/v1/dashboard' && (req.method === 'GET' || req.method === 'HEAD')) {
       const currentSchoolId = getReqSchoolId(req)
-      const schoolStudents = (db.students || []).filter(s => !s.school_id || s.school_id === currentSchoolId)
-      const schoolClassrooms = (db.classrooms || []).filter(c => !c.school_id || c.school_id === currentSchoolId)
-      const schoolExams = (db.exams || []).filter(e => !e.school_id || e.school_id === currentSchoolId)
-      const schoolSessions = (db.sessions || []).filter(s => !s.school_id || s.school_id === currentSchoolId)
-      const schoolSubjectGrades = (db.subjectGrades || []).filter(g => !g.school_id || g.school_id === currentSchoolId)
-      const schoolAssignments = (db.assignments || []).filter(a => !a.school_id || a.school_id === currentSchoolId)
-      const schoolWeeklySchedules = (db.weeklySchedules || []).filter(s => !s.school_id || s.school_id === currentSchoolId)
-      const schoolMeetingLogs = (db.meetingLogs || []).filter(m => !m.school_id || m.school_id === currentSchoolId)
+      const schoolStudents = (db.students || []).filter(s => s.school_id === currentSchoolId)
+      const schoolClassrooms = (db.classrooms || []).filter(c => c.school_id === currentSchoolId)
+      const schoolExams = (db.exams || []).filter(e => e.school_id === currentSchoolId)
+      const schoolSessions = (db.sessions || []).filter(s => s.school_id === currentSchoolId)
+      const schoolSubjectGrades = (db.subjectGrades || []).filter(g => g.school_id === currentSchoolId)
+      const schoolAssignments = (db.assignments || []).filter(a => a.school_id === currentSchoolId)
+      const schoolWeeklySchedules = (db.weeklySchedules || []).filter(s => s.school_id === currentSchoolId)
+      const schoolMeetingLogs = (db.meetingLogs || []).filter(m => m.school_id === currentSchoolId)
 
       const totalStudents = schoolStudents.length
       const totalClasses = schoolClassrooms.length
@@ -1805,10 +1772,30 @@ const server = http.createServer(async (req, res) => {
     // -------------------------------------------------------------
     // MULTI-TENANT SCHOOLS & ACADEMIC YEARS
     // -------------------------------------------------------------
-    // 1. GET /api/v1/schools - Daftar seluruh satuan pendidikan terdaftar
+    // 1. GET /api/v1/schools - Daftar satuan pendidikan
     if (pathname === '/api/v1/schools' && req.method === 'GET') {
       db.schools = db.schools || []
-      const listWithStats = db.schools.map(s => {
+      const user = getAuthUser(req)
+      const isSuperAdmin = Boolean(user && (user.role === 'superadmin' || (Array.isArray(user.roles) && user.roles.includes('superadmin'))))
+
+      // Jika unauthenticated (misal dari form login): kembalikan hanya nama sekolah publik
+      if (!user) {
+        const publicList = db.schools.map(s => ({
+          id: s.id,
+          name: s.name,
+          city: s.city || 'Indonesia',
+          level: s.level || 'smp'
+        }))
+        return sendJson(res, 200, { status: 'success', data: publicList, is_superadmin: false })
+      }
+
+      // Jika BUKAN admin website, hanya kembalikan sekolah yang terdaftar di akun yang login
+      const currentSchoolId = getReqSchoolId(req)
+      const allowedSchools = isSuperAdmin
+        ? db.schools
+        : db.schools.filter(s => s.id === currentSchoolId)
+
+      const listWithStats = allowedSchools.map(s => {
         const studentCount = (db.students || []).filter(std => std.school_id === s.id).length
         const teacherCount = (db.users || []).filter(u => u.school_id === s.id).length
         const classCount = (db.classrooms || []).filter(c => c.school_id === s.id).length
@@ -1819,13 +1806,15 @@ const server = http.createServer(async (req, res) => {
           classroom_count: classCount
         }
       })
-      return sendJson(res, 200, { status: 'success', data: listWithStats })
+      return sendJson(res, 200, { status: 'success', data: listWithStats, is_superadmin: isSuperAdmin })
     }
 
-    // 2. POST /api/v1/schools - Tambah satuan pendidikan baru oleh guru/admin
+    // 2. POST /api/v1/schools - Tambah satuan pendidikan baru (Khusus Admin Website / Superadmin)
     if (pathname === '/api/v1/schools' && req.method === 'POST') {
-      if (!isTeacherRequest(req)) {
-        return sendJson(res, 403, { status: 'error', message: 'Hanya guru/admin yang berwenang menambah sekolah.' })
+      const user = getAuthUser(req)
+      const isSuperAdmin = Boolean(user && (user.role === 'superadmin' || (Array.isArray(user.roles) && user.roles.includes('superadmin'))))
+      if (!isSuperAdmin) {
+        return sendJson(res, 403, { status: 'error', message: 'Hanya Admin Website yang berwenang menambah sekolah dari menu ini.' })
       }
       const body = await parseBody(req)
       if (!body.name) {
@@ -2029,7 +2018,7 @@ const server = http.createServer(async (req, res) => {
     // -------------------------------------------------------------
     if (pathname === '/api/v1/classrooms' && req.method === 'GET') {
       const currentSchoolId = getReqSchoolId(req)
-      const schoolClasses = (db.classrooms || []).filter(c => !c.school_id || c.school_id === currentSchoolId)
+      const schoolClasses = (db.classrooms || []).filter(c => c.school_id === currentSchoolId)
       // Calculate real student counts
       const classroomsWithCounts = schoolClasses.map(c => {
         const count = (db.students || []).filter(s => s.classroom_id === c.id).length
@@ -2175,7 +2164,7 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/api/v1/students' && req.method === 'GET') {
       const currentSchoolId = getReqSchoolId(req)
-      const schoolStudents = (db.students || []).filter(s => !s.school_id || s.school_id === currentSchoolId)
+      const schoolStudents = (db.students || []).filter(s => s.school_id === currentSchoolId)
       let filtered = [...schoolStudents]
 
       if (query.classroom_id) {
@@ -2924,9 +2913,9 @@ const server = http.createServer(async (req, res) => {
       db.assignments = db.assignments || []
       db.assignmentSubmissions = db.assignmentSubmissions || []
       
-      const filteredAssignments = db.assignments.filter(a => !a.school_id || a.school_id === currentSchoolId)
+      const filteredAssignments = db.assignments.filter(a => a.school_id === currentSchoolId)
       const list = filteredAssignments.map(a => {
-        const classStudents = (db.students || []).filter(s => (!s.school_id || s.school_id === currentSchoolId) && (s.classroom_id === a.classroom_id || s.classroom_name === a.classroom))
+        const classStudents = (db.students || []).filter(s => s.school_id === currentSchoolId && (s.classroom_id === a.classroom_id || s.classroom_name === a.classroom))
         const total = classStudents.length
         const subs = db.assignmentSubmissions.filter(sub => sub.assignment_id === a.id)
         const graded = subs.filter(sub => sub.score !== null && sub.score !== undefined).length
@@ -3067,7 +3056,7 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/v1/exams' && req.method === 'GET') {
       const currentSchoolId = getReqSchoolId(req)
       db.exams = db.exams || []
-      const filteredExams = db.exams.filter(e => !e.school_id || e.school_id === currentSchoolId)
+      const filteredExams = db.exams.filter(e => e.school_id === currentSchoolId)
       return sendJson(res, 200, { status: 'success', data: filteredExams })
     }
 
@@ -7137,8 +7126,8 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, {
         status: 'success',
         data: {
-          weeklySlots: (db.weeklySchedules || []).filter(s => !s.school_id || s.school_id === currentSchoolId),
-          meetingLogs: (db.meetingLogs || []).filter(m => !m.school_id || m.school_id === currentSchoolId)
+          weeklySlots: (db.weeklySchedules || []).filter(s => s.school_id === currentSchoolId),
+          meetingLogs: (db.meetingLogs || []).filter(m => m.school_id === currentSchoolId)
         }
       })
     }
@@ -8969,7 +8958,7 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/v1/offline-assessments' && req.method === 'GET') {
       const currentSchoolId = getReqSchoolId(req)
       db.offlineAssessments = db.offlineAssessments || []
-      let list = db.offlineAssessments.filter(a => !a.school_id || a.school_id === currentSchoolId)
+      let list = db.offlineAssessments.filter(a => a.school_id === currentSchoolId)
       if (query.classroom_id) {
         list = list.filter(a => a.classroom_id === query.classroom_id)
       }
@@ -9954,7 +9943,7 @@ FORMAT OUTPUT WAJIB BERUPA JSON TERSTRUKTUR DENGAN SKEMA:
       db.gradingSessions = db.gradingSessions || []
       db.gradingSubmissions = db.gradingSubmissions || []
 
-      let list = db.gradingSessions.filter(s => !s.school_id || s.school_id === currentSchoolId)
+      let list = db.gradingSessions.filter(s => s.school_id === currentSchoolId)
       if (query.classroom_id) {
         list = list.filter(s => s.classroom_id === query.classroom_id)
       }
