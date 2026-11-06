@@ -7,7 +7,7 @@
           <span>📅</span> Tahun Pelajaran & Kalender Semester
         </h1>
         <p class="text-surface-500 text-sm mt-0.5">
-          Atur periode kalender akademik, semester berjalan, dan cut-off penilaian SMP Negeri 6 Kendari
+          Atur periode kalender akademik, semester berjalan, dan cut-off penilaian {{ schoolName }}
         </p>
       </div>
       <div class="flex items-center gap-2">
@@ -137,7 +137,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
+const schoolName = computed(() => authStore.currentSchool?.name || 'Satuan Pendidikan')
 
 const showCreateModal = ref(false)
 

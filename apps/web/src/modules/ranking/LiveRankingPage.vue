@@ -445,18 +445,18 @@
       <div class="hidden print:grid grid-cols-2 gap-8 text-xs text-slate-900 text-center pt-8">
         <div>
           <p>Mengetahui,</p>
-          <p class="font-bold">Kepala SMP Negeri 6 Kendari</p>
+          <p class="font-bold">Kepala {{ schoolInfo.name || 'Satuan Pendidikan' }}</p>
           <div class="h-20"></div>
-          <p class="font-black underline">H. Abdul Rahman, S.Pd., M.Pd.</p>
-          <p class="text-[11px] font-mono mt-0.5">NIP. 197003151996031002</p>
+          <p class="font-black underline">{{ schoolInfo.principal_name || 'Kepala Sekolah' }}</p>
+          <p class="text-[11px] font-mono mt-0.5">NIP. {{ schoolInfo.principal_nip || '-' }}</p>
         </div>
 
         <div>
-          <p>Kendari, {{ printDate }}</p>
+          <p>{{ schoolInfo.city || 'Kendari' }}, {{ printDate }}</p>
           <p class="font-bold">Guru Mata Pelajaran</p>
           <div class="h-20"></div>
-          <p class="font-black underline">Muhammad Fadly Akbar Arsandi, S.Pd.</p>
-          <p class="text-[11px] font-mono mt-0.5">NIP. 199509282020121003</p>
+          <p class="font-black underline">{{ teacherName }}</p>
+          <p class="text-[11px] font-mono mt-0.5">NIP. {{ teacherNip }}</p>
         </div>
       </div>
     </div>
@@ -467,11 +467,17 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
 import {
   useClassrooms,
   getSubjectIdForClass,
   filterClassroomsBySubject
 } from '@/composables/useClassrooms'
+
+const authStore = useAuthStore()
+const schoolInfo = computed(() => authStore.currentSchool || { name: 'Satuan Pendidikan', principal_name: 'Kepala Sekolah', principal_nip: '-', city: 'Kendari' })
+const teacherName = computed(() => authStore.user?.name || 'Guru Mata Pelajaran')
+const teacherNip = computed(() => (authStore.user as any)?.nip || '-')
 
 const route = useRoute()
 const { classrooms, fetchClassrooms, formatClassLabel, getClassName } = useClassrooms()

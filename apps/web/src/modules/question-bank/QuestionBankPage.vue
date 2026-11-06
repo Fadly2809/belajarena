@@ -7,7 +7,7 @@
           <span>📚</span> Bank Soal Evaluasi
         </h1>
         <p class="text-slate-600 text-sm mt-1 font-medium">
-          Kelola butir soal evaluasi, asesmen, CBT, dan games interaktif SMP Negeri 6 Kendari
+          Kelola butir soal evaluasi, asesmen, CBT, dan games interaktif di {{ schoolName }}
         </p>
       </div>
       <div class="flex flex-wrap items-center gap-2">
@@ -975,7 +975,11 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
+
+const authStore = useAuthStore()
+const schoolName = computed(() => authStore.currentSchool?.name || 'Satuan Pendidikan')
 import {
   extractTextFromImage,
   extractTextFromDocx,

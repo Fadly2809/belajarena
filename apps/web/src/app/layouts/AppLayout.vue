@@ -583,7 +583,7 @@
             />
             <div class="text-left hidden md:block">
               <p class="text-xs font-bold text-slate-900 leading-tight">{{ userName }}</p>
-              <p class="text-[11px] text-slate-400 leading-tight mt-0.5">Informatika & KKA · SMP Negeri 6 Kendari</p>
+              <p class="text-[11px] text-slate-400 leading-tight mt-0.5 truncate max-w-[200px]">Informatika & KKA · {{ currentSchoolName }}</p>
             </div>
           </RouterLink>
         </div>
@@ -602,7 +602,7 @@
 
       <!-- Belajarena Footer -->
       <footer class="px-8 py-5 border-t border-slate-200/60 bg-white/60 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-2 mb-16 md:mb-0">
-        <p>© 2026 Belajarena · SMP Negeri 6 Kendari · Muhammad Fadly Akbar Arsandi, S.Pd. (NIP: 199509282020121003)</p>
+        <p>© 2026 Belajarena · {{ currentSchoolName }} · {{ currentTeacherCredit }}</p>
         <p class="font-medium text-slate-500">Informatika & KKA · Versi 2.5.0</p>
       </footer>
 
@@ -689,9 +689,15 @@ const showYearDropdown = ref(false)
 const selectedYear = ref('2024/2025')
 const academicYears = ['2024/2025', '2025/2026', '2023/2024']
 
-// User details
+// User details & School Multi-Tenancy
 const userName = computed(() => authStore.user?.name || 'Muhammad Fadly Akbar Arsandi, S.Pd.')
 const userNip = computed(() => (authStore.user as any)?.nip || '199509282020121003')
+const currentSchoolName = computed(() => authStore.currentSchool?.name || 'SMP Negeri 6 Kendari')
+const currentTeacherCredit = computed(() => {
+  const name = authStore.user?.name || 'Muhammad Fadly Akbar Arsandi, S.Pd.'
+  const nip = (authStore.user as any)?.nip ? ` (NIP: ${(authStore.user as any).nip})` : ''
+  return `${name}${nip}`
+})
 const userAvatar = computed(() => {
   return authStore.user?.avatar_url || authStore.user?.avatar_path || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'
 })

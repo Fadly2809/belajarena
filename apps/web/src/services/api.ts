@@ -41,12 +41,21 @@ const api = axios.create({
   withCredentials: true,
 })
 
-// Request interceptor - add auth token
+// Request interceptor - add auth token & active school id
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('auth_token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
+    }
+    const rawSchool = localStorage.getItem('auth_school')
+    if (rawSchool) {
+      try {
+        const s = JSON.parse(rawSchool)
+        if (s?.id) {
+          config.headers['X-School-Id'] = s.id
+        }
+      } catch {}
     }
     return config
   },

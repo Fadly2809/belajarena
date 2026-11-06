@@ -570,17 +570,17 @@
       <div class="grid grid-cols-2 gap-8 pt-8 text-xs text-center">
         <div>
           <p>Mengetahui,</p>
-          <p class="font-bold">Kepala SMP Negeri 6 Kendari</p>
+          <p class="font-bold">Kepala {{ schoolInfo.name || 'Satuan Pendidikan' }}</p>
           <div class="h-16"></div>
-          <p class="font-bold underline">La Ode Muhamad Hidayat, S.Pd., M.Pd.</p>
-          <p class="text-[10px]">NIP. 197205141998021002</p>
+          <p class="font-bold underline">{{ schoolInfo.principal_name || 'Kepala Sekolah' }}</p>
+          <p class="text-[10px]">NIP. {{ schoolInfo.principal_nip || '-' }}</p>
         </div>
         <div>
-          <p>Kendari, {{ printDate }}</p>
+          <p>{{ schoolInfo.city || 'Kota' }}, {{ printDate }}</p>
           <p class="font-bold">Guru Mata Pelajaran,</p>
           <div class="h-16"></div>
-          <p class="font-bold underline">Muhammad Fadly Akbar Arsandi, S.Pd.</p>
-          <p class="text-[10px]">NIP. 199509282020121003</p>
+          <p class="font-bold underline">{{ teacherName }}</p>
+          <p class="text-[10px]">NIP. {{ teacherNip }}</p>
         </div>
       </div>
     </div>
@@ -592,12 +592,18 @@ import { ref, computed, onMounted } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import api from '@/services/api'
 import * as XLSX from 'xlsx'
+import { useAuthStore } from '@/stores/auth'
 import {
   useClassrooms,
   getSubjectIdForClass,
   getAvailableSubjectsForClass,
   filterClassroomsBySubject
 } from '@/composables/useClassrooms'
+
+const authStore = useAuthStore()
+const schoolInfo = computed(() => authStore.currentSchool || { name: 'Satuan Pendidikan', principal_name: 'Kepala Sekolah', principal_nip: '-', city: 'Kendari' })
+const teacherName = computed(() => authStore.user?.name || 'Guru Mata Pelajaran')
+const teacherNip = computed(() => (authStore.user as any)?.nip || '-')
 
 const route = useRoute()
 const { classrooms, fetchClassrooms, formatClassLabel, getClassName } = useClassrooms()

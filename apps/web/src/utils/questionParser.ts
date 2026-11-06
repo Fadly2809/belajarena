@@ -331,7 +331,7 @@ export function downloadQuestionTemplateWord() {
 <html>
 <head>
 <meta charset="utf-8">
-<title>Template Format Soal Word - SMP Negeri 6 Kendari</title>
+<title>Template Format Soal Word - Belajarena LMS</title>
 <style>
   body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; line-height: 1.5; margin: 40px; }
   h2 { text-align: center; font-size: 14pt; margin-bottom: 4px; text-transform: uppercase; }
@@ -345,7 +345,7 @@ export function downloadQuestionTemplateWord() {
 </head>
 <body>
   <h2>Format Baku Penulisan Soal Word (.doc / .docx)</h2>
-  <p class="subtitle">Bank Soal Digital &bull; SMP Negeri 6 Kendari &bull; Kurikulum Merdeka</p>
+  <p class="subtitle">Bank Soal Digital &bull; Belajarena Multi-Sekolah &bull; Kurikulum Merdeka</p>
 
   <div class="guideline">
     <strong>Petunjuk Pengisian Format Word:</strong><br/>

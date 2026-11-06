@@ -7,7 +7,7 @@
           <span>👤</span> Profil Pendidik & Keamanan Akun
         </h1>
         <p class="text-slate-500 text-xs sm:text-sm mt-0.5 font-medium">
-          Kelola informasi data pribadi guru, NIP, kontak, dan keamanan kata sandi Anda di SMP Negeri 6 Kendari
+          Kelola informasi data pribadi guru, NIP, kontak, dan keamanan kata sandi Anda di {{ currentSchoolName }}
         </p>
       </div>
 
@@ -116,7 +116,7 @@
           Mata Pelajaran: <strong class="text-slate-800 font-bold">Informatika & KKA (Koding & AI)</strong>
         </p>
         <div class="flex flex-wrap items-center justify-center sm:justify-start gap-3 pt-1 text-xs text-slate-500">
-          <span>🏫 <strong class="text-slate-700">SMP Negeri 6 Kendari</strong></span>
+          <span>🏫 <strong class="text-slate-700">{{ currentSchoolName }}</strong></span>
           <span>&bull;</span>
           <span>📧 <span class="font-mono text-slate-600">{{ profile.email }}</span></span>
         </div>
@@ -289,7 +289,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
@@ -297,6 +297,7 @@ import { compressImageFile } from '@/utils/imageHelper'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const currentSchoolName = computed(() => authStore.currentSchool?.name || 'Satuan Pendidikan')
 
 const profile = ref({
   name: 'Muhammad Fadly Akbar Arsandi, S.Pd.',

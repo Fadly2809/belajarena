@@ -22,7 +22,7 @@
                 </span>
               </div>
               <p class="text-[11px] text-blue-150 leading-tight mt-0.5">
-                Informatika & KKA · SMP Negeri 6 Kendari
+                Informatika & KKA · {{ currentSchoolName }}
               </p>
             </div>
           </div>
@@ -211,9 +211,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useAiAssistant } from '@/composables/useAiAssistant'
+import { useAuthStore } from '@/stores/auth'
 import { renderMarkdown } from '@/utils/markdown'
+
+const authStore = useAuthStore()
+const currentSchoolName = computed(() => authStore.currentSchool?.name || 'Satuan Pendidikan')
 
 const {
   isOpen,
@@ -233,15 +237,15 @@ const customApiKeyInput = ref(apiKey.value)
 const apiKeySavedFeedback = ref(false)
 const copiedId = ref<string | null>(null)
 
-const quickChips = [
+const quickChips = computed(() => [
   { icon: '📡', label: 'Cara Live Presentasi', prompt: 'Bagaimana cara memulai sesi Live Presentasi dan menghubungkannya ke HP siswa?' },
   { icon: '🎮', label: 'Cara Main Edu-Games', prompt: 'Bagaimana langkah menjalankan Edu-Games Boss Battle 3D di kelas?' },
   { icon: '📝', label: 'Panduan Bank Soal & CBT', prompt: 'Bagaimana cara membuat Bank Soal, import dari Word/Excel, dan menyelenggarakan Ujian CBT?' },
-  { icon: '📋', label: '5 Soal HOTS KKA', prompt: 'Buatkan 5 butir soal pilihan ganda HOTS lengkap dengan stimulus dan kunci jawaban untuk mata pelajaran KKA (Koding dan Kecerdasan Artifisial) Kelas VII SMPN 6 Kendari.' },
-  { icon: '📘', label: 'Modul Ajar Informatika', prompt: 'Buatkan draf Modul Ajar Kurikulum Merdeka Fase D untuk mata pelajaran Informatika elemen Algoritma dan Pemrograman 2 JP di SMP Negeri 6 Kendari.' },
+  { icon: '📋', label: '5 Soal HOTS KKA', prompt: `Buatkan 5 butir soal pilihan ganda HOTS lengkap dengan stimulus dan kunci jawaban untuk mata pelajaran KKA (Koding dan Kecerdasan Artifisial) di ${currentSchoolName.value}.` },
+  { icon: '📘', label: 'Modul Ajar Informatika', prompt: `Buatkan draf Modul Ajar Kurikulum Merdeka Fase D untuk mata pelajaran Informatika elemen Algoritma dan Pemrograman 2 JP di ${currentSchoolName.value}.` },
   { icon: '💻', label: 'Script Python SMP', prompt: 'Berikan contoh program Python sederhana yang menarik untuk diajarkan di Lab Komputer siswa SMP kelas VII beserta penjelasan baris per baris kodenya.' },
   { icon: '🤖', label: 'Ide Proyek AI & Vision', prompt: 'Berikan 3 ide proyek praktikum Kecerdasan Artifisial (AI) yang ramah siswa SMP menggunakan kamera/webcam di Lab Komputer.' }
-]
+])
 
 function submitMessage() {
   sendMessage()

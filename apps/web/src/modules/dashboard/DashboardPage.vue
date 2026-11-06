@@ -4,16 +4,16 @@
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
         <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-          Halo, Pak Fadly! <span class="animate-bounce inline-block">👋</span>
+          Halo, {{ greetingName }}! <span class="animate-bounce inline-block">👋</span>
         </h1>
         <p class="text-slate-600 text-sm mt-1 font-medium">
-          Guru Informatika & KKA (Koding dan Kecerdasan Artifisial) · <strong class="text-slate-800">SMP Negeri 6 Kendari</strong>
+          Guru Informatika & KKA (Koding dan Kecerdasan Artifisial) · <strong class="text-slate-800">{{ currentSchoolName }}</strong>
         </p>
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
         <span class="px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200/80 text-blue-700 text-xs font-bold font-mono shadow-2xs">
-          NIP: 199509282020121003
+          NIP: {{ teacherNip }}
         </span>
         <span class="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-700 text-xs font-semibold shadow-2xs">
           Kurikulum Merdeka (Fase D)
@@ -602,9 +602,22 @@
 import { ref, computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import api from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
 import { useAiAssistant } from '@/composables/useAiAssistant'
 
+const authStore = useAuthStore()
 const { openAssistant } = useAiAssistant()
+
+const greetingName = computed(() => {
+  const name = authStore.user?.name
+  if (name) {
+    const parts = name.split(' ')
+    return parts.length > 1 ? `${parts[0]} ${parts[1]}` : name
+  }
+  return 'Bapak/Ibu Guru'
+})
+const currentSchoolName = computed(() => authStore.currentSchool?.name || 'Satuan Pendidikan')
+const teacherNip = computed(() => (authStore.user as any)?.nip || '199509282020121003')
 
 function openAiTutor(prompt?: string) {
   openAssistant(prompt)

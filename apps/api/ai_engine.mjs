@@ -1,16 +1,16 @@
 /**
  * AI Assistant Engine - Belajarena
  * Asisten Virtual Cerdas Berbasis Pengetahuan Menyeluruh Website Belajarena
- * Khusus untuk Guru Informatika & KKA (Koding dan Kecerdasan Artifisial)
- * SMP Negeri 6 Kendari — Muhammad Fadly Akbar Arsandi, S.Pd. (NIP: 199509282020121003)
+ * Fleksibel Multi-Sekolah untuk Seluruh Guru & Satuan Pendidikan
  */
 
-// Pangkalan Data Pengetahuan Resmi Belajarena
-const BELAJARENA_KNOWLEDGE_BASE = `
-# BASIS PENGETAHUAN LENGKAP BELAJARENA (SMP NEGERI 6 KENDARI)
+// Pangkalan Data Pengetahuan Resmi Belajarena (Dinamis Multi-Sekolah)
+function getBelajarenaKnowledgeBase(schoolName = 'Satuan Pendidikan', teacherName = 'Bapak/Ibu Guru', teacherNip = '') {
+  return `
+# BASIS PENGETAHUAN LENGKAP BELAJARENA (${schoolName.toUpperCase()})
 - Platform: Belajarena (Sistem Pembelajaran & Presentasi Interaktif Real-time Guru & Siswa)
-- Sekolah: SMP Negeri 6 Kendari, Sulawesi Tenggara
-- Guru Pengampu: Muhammad Fadly Akbar Arsandi, S.Pd. (NIP: 199509282020121003, Email: muhammadarsandi89@guru.smp.belajar.id)
+- Satuan Pendidikan: ${schoolName}
+- Guru Pengampu: ${teacherName} ${teacherNip ? `(NIP: ${teacherNip})` : ''}
 - Mata Pelajaran Utama: 
   1. Informatika (Kurikulum Merdeka Fase D, Kelas VII, VIII, IX)
   2. KKA - Koding dan Kecerdasan Artifisial (Muatan Inovasi Digital)
@@ -62,7 +62,7 @@ const BELAJARENA_KNOWLEDGE_BASE = `
 Semua menu manajemen dan penilaian kelas disatukan dalam satu menu hub Akademik:
 
 A. KELOMPOK KELAS & SISWA:
-- Manajemen Kelas (/classes): Kelola data rombel kelas VII A s.d. VII F, atur nama kelas, wali kelas, tahun ajaran, dan kapasitas siswa.
+- Manajemen Kelas (/classes): Kelola data rombel kelas, atur nama kelas, wali kelas, tahun ajaran, dan kapasitas siswa.
 - Data Siswa (/students): Kelola data induk siswa lengkap (Nama, NIS, NISN, Gender, Email, Kontak Ortu, Foto Profil/Avatar, Cetak Kartu Pelajar & QR Code).
 - Jadwal Mingguan (/schedule):
   * Tab 1: Jadwal Mingguan Rutin (Master Senin s.d. Jumat berulang otomatis tiap minggu).
@@ -81,6 +81,8 @@ B. KELOMPOK PENILAIAN & TUGAS:
   * Memberikan tugas mandiri atau proyek kelompok koding/AI.
   * Siswa mengunggah berkas atau tautan hasil kerja.
   * Guru memeriksa, memberi nilai numerik (0-100), dan umpan balik personal.
+- Periksa Kertas AI (/paper-grading):
+  * Koreksi lembar jawaban fisik tugas/ulangan tulisan tangan siswa berbasis Gemini Vision.
 - Mapping BAB & TP (/curriculum/mapping):
   * Pemetaan Bab, Elemen Kurikulum Merdeka (BK, TIK, SK, JKI, AD, AP, DSI, PLB), Capaian Pembelajaran (CP), dan Tujuan Pembelajaran (TP) serta KKTP.
 
@@ -88,15 +90,16 @@ C. KELOMPOK LAPORAN & MATERI:
 - Rekap Nilai Ulangan (/reports/exam-events): Analisis butir soal CBT, daya pembeda, tingkat kesukaran, dan grafik ketuntasan belajar per kelas.
 - Rekap Nilai Siswa / Ledger Nilai (/grades): Rekapitulasi nilai akhir gabungan dari seluruh komponen (Ulangan CBT + Tugas Proyek + Praktikum Koding + Kehadiran). Siap diunduh dalam format Excel.
 - Live Ranking (/ranking): Papan peringkat leaderboard prestasi dan keaktifan siswa (Total Poin XP, Badge, dan Tingkat Ketuntasan).
-- Materi Ajar Pustaka (/presentations?view=catalog): Katalog pustaka digital modul ajar, materi presentasi, dan lembar kerja siswa.
 
-### 5. ⚙️ PENGATURAN & PROFIL (/profile, /settings)
-- Kelola profil guru Muhammad Fadly Akbar Arsandi, S.Pd., update NIP, email, nomor WhatsApp, foto avatar, dan ganti kata sandi.
+### 5. ⚙️ PENGATURAN & PROFIL (/profile, /settings/school)
+- Kelola profil guru, update NIP, email, nomor WhatsApp, foto avatar, dan ganti kata sandi.
+- Kelola identitas satuan pendidikan (NPSN, nama sekolah, kepala sekolah, kktp standar).
 
 ### 6. 📱 PORTAL SISWA & MOBILE ANDROID APK (/student)
 - Siswa dapat login menggunakan NIS atau Username mereka (password standar: 123456).
 - Menu siswa: Dashboard Siswa, Jadwal Pelajaran Saya, Presensi Saya, Ujian CBT Siswa, Tugas Saya, Rekap Nilai Saya, dan Gabung Sesi Live Presentasi / Edu-Games via PIN.
 `
+}
 
 // Cache nama-nama model yang berhasil dideteksi untuk efisiensi
 let cachedModelsList = null
@@ -167,17 +170,24 @@ async function getAvailableGeminiModels(apiKey) {
 // Query Google Gemini API dengan Prompt Khusus Belajarena
 async function callGeminiApi(apiKey, message, history = [], context = {}) {
   const currentRoute = context.currentRoute || '/dashboard'
+  const schoolName = context.schoolName || context.school?.name || 'Satuan Pendidikan'
+  const teacherName = context.teacherName || context.user?.name || 'Bapak/Ibu Guru'
+  const teacherNip = context.teacherNip || context.user?.nip || ''
   const totalStudents = context.totalStudents || 180
   const totalClasses = context.totalClasses || 6
   const totalPresentations = context.totalPresentations || 8
 
-  const systemPrompt = `Anda adalah "AI Chatbot Belajarena", asisten resmi cerdas, interaktif, dan penuh inisiatif dari platform digital Belajarena di SMP Negeri 6 Kendari.
-Anda mendampingi Bapak Muhammad Fadly Akbar Arsandi, S.Pd. (Guru Informatika & KKA, NIP: 199509282020121003).
+  const knowledgeBase = getBelajarenaKnowledgeBase(schoolName, teacherName, teacherNip)
+
+  const systemPrompt = `Anda adalah "AI Chatbot Belajarena", asisten resmi cerdas, interaktif, dan penuh inisiatif dari platform digital Belajarena di ${schoolName}.
+Anda mendampingi ${teacherName} ${teacherNip ? `(NIP: ${teacherNip})` : ''} dalam kegiatan pembelajaran, evaluasi, dan presentasi kelas.
 
 INFORMASI KONTESKTUAL SAAT INI:
+- Satuan Pendidikan: ${schoolName}
+- Guru Pengampu: ${teacherName} ${teacherNip ? `(NIP: ${teacherNip})` : ''}
 - Halaman aktif guru: ${currentRoute}
 - Total Siswa Terdaftar: ${totalStudents} siswa
-- Total Rombel Kelas: ${totalClasses} kelas (Kelas VII A - VII F)
+- Total Rombel Kelas: ${totalClasses} kelas
 - Total Modul Presentasi: ${totalPresentations} modul
 
 ATURAN PERILAKU INTERAKTIF & REKREASI PERCAKAPAN (SEPERTI CHATGPT & GEMINI):
@@ -196,11 +206,11 @@ ATURAN PERILAKU INTERAKTIF & REKREASI PERCAKAPAN (SEPERTI CHATGPT & GEMINI):
 2. MENJAGA KONTEKS MULTI-TURN (INGAT PERCAKAPAN SEBELUMNYA):
    - Perhatikan riwayat chat (history). Jika sebelumnya Anda bertanya detail materi dan guru baru saja menjawabnya, langsung lanjutkan dengan materi yang diminta tanpa bertanya ulang.
 3. KUASAI 100% FITUR & NAVIGASI BELAJARENA:
-   - Jika guru bertanya seputar cara menggunakan fitur (Edu-Games, Live Presentasi, CBT, Bank Soal, Jadwal, Absensi, Siswa, dll.), berikan panduan langkah demi langkah (1, 2, 3...) yang runut dan SELALU sertakan tautan navigasi langsung berformat [Nama Menu →](/route-link).
+   - Jika guru bertanya seputar cara menggunakan fitur (Edu-Games, Live Presentasi, CBT, Bank Soal, Jadwal, Absensi, Siswa, Periksa Kertas, dll.), berikan panduan langkah demi langkah (1, 2, 3...) yang runut dan SELALU sertakan tautan navigasi langsung berformat [Nama Menu →](/route-link).
 4. FORMAT GITHUB-FLAVORED MARKDOWN:
    - Gunakan format teks yang rapi, tebal, tabel perbandingan jika relevan, dan blok kode bersintaks.
 
-${BELAJARENA_KNOWLEDGE_BASE}`
+${knowledgeBase}`
 
   const contents = []
   for (const h of history) {
@@ -642,19 +652,24 @@ Buka menu [Absensi Siswa →](/attendance):
   // -------------------------------------------------------------
   // 10. DEFAULT / PERCAKAPAN UMUM
   // -------------------------------------------------------------
-  return `### 🤖 Asisten AI Belajarena — SMP Negeri 6 Kendari
-Halo Bapak **Muhammad Fadly Akbar Arsandi, S.Pd.!** (NIP: 199509282020121003)  
-Guru Mata Pelajaran **Informatika & KKA** di SMP Negeri 6 Kendari.
+  const schoolName = context.schoolName || context.school?.name || 'Satuan Pendidikan'
+  const teacherName = context.teacherName || context.user?.name || 'Bapak/Ibu Guru'
+  const teacherNip = context.teacherNip || context.user?.nip ? `(NIP: ${context.teacherNip || context.user?.nip})` : ''
+
+  return `### 🤖 Asisten AI Belajarena — ${schoolName}
+Halo **${teacherName}** ${teacherNip}!  
+Selamat datang di Asisten Pedagogis Digital Belajarena untuk **${schoolName}**.
 
 Mengenai: **"${rawText}"**
 
-Bagaimana saya bisa membantu Bapak hari ini?
+Bagaimana saya bisa membantu Bapak/Ibu hari ini?
 - 📋 Mau membuat paket butir soal kuis atau ulangan? *(Ketik: "Buatkan soal Informatika" atau "Buatkan soal KKA")*
 - 📘 Butuh bantuan draf Modul Ajar Kurikulum Merdeka? *(Ketik: "Buatkan modul ajar")*
 - 📡 Panduan menjalankan [Live Presentasi](/presentations) atau [Edu-Games](/games)?
+- 📝 Panduan koreksi lembar jawaban fisik [Periksa Kertas AI](/paper-grading)?
 - 🖥️ Pengaturan [Ujian CBT](/cbt) atau [Bank Soal](/question-bank)?
 
-> 💡 *Silakan beritahu saya kebutuhan Bapak secara santai layaknya berbicara dengan asisten pribadi!*`
+> 💡 *Silakan beritahu saya kebutuhan Anda secara santai layaknya berbicara dengan asisten pribadi!*`
 }
 
 // Query Google Gemini Vision API untuk Pemeriksaan Lembar Jawaban Kertas

@@ -17,22 +17,41 @@ const isLoading = ref(false)
 const inputMessage = ref('')
 const apiKey = ref(localStorage.getItem(STORAGE_KEY_API_KEY) || '')
 
-const initialGreeting: ChatMessage = {
-  id: 'msg-welcome',
-  role: 'assistant',
-  content: `### 🤖 Halo Pak Muhammad Fadly Akbar Arsandi, S.Pd.!
-Saya adalah **Asisten AI Belajarena** untuk guru Informatika & KKA di **SMP Negeri 6 Kendari** (NIP: 199509282020121003).
+function getAiGreeting(): ChatMessage {
+  let teacherName = 'Bapak/Ibu Guru'
+  let schoolName = 'Satuan Pendidikan'
+  let nipStr = ''
+  try {
+    const rawUser = localStorage.getItem('auth_user')
+    if (rawUser) {
+      const u = JSON.parse(rawUser)
+      if (u?.name) teacherName = u.name
+      if (u?.nip) nipStr = ` (NIP: ${u.nip})`
+    }
+    const rawSchool = localStorage.getItem('auth_school')
+    if (rawSchool) {
+      const s = JSON.parse(rawSchool)
+      if (s?.name) schoolName = s.name
+    }
+  } catch {}
+
+  return {
+    id: 'msg-welcome',
+    role: 'assistant',
+    content: `### 🤖 Halo ${teacherName}!
+Saya adalah **Asisten AI Belajarena** untuk guru Informatika & KKA di **${schoolName}**${nipStr}.
 
 Saya siap membantu Anda menyusun perangkat ajar dan aktivitas belajar interaktif secara instan:
 * 📋 **Penyusunan Soal HOTS & MOTS** (Kurikulum Merdeka Fase D).
 * 📘 **Pembuatan Draf Modul Ajar, ATP, & KKTP**.
-* 💻 **Contoh Kode Python, Scratch, & Block Coding** ramah siswa SMP.
+* 💻 **Contoh Kode Python, Scratch, & Block Coding** ramah siswa.
 * 🤖 **Ide Praktikum Kecerdasan Artifisial & Machine Learning**.
 * 📊 **Panduan Asesmen Formatif & Sumatif**.
 
 Silakan ketik pertanyaan Anda atau pilih tombol cepat di bawah!`,
-  timestamp: new Date().toISOString(),
-  source: 'built_in'
+    timestamp: new Date().toISOString(),
+    source: 'built_in'
+  }
 }
 
 function loadHistory(): ChatMessage[] {
@@ -49,7 +68,7 @@ function loadHistory(): ChatMessage[] {
   } catch (e) {
     console.warn('Failed to parse saved AI history:', e)
   }
-  return [initialGreeting]
+  return [getAiGreeting()]
 }
 
 const messages = ref<ChatMessage[]>(loadHistory())
@@ -85,7 +104,7 @@ export function useAiAssistant() {
   }
 
   function clearHistory() {
-    messages.value = [initialGreeting]
+    messages.value = [getAiGreeting()]
     saveHistory()
   }
 
@@ -112,15 +131,32 @@ export function useAiAssistant() {
         content: m.content
       }))
 
+      let teacherName = 'Bapak/Ibu Guru'
+      let schoolName = 'Satuan Pendidikan'
+      let nip = ''
+      try {
+        const rawUser = localStorage.getItem('auth_user')
+        if (rawUser) {
+          const u = JSON.parse(rawUser)
+          if (u?.name) teacherName = u.name
+          if (u?.nip) nip = u.nip
+        }
+        const rawSchool = localStorage.getItem('auth_school')
+        if (rawSchool) {
+          const s = JSON.parse(rawSchool)
+          if (s?.name) schoolName = s.name
+        }
+      } catch {}
+
       const response = await api.post('/ai/chat', {
         message: textToSend,
         history: historyPayload,
         apiKey: apiKey.value,
         context: {
           currentRoute: typeof window !== 'undefined' ? window.location.pathname : '',
-          teacherName: 'Muhammad Fadly Akbar Arsandi, S.Pd.',
-          school: 'SMP Negeri 6 Kendari',
-          nip: '199509282020121003'
+          teacherName,
+          school: schoolName,
+          nip
         }
       })
 

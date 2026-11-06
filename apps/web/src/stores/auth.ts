@@ -2,6 +2,26 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/services/api'
 
+export interface SchoolInfo {
+  id: string
+  name: string
+  npsn?: string
+  address?: string
+  email?: string
+  phone?: string
+  principal_name?: string
+  principal_nip?: string
+  accreditation?: string
+  curriculum?: string
+  kktp?: number
+  academic_year?: string
+  city?: string
+  province?: string
+  student_count?: number
+  teacher_count?: number
+  classroom_count?: number
+}
+
 export interface User {
   id: string
   name: string
@@ -15,6 +35,7 @@ export interface User {
   role?: string
   is_student?: boolean
   nis?: string
+  nip?: string
   classroom_id?: string
   classroom_name?: string
 }
@@ -28,8 +49,18 @@ function getSavedUser(): User | null {
   }
 }
 
+function getSavedSchool(): SchoolInfo | null {
+  try {
+    const raw = localStorage.getItem('auth_school')
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(getSavedUser())
+  const currentSchool = ref<SchoolInfo | null>(getSavedSchool())
   const loading = ref(false)
   const initialized = ref(false)
 
@@ -76,10 +107,14 @@ export const useAuthStore = defineStore('auth', () => {
     loading.value = true
     try {
       const response = await api.post('/auth/login', credentials)
-      const { token, user: userData } = response.data.data
+      const { token, user: userData, school: schoolData } = response.data.data
 
       localStorage.setItem('auth_token', token)
       localStorage.setItem('auth_user', JSON.stringify(userData))
+      if (schoolData) {
+        localStorage.setItem('auth_school', JSON.stringify(schoolData))
+        currentSchool.value = schoolData
+      }
       user.value = userData
       initialized.value = true
 
@@ -147,6 +182,58 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function registerSchool(data: {
+    school_name: string
+    npsn?: string
+    city?: string
+    province?: string
+    address?: string
+    phone?: string
+    admin_name: string
+    email: string
+    password: string
+  }) {
+    loading.value = true
+    try {
+      const response = await api.post('/auth/register-school', data)
+      const { token, user: userData, school: schoolData } = response.data.data
+
+      localStorage.setItem('auth_token', token)
+      localStorage.setItem('auth_user', JSON.stringify(userData))
+      if (schoolData) {
+        localStorage.setItem('auth_school', JSON.stringify(schoolData))
+        currentSchool.value = schoolData
+      }
+      user.value = userData
+      initialized.value = true
+      return { success: true, message: response.data?.message }
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Registrasi sekolah gagal. Periksa kembali formulir Anda.',
+        errors: error.response?.data?.errors || {}
+      }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  function setSchool(school: SchoolInfo) {
+    currentSchool.value = school
+    localStorage.setItem('auth_school', JSON.stringify(school))
+  }
+
+  async function fetchActiveSchool() {
+    try {
+      const res = await api.get('/school')
+      if (res.data?.data) {
+        setSchool(res.data.data)
+        return res.data.data
+      }
+    } catch {}
+    return null
+  }
+
   async function logout() {
     loading.value = true
     try {
@@ -156,7 +243,9 @@ export const useAuthStore = defineStore('auth', () => {
     } finally {
       localStorage.removeItem('auth_token')
       localStorage.removeItem('auth_user')
+      localStorage.removeItem('auth_school')
       user.value = null
+      currentSchool.value = null
       loading.value = false
       initialized.value = true
     }
@@ -267,6 +356,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   return {
     user,
+    currentSchool,
     loading,
     initialized,
     isAuthenticated,
@@ -277,6 +367,9 @@ export const useAuthStore = defineStore('auth', () => {
     hasPermission,
     isSuperAdmin,
     login,
+    registerSchool,
+    setSchool,
+    fetchActiveSchool,
     logout,
     fetchUser,
     updateUser,

@@ -47,7 +47,7 @@
               {{ exam.title }}
             </h1>
             <p class="text-xs text-white/80 mt-1">
-              SMP Negeri 6 Kendari &bull; Dibuat oleh: <strong class="text-white">{{ creatorName }}</strong>
+              {{ schoolName }} &bull; Dibuat oleh: <strong class="text-white">{{ creatorName }}</strong>
             </p>
           </div>
 
@@ -214,6 +214,7 @@ import api from '@/services/api'
 
 const route = useRoute()
 const authStore = useAuthStore()
+const schoolName = computed(() => authStore.currentSchool?.name || 'Satuan Pendidikan')
 const examId = (route.params.id as string) || 'ex-01'
 
 const loading = ref(true)

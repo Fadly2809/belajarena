@@ -562,7 +562,7 @@
             <!-- Biodata Tambahan -->
             <div>
               <label class="label">Email Siswa (Opsional)</label>
-              <input v-model="form.email" type="email" class="input text-xs" placeholder="email@siswa.smpn6kendari.sch.id" />
+              <input v-model="form.email" type="email" class="input text-xs" placeholder="email.siswa@sekolah.sch.id" />
             </div>
 
             <div>
@@ -687,7 +687,7 @@
 
                 <!-- Footer Petunjuk Login -->
                 <div class="pt-1 flex items-center justify-between text-[9px] text-slate-400">
-                  <span>Portal: <strong class="text-slate-600">http://smpn6kendari.sch.id</strong></span>
+                  <span>Portal Siswa: <strong class="text-slate-600">Aplikasi Belajarena LMS</strong></span>
                   <span>Jaga kerahasiaan kata sandi</span>
                 </div>
               </div>

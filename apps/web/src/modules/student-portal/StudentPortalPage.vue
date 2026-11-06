@@ -13,7 +13,7 @@
             <span>Belajar<span class="text-amber-400">ena</span></span>
             <span class="text-[9px] font-extrabold text-cyan-300 bg-cyan-400/20 px-1.5 py-0.5 rounded uppercase">Siswa</span>
           </h1>
-          <p class="text-[10px] text-slate-300 font-medium">SMP Negeri 6 Kendari</p>
+          <p class="text-[10px] text-slate-300 font-medium">{{ schoolName }}</p>
         </div>
       </div>
 
@@ -833,6 +833,7 @@ import { compressImageFile } from '@/utils/imageHelper'
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
+const schoolName = computed(() => authStore.currentSchool?.name || 'Satuan Pendidikan')
 
 const loading = ref(true)
 const currentTab = ref<'home' | 'tasks' | 'report' | 'materials' | 'leaderboard' | 'profile'>('home')

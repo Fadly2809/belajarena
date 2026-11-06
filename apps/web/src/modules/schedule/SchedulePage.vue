@@ -13,7 +13,7 @@
           </span>
         </div>
         <p class="text-xs sm:text-sm text-slate-600 font-medium mt-1">
-          SMP Negeri 6 Kendari &bull; Guru Pengampu: <strong class="text-slate-800">Muhammad Fadly Akbar Arsandi, S.Pd.</strong> (Informatika & KKA)
+          {{ schoolName }} &bull; Guru Pengampu: <strong class="text-slate-800">{{ teacherName }}</strong> (Informatika & KKA)
         </p>
       </div>
 
@@ -500,11 +500,16 @@
 import { ref, computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import api from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
 import {
   useClassrooms,
   getSubjectIdForClass,
   getAvailableSubjectsForClass
 } from '@/composables/useClassrooms'
+
+const authStore = useAuthStore()
+const schoolName = computed(() => authStore.currentSchool?.name || 'Satuan Pendidikan')
+const teacherName = computed(() => authStore.user?.name || 'Guru Pengampu')
 
 const { classrooms, fetchClassrooms, formatClassLabel, getClassName } = useClassrooms()
 

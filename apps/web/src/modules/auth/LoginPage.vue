@@ -91,7 +91,7 @@
               type="text"
               class="input text-xs"
               :class="{ 'input-error': errors.email }"
-              :placeholder="accountType === 'teacher' ? '199509282020121003 atau fadly.arsandi@smpn6kendari.sch.id' : 'Masukkan NIS atau NISN siswa'"
+              :placeholder="accountType === 'teacher' ? 'NIP atau alamat email Guru / Pengelola' : 'Masukkan NIS atau NISN siswa'"
               autocomplete="username email"
               :disabled="loading"
             />
@@ -152,13 +152,26 @@
           </button>
 
           <!-- Quick Fill for Pak Fadly -->
-          <div v-if="accountType === 'teacher'" class="pt-2">
+          <div v-if="accountType === 'teacher'" class="pt-2 flex flex-col gap-2">
             <button
               type="button"
               @click="quickFillTeacher"
               class="w-full text-center py-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 text-[11px] font-semibold text-slate-700 transition"
             >
-              ⚡ Klik untuk isi akun Pak Fadly otomatis
+              ⚡ Klik untuk isi akun Guru Default (Pak Fadly)
+            </button>
+            <div class="relative flex py-1 items-center">
+              <div class="flex-grow border-t border-slate-200"></div>
+              <span class="flex-shrink mx-2 text-[10px] text-slate-400 font-bold uppercase tracking-wider">atau</span>
+              <div class="flex-grow border-t border-slate-200"></div>
+            </div>
+            <button
+              type="button"
+              @click="openRegisterModal"
+              class="w-full text-center py-2 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-[11px] font-bold text-blue-800 transition flex items-center justify-center gap-1.5"
+            >
+              <span>🏛️</span>
+              <span>Daftarkan Satuan Pendidikan Baru</span>
             </button>
           </div>
 
@@ -177,15 +190,159 @@
 
       <!-- Footer Note -->
       <p class="text-center text-primary-200 text-xs mt-6">
-        © 2026 Belajarena · SMP Negeri 6 Kendari<br/>
-        <span class="text-[10px] text-primary-300">Sistem Khusus Akun Guru & Siswa</span>
+        © 2026 Belajarena · {{ schoolName }}<br/>
+        <span class="text-[10px] text-primary-300">Sistem Pembelajaran Multi-Satuan Pendidikan Terpadu</span>
       </p>
+    </div>
+
+    <!-- Modal Registrasi Satuan Pendidikan Baru -->
+    <div
+      v-if="showRegisterModal"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+      @click.self="showRegisterModal = false"
+    >
+      <div class="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-lg w-full p-6 sm:p-7 relative max-h-[90vh] overflow-y-auto">
+        <div class="flex items-start justify-between pb-4 border-b border-slate-100 mb-5">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-xl">
+              🏛️
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-slate-900">Daftarkan Satuan Pendidikan Baru</h3>
+              <p class="text-xs text-slate-500 mt-0.5">Mulai sekolah baru dengan data dan rombel kelas terisolasi</p>
+            </div>
+          </div>
+          <button
+            @click="showRegisterModal = false"
+            class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-sm transition"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div v-if="registerError" class="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+          <span>⚠️</span>
+          <span>{{ registerError }}</span>
+        </div>
+
+        <form @submit.prevent="handleRegisterSchool" class="space-y-3.5 text-xs">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Nama Satuan Pendidikan / Sekolah <span class="text-red-500">*</span></label>
+            <input
+              v-model="regForm.school_name"
+              type="text"
+              required
+              class="input text-xs"
+              placeholder="Contoh: SMP Negeri 1 Surabaya / SMA Prestasi"
+            />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">NPSN (Opsional)</label>
+              <input
+                v-model="regForm.npsn"
+                type="text"
+                class="input text-xs font-mono"
+                placeholder="8 digit NPSN"
+              />
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Kota / Kabupaten</label>
+              <input
+                v-model="regForm.city"
+                type="text"
+                class="input text-xs"
+                placeholder="Contoh: Surabaya"
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Provinsi</label>
+              <input
+                v-model="regForm.province"
+                type="text"
+                class="input text-xs"
+                placeholder="Contoh: Jawa Timur"
+              />
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">No. Telp Sekolah</label>
+              <input
+                v-model="regForm.phone"
+                type="text"
+                class="input text-xs"
+                placeholder="031-xxxxxxx"
+              />
+            </div>
+          </div>
+
+          <div class="pt-2 border-t border-slate-100">
+            <h4 class="font-bold text-slate-800 text-xs mb-2 flex items-center gap-1.5">
+              <span>👤</span> <span>Akun Pengelola / Guru Pertama</span>
+            </h4>
+            <div class="space-y-3">
+              <div>
+                <label class="block font-semibold text-slate-700 mb-1">Nama Lengkap Pengelola / Guru <span class="text-red-500">*</span></label>
+                <input
+                  v-model="regForm.admin_name"
+                  type="text"
+                  required
+                  class="input text-xs"
+                  placeholder="Contoh: Dr. Budi Santoso, M.Pd."
+                />
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-700 mb-1">Email Pengelola (Untuk Login) <span class="text-red-500">*</span></label>
+                <input
+                  v-model="regForm.email"
+                  type="email"
+                  required
+                  class="input text-xs"
+                  placeholder="admin@sekolahanda.sch.id"
+                />
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-700 mb-1">Kata Sandi <span class="text-red-500">*</span></label>
+                <input
+                  v-model="regForm.password"
+                  type="password"
+                  required
+                  minlength="6"
+                  class="input text-xs"
+                  placeholder="Minimal 6 karakter"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-3 flex gap-2">
+            <button
+              type="button"
+              @click="showRegisterModal = false"
+              class="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              :disabled="registerLoading"
+              class="flex-1 py-2.5 rounded-xl bg-[#0c2b3d] hover:bg-[#164255] text-white font-bold transition flex items-center justify-center gap-2"
+            >
+              <svg v-if="registerLoading" class="spinner w-4 h-4" viewBox="0 0 24 24"></svg>
+              <span>{{ registerLoading ? 'Mendaftarkan...' : 'Daftarkan & Masuk' }}</span>
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
@@ -193,12 +350,66 @@ const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 
-const schoolName = 'SMP Negeri 6 Kendari'
+const schoolName = computed(() => authStore.currentSchool?.name || 'Belajarena LMS')
 
 const accountType = ref<'teacher' | 'student'>('teacher')
 const loading = ref(false)
 const showPassword = ref(false)
 const errorMessage = ref('')
+
+// Register New School Modal State
+const showRegisterModal = ref(false)
+const registerLoading = ref(false)
+const registerError = ref('')
+const regForm = reactive({
+  school_name: '',
+  npsn: '',
+  city: '',
+  province: '',
+  phone: '',
+  admin_name: '',
+  email: '',
+  password: ''
+})
+
+function openRegisterModal() {
+  registerError.value = ''
+  showRegisterModal.value = true
+}
+
+async function handleRegisterSchool() {
+  if (!regForm.school_name || !regForm.email || !regForm.password) {
+    registerError.value = 'Nama sekolah, email, dan kata sandi wajib diisi.'
+    return
+  }
+  registerLoading.value = true
+  registerError.value = ''
+
+  const res = await authStore.registerSchool({
+    school_name: regForm.school_name,
+    npsn: regForm.npsn,
+    city: regForm.city,
+    province: regForm.province,
+    phone: regForm.phone,
+    admin_name: regForm.admin_name,
+    email: regForm.email,
+    password: regForm.password
+  })
+
+  registerLoading.value = false
+  if (res.success) {
+    showRegisterModal.value = false
+    router.push('/dashboard')
+  } else {
+    registerError.value = res.message || 'Gagal mendaftarkan sekolah.'
+  }
+}
+
+onMounted(() => {
+  if (!authStore.currentSchool) {
+    authStore.fetchActiveSchool()
+  }
+})
 
 const form = reactive({
   email: 'muhammadarsandi89@guru.smp.belajar.id',

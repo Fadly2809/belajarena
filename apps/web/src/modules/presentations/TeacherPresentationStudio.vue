@@ -324,7 +324,7 @@
             <!-- Floating Watermark Header: Left -->
             <div class="absolute top-3 left-4 z-20 px-3 py-1 rounded-lg bg-surface-900/90 border border-surface-700/80 backdrop-blur-md flex items-center gap-2 text-xs font-bold text-white shadow-md">
               <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span class="text-primary-300 uppercase tracking-wider text-[11px]">SMP Negeri 6 Kendari &bull; {{ session.subject || 'Informatika Fase D' }}</span>
+              <span class="text-primary-300 uppercase tracking-wider text-[11px]">{{ currentSchoolName }} &bull; {{ session.subject || 'Informatika Fase D' }}</span>
             </div>
 
             <!-- Floating Watermark Header: Right (Slide Counter) -->
@@ -901,7 +901,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
+
+const authStore = useAuthStore()
+const currentSchoolName = computed(() => authStore.currentSchool?.name || 'Satuan Pendidikan')
 import {
   presentationRealtime,
   resolveSlideImageUrl,

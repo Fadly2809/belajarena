@@ -11,7 +11,7 @@
             <span>📊</span> Rekapitulasi Nilai Siswa (Informatika & KKA)
           </h2>
           <span class="text-[11px] text-slate-500 font-medium">
-            SMP Negeri 6 Kendari &bull; Muhammad Fadly Akbar Arsandi, S.Pd. (NIP: 199509282020121003)
+            {{ stats.school_name || currentSchoolName }} &bull; {{ stats.teacher_name }} (NIP: {{ stats.teacher_nip }})
           </span>
         </div>
       </div>
@@ -410,7 +410,7 @@
             <tr>
               <td class="w-36 py-1 font-semibold text-slate-600">Satuan Pendidikan</td>
               <td class="w-4 py-1">:</td>
-              <td class="py-1 font-bold">SMP Negeri 6 Kendari</td>
+              <td class="py-1 font-bold">{{ stats.school_name || currentSchoolName }}</td>
             </tr>
             <tr>
               <td class="py-1 font-semibold text-slate-600">Mata Pelajaran</td>
@@ -502,14 +502,14 @@
       <div class="pt-6 grid grid-cols-2 gap-8 text-xs text-slate-900 text-center">
         <div>
           <p>Mengetahui,</p>
-          <p class="font-bold">Kepala SMP Negeri 6 Kendari</p>
+          <p class="font-bold">Kepala {{ stats.school_name || currentSchoolName }}</p>
           <div class="h-20"></div>
           <p class="font-black underline">{{ stats.principal_name }}</p>
           <p class="text-[11px] font-mono mt-0.5">NIP. {{ stats.principal_nip }}</p>
         </div>
 
         <div>
-          <p>Kendari, {{ printDate }}</p>
+          <p>{{ (stats as any).city || 'Kendari' }}, {{ printDate }}</p>
           <p class="font-bold">Guru Mata Pelajaran</p>
           <div class="h-20"></div>
           <p class="font-black underline">{{ stats.teacher_name }}</p>
@@ -1231,6 +1231,10 @@ import { RouterLink } from 'vue-router'
 import api from '@/services/api'
 import * as XLSX from 'xlsx'
 import { useClassrooms } from '@/composables/useClassrooms'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
+const currentSchoolName = computed(() => authStore.currentSchool?.name || 'Satuan Pendidikan')
 
 const {
   classrooms,
@@ -1410,6 +1414,21 @@ async function onClassChange() {
 }
 
 onMounted(async () => {
+  try {
+    const schRes = await api.get('/school')
+    if (schRes.data?.data) {
+      const s = schRes.data.data
+      stats.value.school_name = s.name || stats.value.school_name
+      stats.value.principal_name = s.principal_name || stats.value.principal_name
+      stats.value.principal_nip = s.principal_nip || stats.value.principal_nip
+      if (s.city) (stats.value as any).city = s.city
+    }
+    if (authStore.user?.name) {
+      stats.value.teacher_name = authStore.user.name
+      stats.value.teacher_nip = (authStore.user as any).nip || stats.value.teacher_nip
+    }
+  } catch {}
+
   await fetchClassrooms()
   if (classrooms.value.length > 0 && !classrooms.value.some(c => c.id === selectedClassId.value)) {
     selectedClassId.value = classrooms.value[0].id

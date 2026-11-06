@@ -7,7 +7,7 @@
           <span>🏫</span> Manajemen Kelas (Rombongan Belajar)
         </h1>
         <p class="text-slate-600 text-sm mt-1 font-medium">
-          Data kelas, wali kelas pembina, dan distribusi siswa SMP Negeri 6 Kendari
+          Data kelas, wali kelas pembina, dan distribusi siswa di {{ schoolName }}
         </p>
       </div>
       <div class="flex items-center gap-2">
@@ -296,7 +296,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
+
+const authStore = useAuthStore()
+const schoolName = computed(() => authStore.currentSchool?.name || 'Satuan Pendidikan')
 
 interface Classroom {
   id: string

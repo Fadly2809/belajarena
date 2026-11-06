@@ -14,7 +14,7 @@
             </div>
             <h1 class="text-2xl font-black mt-1">Kelas {{ classroom?.name || 'VII A' }} (Fase D)</h1>
             <p class="text-xs text-white/80 mt-0.5">
-              Wali Kelas: <strong class="text-amber-300">{{ classroom?.homeroom_teacher_name || 'Muhammad Fadly Akbar Arsandi, S.Pd.' }}</strong> &bull; SMP Negeri 6 Kendari
+              Wali Kelas: <strong class="text-amber-300">{{ classroom?.homeroom_teacher_name || 'Guru Pengampu' }}</strong> &bull; {{ schoolName }}
             </p>
           </div>
         </div>
@@ -219,7 +219,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
+
+const authStore = useAuthStore()
+const schoolName = computed(() => authStore.currentSchool?.name || 'Satuan Pendidikan')
 
 const route = useRoute()
 const activeTab = ref<'students' | 'schedule'>('students')

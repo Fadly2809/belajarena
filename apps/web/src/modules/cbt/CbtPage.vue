@@ -7,7 +7,7 @@
           <span>💻</span> CBT – Ujian Online
         </h1>
         <p class="text-slate-600 text-sm mt-1 font-medium">
-          Kelola ujian berbasis komputer (STS, SAS, dan Sumatif Lingkup Materi) SMP Negeri 6 Kendari
+          Kelola ujian berbasis komputer (STS, SAS, dan Sumatif Lingkup Materi) di {{ schoolName }}
         </p>
       </div>
       <RouterLink to="/cbt/create" class="px-4 py-2.5 rounded-xl bg-[#0c2b3d] hover:bg-[#082231] text-white font-bold text-xs shadow-md transition flex items-center gap-2">
@@ -302,9 +302,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
+
+const authStore = useAuthStore()
+const schoolName = computed(() => authStore.currentSchool?.name || 'Satuan Pendidikan')
 
 interface Exam {
   id: string

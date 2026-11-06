@@ -11,7 +11,7 @@
             Laporan Rekapitulasi Presensi Siswa Resmi
           </h2>
           <span class="text-[11px] text-surface-500">
-            SMP Negeri 6 Kendari &bull; Kelas VII-A &bull; Semester Ganjil 2024/2025
+            {{ schoolInfo.name }} &bull; Semester Berjalan &bull; {{ schoolInfo.academic_year || '2026/2027' }}
           </span>
         </div>
       </div>
@@ -97,18 +97,18 @@
       <div class="pt-8 grid grid-cols-2 gap-8 text-center text-xs text-surface-800">
         <div>
           <p>Mengetahui,</p>
-          <p class="font-semibold">Kepala SMPN 6 Kendari</p>
+          <p class="font-semibold">Kepala {{ schoolInfo.name }}</p>
           <div class="h-20"></div>
-          <p class="font-bold underline">H. Abdul Rahman, S.Pd., M.Pd.</p>
-          <p class="text-[10px] text-surface-500">NIP. 197003151996031002</p>
+          <p class="font-bold underline">{{ schoolInfo.principal_name || 'Kepala Sekolah' }}</p>
+          <p class="text-[10px] text-surface-500">NIP. {{ schoolInfo.principal_nip || '-' }}</p>
         </div>
 
         <div>
-          <p>Kendari, 24 Oktober 2024</p>
+          <p>{{ schoolInfo.city || 'Kota' }}, {{ printDate }}</p>
           <p class="font-semibold">Guru Pengampu</p>
           <div class="h-20"></div>
-          <p class="font-bold underline">Muhammad Fadly Akbar Arsandi, S.Pd.</p>
-          <p class="text-[10px] text-surface-500">NIP. 199509282020121003</p>
+          <p class="font-bold underline">{{ teacherName }}</p>
+          <p class="text-[10px] text-surface-500">NIP. {{ teacherNip }}</p>
         </div>
       </div>
     </div>
@@ -116,8 +116,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
+
+const authStore = useAuthStore()
+const schoolInfo = computed(() => authStore.currentSchool || { name: 'Satuan Pendidikan', principal_name: 'Kepala Sekolah', principal_nip: '-', city: 'Kendari', academic_year: '2026/2027' })
+const teacherName = computed(() => authStore.user?.name || 'Guru Pengampu')
+const teacherNip = computed(() => (authStore.user as any)?.nip || '-')
+const printDate = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
 
 const list = ref<any[]>([])
 

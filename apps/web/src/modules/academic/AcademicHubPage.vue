@@ -7,7 +7,7 @@
           <span class="px-2.5 py-0.5 rounded-full bg-blue-100 text-[#0c2b3d] text-[11px] font-bold uppercase tracking-wider">
             Menu Terpadu
           </span>
-          <span class="text-xs text-slate-500 font-medium">SMP Negeri 6 Kendari</span>
+          <span class="text-xs text-slate-500 font-medium">{{ schoolName }}</span>
         </div>
         <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
           <span>📁</span> Pusat Akademik Belajarena
@@ -181,6 +181,7 @@ import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
+const schoolName = computed(() => authStore.currentSchool?.name || 'Satuan Pendidikan')
 const isStudent = computed(() => authStore.hasRole('student'))
 
 const searchQuery = ref('')

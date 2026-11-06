@@ -1346,7 +1346,7 @@
 
           <div class="relative z-10 flex items-center justify-between text-xs text-slate-300">
             <span class="font-bold uppercase tracking-wider text-cyan-300">Modul Ajar Digital SMP</span>
-            <span class="font-mono">SMP Negeri 6 Kendari</span>
+            <span class="font-mono">{{ currentSchoolName }}</span>
           </div>
 
           <!-- Slide Content Body -->
@@ -1640,6 +1640,7 @@ import api from '@/services/api'
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
+const currentSchoolName = computed(() => authStore.currentSchool?.name || 'Satuan Pendidikan')
 const isStudent = computed(() => authStore.hasRole('student'))
 
 // View mode: 'hero' (Fullscreen 100dvh) or 'catalog' (Classic Grid)
