@@ -47,7 +47,7 @@
       </div>
       <div class="text-xs text-slate-800 leading-relaxed">
         <strong class="font-extrabold text-[#0c2b3d]">Prinsip Jadwal Mingguan Tetap:</strong>
-        Jadwal mengajar Bapak berulang secara otomatis setiap minggu (Senin s.d. Jumat). Anda <em>tidak perlu menambah jadwal baru setiap minggu</em>. Cukup atur slot mingguan sekali di tab <strong>Jadwal Mingguan Rutin</strong>, lalu isi topik dan capaian ajar pada tab <strong>Info Pertemuan Tiap Minggu</strong>.
+        Jadwal mengajar Anda berulang secara otomatis setiap minggu (Senin s.d. Jumat). Anda <em>tidak perlu menambah jadwal baru setiap minggu</em>. Cukup atur slot mingguan sekali di tab <strong>Jadwal Mingguan Rutin</strong>, lalu isi topik dan capaian ajar pada tab <strong>Info Pertemuan Tiap Minggu</strong>.
       </div>
     </div>
 
@@ -379,12 +379,12 @@
 
             <div>
               <label class="block font-bold text-slate-700 mb-1">Ruangan</label>
-              <input v-model="slotForm.room" type="text" placeholder="Lab Komputer 1" class="w-full px-3 py-2 bg-slate-50 border rounded-xl" />
+              <input v-model="slotForm.room" type="text" placeholder="Misal: Ruang Kelas / Lab" class="w-full px-3 py-2 bg-slate-50 border rounded-xl" />
             </div>
 
             <div>
               <label class="block font-bold text-slate-700 mb-1">Keterangan Singkat</label>
-              <input v-model="slotForm.description" type="text" placeholder="Misal: Praktikum Logika & Koding" class="w-full px-3 py-2 bg-slate-50 border rounded-xl" />
+              <input v-model="slotForm.description" type="text" placeholder="Misal: Pembahasan Bab 1 / Diskusi" class="w-full px-3 py-2 bg-slate-50 border rounded-xl" />
             </div>
           </div>
 
@@ -460,17 +460,17 @@
               <input
                 v-model="editingMeeting.topic"
                 type="text"
-                placeholder="Misal: Logika Percabangan IF-ELSE pada Python"
+                placeholder="Misal: Pembahasan Konsep & Latihan Soal"
                 class="w-full px-3 py-2 bg-slate-50 border rounded-xl font-medium text-slate-900"
               />
             </div>
 
             <div>
-              <label class="block font-bold text-slate-700 mb-1">Aktivitas Siswa / Capaian di Lab Komputer</label>
+              <label class="block font-bold text-slate-700 mb-1">Aktivitas Siswa / Capaian Pembelajaran</label>
               <textarea
                 v-model="editingMeeting.activities"
                 rows="2"
-                placeholder="Aktivitas praktikum siswa..."
+                placeholder="Aktivitas belajar siswa di kelas..."
                 class="w-full px-3 py-2 bg-slate-50 border rounded-xl font-medium leading-relaxed"
               ></textarea>
             </div>
@@ -480,7 +480,7 @@
               <textarea
                 v-model="editingMeeting.notes"
                 rows="2"
-                placeholder="Catatan keaktifan siswa atau kendala teknis lab..."
+                placeholder="Catatan keaktifan siswa atau kendala pembelajaran..."
                 class="w-full px-3 py-2 bg-slate-50 border rounded-xl font-medium leading-relaxed"
               ></textarea>
             </div>
@@ -584,9 +584,14 @@ onMounted(async () => {
       selectedClassId.value = classrooms.value[0].id
       slotForm.value.classroom_id = classrooms.value[0].id
     }
+  } else {
+    selectedClassId.value = ''
+    slotForm.value.classroom_id = ''
   }
-  selectedSubjectId.value = getSubjectIdForClass(selectedClassId.value)
-  slotForm.value.subject_id = getSubjectIdForClass(slotForm.value.classroom_id)
+  const availTracking = getAvailableSubjectsForClass(selectedClassId.value)
+  selectedSubjectId.value = availTracking[0]?.id || ''
+  const availSlot = getAvailableSubjectsForClass(slotForm.value.classroom_id)
+  slotForm.value.subject_id = availSlot[0]?.id || ''
   await fetchWeeklyData()
 })
 
@@ -609,12 +614,13 @@ const currentMeetings = computed(() => {
 function openSlotModal() {
   editingSlotId.value = null
   const defaultClass = classrooms.value[0]?.id || ''
+  const availSubjects = getAvailableSubjectsForClass(defaultClass)
   slotForm.value = {
     day: 'Senin',
     day_index: 1,
     time_start: '07:30',
     time_end: '08:50',
-    subject_id: getSubjectIdForClass(defaultClass) || '',
+    subject_id: availSubjects[0]?.id || '',
     classroom_id: defaultClass,
     room: 'Ruang Kelas',
     description: ''

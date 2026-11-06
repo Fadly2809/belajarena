@@ -316,7 +316,7 @@ export function downloadQuestionTemplateCsv() {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = 'Template_Import_Soal_SMPN6_Kendari.csv'
+  a.download = 'Template_Import_Soal.csv'
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
@@ -392,7 +392,7 @@ export function downloadQuestionTemplateWord() {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = 'Template_Format_Soal_Word_SMPN6_Kendari.doc'
+  a.download = 'Template_Format_Soal_Word.doc'
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
@@ -456,5 +456,5 @@ export function downloadQuestionTemplateXlsx() {
   const worksheet = XLSX.utils.json_to_sheet(rows)
   const workbook = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Bank Soal')
-  XLSX.writeFile(workbook, 'Template_Import_Soal_SMPN6_Kendari.xlsx')
+  XLSX.writeFile(workbook, 'Template_Import_Soal.xlsx')
 }

@@ -818,15 +818,15 @@ async function loadChapters() {
 }
 
 const form = ref({
-  title: 'Sumatif Tengah Semester (STS): KKA (Koding dan Kecerdasan Artifisial) Kelas VII A',
+  title: '',
   assessment_type: 'sts' as 'sts' | 'sas' | 'tp',
-  subject: 'KKA (Koding dan Kecerdasan Artifisial)',
-  classroom: 'VII A',
+  subject: authStore.user?.subject || 'Mata Pelajaran',
+  classroom: '',
   tp_id: '',
   kktp: 75,
   startTime: new Date().toISOString().slice(0, 16),
   durationMinutes: 60,
-  token: 'STS-KKA',
+  token: 'STS-' + Math.random().toString(36).slice(2, 6).toUpperCase(),
   randomizeQuestions: true,
   randomizeOptions: true,
   tabSwitchDetection: true,
@@ -1308,20 +1308,29 @@ async function saveExam() {
 async function loadSubjects() {
   try {
     const res = await api.get('/subjects', { params: { per_page: 100 } })
-    subjectsList.value = res.data?.data || []
-  } catch {
-    subjectsList.value = [
-      { id: 'sub-kka', name: 'KKA (Koding dan Kecerdasan Artifisial)' },
-      { id: 'sub-inf', name: 'Informatika' }
-    ]
+    if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+      subjectsList.value = res.data.data
+      return
+    }
+  } catch (err) {
+    console.warn('Failed to load subjects:', err)
+  }
+  const userSub = authStore.user?.subject
+  if (userSub) {
+    subjectsList.value = [{ id: 'sub-user-active', name: userSub }]
+  } else {
+    subjectsList.value = []
   }
 }
 
 onMounted(async () => {
-  await Promise.all([fetchClassrooms(), loadSubjects(), loadChapters()])
+  await Promise.all([fetchClassrooms(true), loadSubjects(), loadChapters()])
   if (classrooms.value.length > 0) {
     form.value.classroom = classrooms.value[0].name
     form.value.subject = getSubjectNameForClass(classrooms.value[0].id)
+  } else {
+    form.value.classroom = ''
+    form.value.subject = authStore.user?.subject || ''
   }
 
   // Pre-fetch bank questions so stats and topics are immediately ready

@@ -46,8 +46,10 @@
             @change="onSubjectChange"
             class="input text-xs py-1.5 font-bold"
           >
-            <option value="sub-kka">KKA (Koding &amp; Kecerdasan Artifisial) — Kelas VII</option>
-            <option value="sub-inf">Informatika — Kelas IX</option>
+            <option v-if="availableSubjectsList.length === 0" value="" disabled>-- Belum ada mapel --</option>
+            <option v-for="s in availableSubjectsList" :key="s.id" :value="s.id">
+              {{ s.name }}
+            </option>
           </select>
         </div>
 
@@ -480,15 +482,14 @@ const teacherName = computed(() => authStore.user?.name || 'Guru Mata Pelajaran'
 const teacherNip = computed(() => (authStore.user as any)?.nip || '-')
 
 const route = useRoute()
-const { classrooms, fetchClassrooms, formatClassLabel, getClassName } = useClassrooms()
+const { classrooms, fetchClassrooms, fetchSubjects, formatClassLabel, getClassName, getAvailableSubjectsForClass } = useClassrooms()
 
 const loading = ref(false)
-const selectedClassId = ref('cls-7a')
-const selectedSubjectId = ref(getSubjectIdForClass(selectedClassId.value))
+const selectedClassId = ref('')
+const selectedSubjectId = ref('')
 
-// Kelas yang tersedia sesuai mata pelajaran terpilih
-// sub-kka -> VII A, VII B, VII C, VII D
-// sub-inf -> IX A, IX B, IX C, IX D
+const availableSubjectsList = computed(() => getAvailableSubjectsForClass(selectedClassId.value))
+
 const availableClassrooms = computed(() => {
   return filterClassroomsBySubject(classrooms.value, selectedSubjectId.value)
 })
@@ -531,7 +532,8 @@ const topThree = computed(() => {
 })
 
 const currentSubjectName = computed(() => {
-  return selectedSubjectId.value === 'sub-kka' ? 'KKA (Koding dan Kecerdasan Artifisial)' : 'Informatika'
+  const found = availableSubjectsList.value.find(s => s.id === selectedSubjectId.value)
+  return found?.name || authStore.user?.subject || 'Mata Pelajaran'
 })
 
 const currentClassName = computed(() => {
@@ -613,9 +615,13 @@ function exportCsv() {
 }
 
 onMounted(async () => {
-  await fetchClassrooms()
+  await Promise.all([fetchClassrooms(true), fetchSubjects(true)])
   if (route.query.classroom_id && typeof route.query.classroom_id === 'string') {
     selectedClassId.value = route.query.classroom_id
+  } else if (classrooms.value.length > 0) {
+    selectedClassId.value = classrooms.value[0].id
+  } else {
+    selectedClassId.value = ''
   }
   selectedSubjectId.value = getSubjectIdForClass(selectedClassId.value)
   await fetchRanking()

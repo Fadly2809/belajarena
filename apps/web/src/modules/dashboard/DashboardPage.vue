@@ -7,7 +7,7 @@
           Halo, {{ greetingName }}! <span class="animate-bounce inline-block">👋</span>
         </h1>
         <p class="text-slate-600 text-sm mt-1 font-medium">
-          Guru Informatika & KKA (Koding dan Kecerdasan Artifisial) · <strong class="text-slate-800">{{ currentSchoolName }}</strong>
+          Guru {{ teacherSubject }} · <strong class="text-slate-800">{{ currentSchoolName }}</strong>
         </p>
       </div>
 
@@ -617,7 +617,8 @@ const greetingName = computed(() => {
   return 'Bapak/Ibu Guru'
 })
 const currentSchoolName = computed(() => authStore.currentSchool?.name || 'Satuan Pendidikan')
-const teacherNip = computed(() => (authStore.user as any)?.nip || '199509282020121003')
+const teacherSubject = computed(() => (authStore.user as any)?.subject || 'Mata Pelajaran')
+const teacherNip = computed(() => (authStore.user as any)?.nip || 'Non-NIP')
 
 function openAiTutor(prompt?: string) {
   openAssistant(prompt)

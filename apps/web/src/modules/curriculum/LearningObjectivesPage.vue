@@ -191,21 +191,25 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 
+const authStore = useAuthStore()
 const selectedGrade = ref('7')
-const selectedSubject = ref('KKA (Koding dan Kecerdasan Artifisial)')
+const selectedSubject = ref(authStore.user?.subject || 'Mata Pelajaran')
 const selectedElement = ref('all')
 const showCreateModal = ref(false)
 
 function onGradeChange() {
-  if (selectedGrade.value === '7') {
-    selectedSubject.value = 'KKA (Koding dan Kecerdasan Artifisial)'
+  if (authStore.user?.subject) {
+    selectedSubject.value = authStore.user.subject
+  } else if (selectedGrade.value === '7') {
+    selectedSubject.value = 'Informatika & KKA'
   } else {
     selectedSubject.value = 'Informatika'
   }
 }
 
-const objectives = ref([
+const defaultSmp6Objectives = [
   {
     code: 'TP-INF-7.1',
     element: 'Sistem Komputer (SK)',
@@ -239,13 +243,15 @@ const objectives = ref([
     assessmentType: 'Penugasan Produk',
     objective: 'Peserta didik mampu membuat dokumen laporan terstruktur dan integrasi lembar kerja grafis sesuai kaidah tata letak digital.',
     kktp: {
-      d: 'Belum mampu memformat teks dan menyisipkan gambar pada aplikasi pengolah kata.',
-      c: 'Mampu membuat dokumen sederhana namun format tata letak belum rapi.',
-      b: 'Mampu menghasilkan dokumen rapi dengan daftar isi otomatis dan tabel terformat.',
-      a: 'Mampu mengintegrasikan grafik data dinamis dari spreadsheet ke dalam laporan presentasi.'
+      d: 'Belum mampu menyusun format dokumen secara mandiri.',
+      c: 'Mampu membuat dokumen sederhana dengan format dasar.',
+      b: 'Mampu mengintegrasikan tabel dan grafik dengan rapi.',
+      a: 'Mampu menyusun laporan komprehensif dengan sitasi dan desain profesional.'
     }
   }
-])
+]
+
+const objectives = ref<any[]>(authStore.currentSchool?.id === 'sch-smpn6kendari' ? defaultSmp6Objectives : [])
 
 const filteredObjectives = computed(() => {
   return objectives.value.filter(tp => {

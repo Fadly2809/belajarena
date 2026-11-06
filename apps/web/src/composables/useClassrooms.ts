@@ -31,6 +31,18 @@ const subjects = ref<TeachingSubject[]>([])
 const subjectsLoading = ref(false)
 const subjectsLoaded = ref(false)
 
+let lastCachedSchoolId: string | null = null
+
+export function resetClassroomsCache() {
+  classrooms.value = []
+  classroomsLoading.value = false
+  classroomsLoaded.value = false
+  subjects.value = []
+  subjectsLoading.value = false
+  subjectsLoaded.value = false
+  lastCachedSchoolId = null
+}
+
 /**
  * Mendeteksi tingkatan kelas dari id, nama, atau objek kelas
  */
@@ -73,15 +85,7 @@ export function getAvailableSubjectsForClass(classIdOrNameOrObj?: any): Teaching
     }
   } catch {}
 
-  return [
-    {
-      id: 'sub-default',
-      code: 'MAPEL',
-      name: 'Mata Pelajaran',
-      kkm: 75,
-      kktp: 75
-    }
-  ]
+  return []
 }
 
 /**
@@ -89,15 +93,21 @@ export function getAvailableSubjectsForClass(classIdOrNameOrObj?: any): Teaching
  */
 export function getSubjectForClass(classIdOrNameOrObj: any): TeachingSubject {
   const available = getAvailableSubjectsForClass(classIdOrNameOrObj)
-  return available[0]
+  return available[0] || {
+    id: '',
+    code: '',
+    name: 'Mata Pelajaran',
+    kkm: 75,
+    kktp: 75
+  }
 }
 
 export function getSubjectIdForClass(classIdOrNameOrObj: any): string {
-  return getSubjectForClass(classIdOrNameOrObj).id
+  return getSubjectForClass(classIdOrNameOrObj).id || ''
 }
 
 export function getSubjectNameForClass(classIdOrNameOrObj: any): string {
-  return getSubjectForClass(classIdOrNameOrObj).name
+  return getSubjectForClass(classIdOrNameOrObj).name || 'Mata Pelajaran'
 }
 
 /**
@@ -112,6 +122,16 @@ export function filterClassroomsBySubject(classroomsList: ClassroomOption[], sub
 export const TEACHING_SUBJECTS: Record<string, TeachingSubject> = {}
 
 export async function fetchSubjects(force = false): Promise<TeachingSubject[]> {
+  try {
+    const authStore = useAuthStore()
+    const currentSchoolId = authStore.user?.school_id || null
+    if (lastCachedSchoolId !== null && lastCachedSchoolId !== currentSchoolId) {
+      resetClassroomsCache()
+      force = true
+    }
+    lastCachedSchoolId = currentSchoolId
+  } catch {}
+
   if (subjectsLoaded.value && !force && subjects.value.length > 0) {
     return subjects.value
   }
@@ -148,11 +168,22 @@ export async function fetchSubjects(force = false): Promise<TeachingSubject[]> {
     }
   } catch {}
 
+  subjects.value = []
   return subjects.value
 }
 
 export function useClassrooms() {
   async function fetchClassrooms(force = false): Promise<ClassroomOption[]> {
+    try {
+      const authStore = useAuthStore()
+      const currentSchoolId = authStore.user?.school_id || null
+      if (lastCachedSchoolId !== null && lastCachedSchoolId !== currentSchoolId) {
+        resetClassroomsCache()
+        force = true
+      }
+      lastCachedSchoolId = currentSchoolId
+    } catch {}
+
     if (classroomsLoaded.value && !force && classrooms.value.length > 0) {
       return classrooms.value
     }

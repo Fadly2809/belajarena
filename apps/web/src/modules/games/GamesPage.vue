@@ -1089,6 +1089,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import {
   useClassrooms,
   getSubjectNameForClass,
@@ -1111,6 +1112,7 @@ import ClassRaceHeroVisual from '@/modules/games/hero/ClassRaceHeroVisual.vue'
 import TowerDefenseHeroVisual from '@/modules/games/hero/TowerDefenseHeroVisual.vue'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const { classrooms, fetchClassrooms, formatClassLabel, getClassName } = useClassrooms()
 const { getActiveSession, restoreSession, stopActiveSession, clearActiveSession, draft, beginBattle } = useBossBattleSession()
 
@@ -1403,9 +1405,9 @@ const pastSessions = ref<Array<{
 const newSession = ref({
   title: 'Kuis Interaktif Baru',
   templateId: 'fast_quiz',
-  classroomId: 'cls-7a',
-  classroom: 'VII A',
-  subject: 'KKA (Koding dan Kecerdasan Artifisial)',
+  classroomId: '',
+  classroom: '',
+  subject: authStore.user?.subject || 'Mata Pelajaran',
   questionCount: 5,
   timePerQuestion: 15
 })
@@ -1436,11 +1438,15 @@ onMounted(async () => {
   window.addEventListener('keydown', handleKeydown)
 
   // Fetch real data
-  await fetchClassrooms()
+  await fetchClassrooms(true)
   if (classrooms.value.length > 0) {
     newSession.value.classroomId = classrooms.value[0].id
     newSession.value.classroom = classrooms.value[0].name
     newSession.value.subject = getSubjectNameForClass(classrooms.value[0].id)
+  } else {
+    newSession.value.classroomId = ''
+    newSession.value.classroom = ''
+    newSession.value.subject = authStore.user?.subject || ''
   }
   await updateCounts()
   await loadRealSessions()

@@ -2237,7 +2237,7 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/v1/teachers' && req.method === 'GET') {
       const currentSchoolId = getReqSchoolId(req)
       const schoolTeachers = (db.users || [])
-        .filter(u => (!u.school_id || u.school_id === currentSchoolId) && u.role !== 'student')
+        .filter(u => u.school_id === currentSchoolId && u.role !== 'student' && u.role !== 'superadmin')
         .map(u => {
           const { password: _, ...safe } = u
           return safe
@@ -2856,7 +2856,8 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/v1/sessions' && req.method === 'GET') {
-      let filtered = [...db.sessions]
+      const currentSchoolId = getReqSchoolId(req)
+      let filtered = (db.sessions || []).filter(s => s.school_id === currentSchoolId)
       if (query.classroom_id) {
         filtered = filtered.filter(s => s.classroom_id === query.classroom_id)
       }
@@ -2877,9 +2878,11 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/v1/sessions' && req.method === 'POST') {
+      const currentSchoolId = getReqSchoolId(req)
+      const authUser = getAuthUser(req)
       const body = await parseBody(req)
-      const classroom = db.classrooms.find(c => c.id === body.classroom_id)
-      const subject = db.subjects.find(s => s.id === body.subject_id)
+      const classroom = (db.classrooms || []).find(c => c.id === body.classroom_id && c.school_id === currentSchoolId)
+      const subject = (db.subjects || []).find(s => s.id === body.subject_id && s.school_id === currentSchoolId)
 
       if (!body.classroom_id || !body.subject_id) {
         return sendJson(res, 422, {
@@ -2892,15 +2895,16 @@ const server = http.createServer(async (req, res) => {
       }
 
       const sessionId = 'ses-' + Date.now().toString(36)
-      const classStudents = db.students.filter(s => s.classroom_id === body.classroom_id)
+      const classStudents = (db.students || []).filter(s => s.classroom_id === body.classroom_id && s.school_id === currentSchoolId)
 
       const newSession = {
         id: sessionId,
+        school_id: currentSchoolId,
         classroom_id: body.classroom_id,
         classroom_name: classroom ? classroom.name : 'Kelas',
         subject_id: body.subject_id,
         subject_name: subject ? subject.name : 'Mata Pelajaran',
-        teacher_id: 'usr-teacher-1',
+        teacher_id: authUser?.id || 'usr-teacher-1',
         session_date: body.session_date || new Date().toISOString().split('T')[0],
         session_number: Number(body.session_number) || (db.sessions.filter(s => s.classroom_id === body.classroom_id).length + 1),
         week_number: Number(body.week_number) || Number(body.session_number) || 1,
@@ -3070,7 +3074,8 @@ const server = http.createServer(async (req, res) => {
     // QUESTION BANK
     // -------------------------------------------------------------
     if (pathname === '/api/v1/questions' && req.method === 'GET') {
-      let filtered = [...db.questions]
+      const currentSchoolId = getReqSchoolId(req)
+      let filtered = (db.questions || []).filter(q => q.school_id === currentSchoolId)
       if (query.subject_id) {
         filtered = filtered.filter(q => q.subject_id === query.subject_id || q.subject_name === query.subject_id)
       }
@@ -3120,8 +3125,9 @@ const server = http.createServer(async (req, res) => {
 
       const getGrade = q => String(q.grade || q.grade_level || (q.classroom_id?.includes('-8') ? '8' : q.classroom_id?.includes('-9') ? '9' : '7'))
 
+      const schoolQuestions = (db.questions || []).filter(q => q.school_id === currentSchoolId)
       const topicCounts = {}
-      for (const q of db.questions) {
+      for (const q of schoolQuestions) {
         const t = q.topic || q.element || 'Umum'
         topicCounts[t] = (topicCounts[t] || 0) + 1
       }
@@ -3136,40 +3142,42 @@ const server = http.createServer(async (req, res) => {
           last_page: 1
         },
         stats: {
-          total: db.questions.length,
-          published: db.questions.filter(q => (q.status || 'published') === 'published').length,
-          draft: db.questions.filter(q => q.status === 'draft').length,
-          subjects: new Set(db.questions.map(q => q.subject_name || q.subject_id)).size,
-          grade_7: db.questions.filter(q => getGrade(q) === '7').length,
-          grade_8: db.questions.filter(q => getGrade(q) === '8').length,
-          grade_9: db.questions.filter(q => getGrade(q) === '9').length,
+          total: schoolQuestions.length,
+          published: schoolQuestions.filter(q => (q.status || 'published') === 'published').length,
+          draft: schoolQuestions.filter(q => q.status === 'draft').length,
+          subjects: new Set(schoolQuestions.map(q => q.subject_name || q.subject_id)).size,
+          grade_7: schoolQuestions.filter(q => getGrade(q) === '7').length,
+          grade_8: schoolQuestions.filter(q => getGrade(q) === '8').length,
+          grade_9: schoolQuestions.filter(q => getGrade(q) === '9').length,
           topics: topicCounts,
-          multiple_choice: db.questions.filter(q => q.type === 'multiple_choice').length,
-          essay: db.questions.filter(q => q.type === 'essay').length
+          multiple_choice: schoolQuestions.filter(q => q.type === 'multiple_choice').length,
+          essay: schoolQuestions.filter(q => q.type === 'essay').length
         }
       })
     }
 
     if (pathname === '/api/v1/questions/batch' && req.method === 'POST') {
+      const currentSchoolId = getReqSchoolId(req)
       const body = await parseBody(req)
       const list = Array.isArray(body.questions) ? body.questions : []
       const added = []
       for (const item of list) {
-        const subject = db.subjects.find(s => s.id === item.subject_id || s.name?.toLowerCase() === item.subject_name?.toLowerCase())
+        const subject = (db.subjects || []).find(s => s.school_id === currentSchoolId && (s.id === item.subject_id || s.name?.toLowerCase() === item.subject_name?.toLowerCase()))
         const rawGrade = String(item.grade || item.grade_level || (item.classroom_id ? item.classroom_id.replace(/^cls-/, '').charAt(0) : '7'))
         const grade = ['7', '8', '9'].includes(rawGrade) ? rawGrade : '7'
-        const classroom = db.classrooms.find(c => c.id === item.classroom_id || String(c.grade_level) === grade)
+        const classroom = (db.classrooms || []).find(c => c.school_id === currentSchoolId && (c.id === item.classroom_id || String(c.grade_level) === grade))
 
         const newQ = {
           id: 'q-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
-          subject_id: subject?.id || item.subject_id || db.subjects[0]?.id || 'sub-inf',
-          subject_name: subject?.name || item.subject_name || 'Informatika',
+          school_id: currentSchoolId,
+          subject_id: subject?.id || item.subject_id || '',
+          subject_name: subject?.name || item.subject_name || 'Mata Pelajaran',
           grade: grade,
           grade_level: parseInt(grade, 10),
-          classroom_id: item.classroom_id || classroom?.id || `cls-${grade}a`,
-          classroom_name: classroom?.name || `Kelas ${grade}`,
-          topic: item.topic || item.element || 'Berpikir Komputasional',
-          element: item.element || item.topic || 'Berpikir Komputasional (BK)',
+          classroom_id: item.classroom_id || classroom?.id || '',
+          classroom_name: classroom?.name || (item.classroom_id ? 'Kelas' : ''),
+          topic: item.topic || item.element || 'Umum',
+          element: item.element || item.topic || 'Umum',
           type: item.type || 'multiple_choice',
           difficulty: item.difficulty || 'medium',
           bloom_level: item.bloom_level || 'C3',
@@ -3188,22 +3196,24 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/v1/questions' && req.method === 'POST') {
+      const currentSchoolId = getReqSchoolId(req)
       const body = await parseBody(req)
-      const subject = db.subjects.find(s => s.id === body.subject_id || s.name?.toLowerCase() === body.subject_name?.toLowerCase())
+      const subject = (db.subjects || []).find(s => s.school_id === currentSchoolId && (s.id === body.subject_id || s.name?.toLowerCase() === body.subject_name?.toLowerCase()))
       const rawGrade = String(body.grade || body.grade_level || (body.classroom_id ? body.classroom_id.replace(/^cls-/, '').charAt(0) : '7'))
       const grade = ['7', '8', '9'].includes(rawGrade) ? rawGrade : '7'
-      const classroom = db.classrooms.find(c => c.id === body.classroom_id || String(c.grade_level) === grade)
+      const classroom = (db.classrooms || []).find(c => c.school_id === currentSchoolId && (c.id === body.classroom_id || String(c.grade_level) === grade))
 
       const newQ = {
         id: 'q-' + Date.now().toString(36),
-        subject_id: subject?.id || body.subject_id || db.subjects[0]?.id || '',
-        subject_name: subject?.name || body.subject_name || 'Informatika',
+        school_id: currentSchoolId,
+        subject_id: subject?.id || body.subject_id || '',
+        subject_name: subject?.name || body.subject_name || 'Mata Pelajaran',
         grade: grade,
         grade_level: parseInt(grade, 10),
-        classroom_id: body.classroom_id || classroom?.id || `cls-${grade}a`,
-        classroom_name: classroom?.name || `Kelas ${grade}`,
-        topic: body.topic || body.element || 'Berpikir Komputasional',
-        element: body.element || body.topic || 'Berpikir Komputasional (BK)',
+        classroom_id: body.classroom_id || classroom?.id || '',
+        classroom_name: classroom?.name || (body.classroom_id ? 'Kelas' : ''),
+        topic: body.topic || body.element || 'Umum',
+        element: body.element || body.topic || 'Umum',
         type: body.type || 'multiple_choice',
         difficulty: body.difficulty || 'medium',
         bloom_level: body.bloom_level || 'C3',
@@ -3751,11 +3761,14 @@ const server = http.createServer(async (req, res) => {
     // PRESENTATIONS & PRESENTATION SESSIONS
     // -------------------------------------------------------------
     if (pathname === '/api/v1/presentations' && req.method === 'GET') {
+      const currentSchoolId = getReqSchoolId(req)
       db.presentations = db.presentations || []
-      return sendJson(res, 200, { status: 'success', data: db.presentations })
+      const filtered = db.presentations.filter(p => p.school_id === currentSchoolId)
+      return sendJson(res, 200, { status: 'success', data: filtered })
     }
 
     if (pathname === '/api/v1/presentations' && req.method === 'POST') {
+      const currentSchoolId = getReqSchoolId(req)
       const body = await parseBody(req)
       let classroomIds = []
       let classroomNames = []
@@ -3763,29 +3776,30 @@ const server = http.createServer(async (req, res) => {
       if (Array.isArray(body.classroom_ids) && body.classroom_ids.length > 0) {
         classroomIds = body.classroom_ids
         classroomNames = classroomIds.map(id => {
-          const c = (db.classrooms || []).find(cls => cls.id === id)
+          const c = (db.classrooms || []).find(cls => cls.id === id && cls.school_id === currentSchoolId)
           return c ? c.name : id
         })
       } else if (Array.isArray(body.classrooms) && body.classrooms.length > 0) {
         classroomNames = body.classrooms
         classroomIds = classroomNames.map(name => {
-          const c = (db.classrooms || []).find(cls => cls.name === name)
+          const c = (db.classrooms || []).find(cls => cls.name === name && cls.school_id === currentSchoolId)
           return c ? c.id : name
         })
       } else {
-        const c = (db.classrooms || []).find(cls => cls.id === body.classroom_id || cls.name === body.classroom) || { id: body.classroom_id || 'cls-7a', name: body.classroom || 'VII A' }
-        classroomIds = [c.id]
-        classroomNames = [c.name]
+        const c = (db.classrooms || []).find(cls => (cls.id === body.classroom_id || cls.name === body.classroom) && cls.school_id === currentSchoolId)
+        classroomIds = c ? [c.id] : (body.classroom_id ? [body.classroom_id] : [])
+        classroomNames = c ? [c.name] : (body.classroom ? [body.classroom] : [])
       }
 
       const classroomString = body.classroom || classroomNames.join(', ')
       const newPres = {
         id: 'pres-' + Date.now().toString(36),
+        school_id: currentSchoolId,
         title: body.title || 'Materi Presentasi Baru',
         description: body.description || '',
-        subject: body.subject || 'Informatika',
+        subject: body.subject || 'Mata Pelajaran',
         classroom: classroomString,
-        classroom_id: classroomIds[0] || 'cls-7a',
+        classroom_id: classroomIds[0] || '',
         classroom_ids: classroomIds,
         classrooms: classroomNames,
         status: body.status || 'ready',
@@ -4993,32 +5007,31 @@ const server = http.createServer(async (req, res) => {
     // LIVE RANKING KELAS REALTIME (SEMUA MAPEL & KOMPONEN NILAI)
     // -------------------------------------------------------------
     if (pathname === '/api/v1/rankings' && req.method === 'GET') {
-      const classroom_id = query.classroom_id || 'cls-7a'
-      const classroom = (db.classrooms || []).find(c => c.id === classroom_id) || { id: classroom_id, name: 'VII A', grade_level: 7 }
+      const currentSchoolId = getReqSchoolId(req)
+      const classroom_id = query.classroom_id || ''
+      const classroom = (db.classrooms || []).find(c => c.id === classroom_id && c.school_id === currentSchoolId)
+      if (!classroom) {
+        return sendJson(res, 200, {
+          status: 'success',
+          data: {
+            classroom: null,
+            subject: null,
+            kktp: 75,
+            leaderboard: []
+          }
+        })
+      }
 
-      // Sinkronisasi mutlak sesuai jadwal mengajar:
-      // Kelas 7 (VII) -> KKA (sub-kka)
-      // Kelas 9 (IX)  -> Informatika (sub-inf)
-      const isGrade9 = Number(classroom.grade_level) === 9 || String(classroom.name).toUpperCase().includes('IX') || String(classroom.name).includes('9')
-      const officialSubjectId = isGrade9 ? 'sub-inf' : 'sub-kka'
-
-      // Jika ada request filter yang tidak sesuai (misal Informatika di Kelas 7 atau KKA di Kelas 9),
-      // paksa sinkron ke mapel resmi sesuai jadwal mengajar
-      const subject_id = (isGrade9 && query.subject_id === 'sub-kka') || (!isGrade9 && query.subject_id === 'sub-inf')
-        ? officialSubjectId
-        : (query.subject_id || officialSubjectId)
-
-      const subject = (db.subjects || []).find(s => s.id === subject_id) || (
-        subject_id === 'sub-kka'
-          ? { id: 'sub-kka', code: 'KKA', name: 'KKA (Koding dan Kecerdasan Artifisial)', grade_level: 7, kkm: 75, kktp: 75 }
-          : { id: 'sub-inf', code: 'INF', name: 'Informatika', grade_level: 9, kkm: 78, kktp: 78 }
-      )
+      const subject_id = query.subject_id || ''
+      const subject = (db.subjects || []).find(s => s.id === subject_id && s.school_id === currentSchoolId) ||
+                      (db.subjects || []).find(s => s.school_id === currentSchoolId) ||
+                      { id: subject_id, name: 'Mata Pelajaran', kkm: 75, kktp: 75 }
 
       // Pastikan perhitungan nilai siswa di kelas ini selalu sinkron persis dengan rekap nilai rapor
-      autoComputeGradesForClass(classroom_id, subject_id)
+      autoComputeGradesForClass(classroom.id, subject.id)
 
       const activeKktp = Number(query.kktp) || Number(subject?.kkm) || Number(subject?.kktp) || 75
-      const students = (db.students || []).filter(s => s.classroom_id === classroom_id || s.classroom_name === classroom.name)
+      const students = (db.students || []).filter(s => s.school_id === currentSchoolId && s.classroom_id === classroom.id)
 
       // Ambil data nilai siswa sama persis dengan rekapitulasi nilai rapor
       const leaderboard = students.map(stu => {
@@ -5125,18 +5138,20 @@ const server = http.createServer(async (req, res) => {
     // GAMES
     // -------------------------------------------------------------
     if (pathname === '/api/v1/game-sessions' && req.method === 'GET') {
+      const currentSchoolId = getReqSchoolId(req)
+      const activeSessions = (db.ulanganGamifikasiSessions || []).filter(s =>
+        s.school_id === currentSchoolId && (s.status === 'active' || s.status === 'in_progress')
+      )
       return sendJson(res, 200, {
         status: 'success',
-        data: [
-          {
-            id: 'ses-live-01',
-            pin: '849 203',
-            title: 'Kuis Cepat Informatika Bab 1: Perangkat Keras',
-            classroom: 'VII A',
-            participantsCount: 10,
-            status: 'active'
-          }
-        ]
+        data: activeSessions.map(s => ({
+          id: s.id,
+          pin: s.pin,
+          title: s.title,
+          classroom: s.classroom_name || 'Kelas',
+          participantsCount: (s.participants || []).length,
+          status: s.status
+        }))
       })
     }
 
@@ -5999,11 +6014,13 @@ const server = http.createServer(async (req, res) => {
 
     // 2. List All Game Sessions (summary only, no question contents/keys)
     if (pathname === '/api/v1/ulangan-gamifikasi/sessions' && req.method === 'GET') {
+      const currentSchoolId = getReqSchoolId(req)
       db.ulanganGamifikasiSessions = db.ulanganGamifikasiSessions || []
       const isTeacher = isTeacherRequest(req)
+      const list = db.ulanganGamifikasiSessions.filter(s => s.school_id === currentSchoolId)
       return sendJson(res, 200, {
         status: 'success',
-        data: db.ulanganGamifikasiSessions.map(s => {
+        data: list.map(s => {
           const item = presentUhgSession(s, isTeacher)
           delete item.questions // Kunci & detail soal tidak disertakan di daftar sesi
           return item
@@ -6107,6 +6124,7 @@ const server = http.createServer(async (req, res) => {
 
       const session = {
         id: sessionId,
+        school_id: getReqSchoolId(req),
         mode: body.mode || body.quiz_type || 'boss_battle',
         quiz_type: body.quiz_type || body.mode || 'ulangan_harian',
         title: body.title || `Edu-Game Sesi — ${resolved.subjectName}`,
@@ -7912,32 +7930,40 @@ const server = http.createServer(async (req, res) => {
 
     // Auto-compute grades from raw data (attendance + tasks + games + CBT)
     function autoComputeGradesForClass(classroomId, subjectId) {
+      if (!classroomId) return
       db.subjectGrades = db.subjectGrades || []
+      const classroom = (db.classrooms || []).find(c => c.id === classroomId)
+      if (!classroom) return
+      const currentSchoolId = classroom.school_id
+      const students = (db.students || []).filter(s => s.school_id === currentSchoolId && s.classroom_id === classroomId)
+      if (students.length === 0) return
+
       const realStudentIds = new Set((db.students || []).map(s => s.id))
       // Bersihkan semua entri dummy siswa yang tidak ada di daftar siswa resmi
       db.subjectGrades = db.subjectGrades.filter(g => realStudentIds.has(g.student_id))
 
-      const students = (db.students || []).filter(s => s.classroom_id === classroomId)
-      const classroom = (db.classrooms || []).find(c => c.id === classroomId) || { id: classroomId, name: 'Kelas' }
-      const subject = (db.subjects || []).find(s => s.id === subjectId) || { id: subjectId, name: 'Informatika' }
+      const subject = (db.subjects || []).find(s => s.id === subjectId && s.school_id === currentSchoolId) ||
+                      (db.subjects || []).find(s => s.school_id === currentSchoolId) ||
+                      { id: subjectId, name: 'Mata Pelajaran' }
 
       // 1. Sesi pertemuan kelas untuk mata pelajaran ini
       const classSessions = (db.sessions || []).filter(s =>
+        s.school_id === currentSchoolId &&
         s.classroom_id === classroomId &&
         (!s.subject_id || !subjectId || s.subject_id === subjectId)
       )
       const totalSessions = classSessions.length
 
       // 2. Tugas untuk kelas dan mata pelajaran ini
-      ensureDefaultChapters()
-      const subjectChapters = (db.chapters || []).filter(c => c.subject_id === subjectId)
+      const subjectChapters = (db.chapters || []).filter(c => c.school_id === currentSchoolId && c.subject_id === subjectId)
       const allSubjectTps = subjectChapters.flatMap(c => c.tps || [])
       const mappedTaskIds = new Set([
         ...allSubjectTps.flatMap(tp => tp.task_ids || []),
-        ...(db.assignments || []).filter(a => allSubjectTps.some(tp => tp.id === a.tp_id)).map(a => a.id)
+        ...(db.assignments || []).filter(a => a.school_id === currentSchoolId && allSubjectTps.some(tp => tp.id === a.tp_id)).map(a => a.id)
       ])
 
       let classAssignments = (db.assignments || []).filter(a =>
+        a.school_id === currentSchoolId &&
         a.classroom_id === classroomId &&
         (!a.subject_id || !subjectId || a.subject_id === subjectId || a.subject === subject.name)
       )
@@ -7962,12 +7988,14 @@ const server = http.createServer(async (req, res) => {
 
       for (const stu of students) {
         let grade = db.subjectGrades.find(g =>
+          g.school_id === currentSchoolId &&
           g.classroom_id === classroomId && g.subject_id === subjectId &&
           (g.student_id === stu.id || (stu.nis && g.nis === stu.nis))
         )
         if (!grade) {
           grade = {
             id: `grd-${stu.id}-${subjectId}`,
+            school_id: currentSchoolId,
             classroom_id: classroomId, classroom_name: classroom.name,
             subject_id: subjectId, subject_name: subject.name,
             student_id: stu.id, student_name: stu.name,
@@ -8187,8 +8215,8 @@ const server = http.createServer(async (req, res) => {
     // CHAPTERS & LEARNING OBJECTIVES (BAB & TP) MANAGEMENT & MAPPING
     // -------------------------------------------------------------
     if (pathname === '/api/v1/chapters' && req.method === 'GET') {
-      ensureDefaultChapters()
-      let chapters = [...db.chapters]
+      const currentSchoolId = getReqSchoolId(req)
+      let chapters = (db.chapters || []).filter(c => c.school_id === currentSchoolId)
       if (query.subject_id) {
         chapters = chapters.filter(c => c.subject_id === query.subject_id)
       }
@@ -8201,15 +8229,15 @@ const server = http.createServer(async (req, res) => {
         ...chap,
         tps: (chap.tps || []).map(tp => {
           const autoTasks = (db.assignments || []).filter(a =>
-            a.tp_id === tp.id || (Array.isArray(tp.task_ids) && tp.task_ids.includes(a.id))
+            a.school_id === currentSchoolId && (a.tp_id === tp.id || (Array.isArray(tp.task_ids) && tp.task_ids.includes(a.id)))
           ).map(a => ({ id: a.id, title: a.title, classroom: a.classroom, maxScore: a.maxScore }))
 
           const autoExams = [
             ...(db.ulanganGamifikasiSessions || []).filter(g =>
-              g.tp_id === tp.id || (Array.isArray(tp.exam_session_ids) && tp.exam_session_ids.includes(g.id))
+              g.school_id === currentSchoolId && (g.tp_id === tp.id || (Array.isArray(tp.exam_session_ids) && tp.exam_session_ids.includes(g.id)))
             ).map(g => ({ id: g.id, title: g.title, topic: g.topic, type: 'gamifikasi' })),
             ...(db.exams || []).filter(e =>
-              e.tp_id === tp.id || (Array.isArray(tp.exam_session_ids) && tp.exam_session_ids.includes(e.id))
+              e.school_id === currentSchoolId && (e.tp_id === tp.id || (Array.isArray(tp.exam_session_ids) && tp.exam_session_ids.includes(e.id)))
             ).map(e => ({ id: e.id, title: e.title, topic: e.subject || e.subject_name, type: 'cbt' }))
           ]
 
@@ -8228,21 +8256,25 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/v1/chapters' && req.method === 'POST') {
-      ensureDefaultChapters()
+      const currentSchoolId = getReqSchoolId(req)
       const body = await parseBody(req)
-      const subject = (db.subjects || []).find(s => s.id === body.subject_id) || { id: body.subject_id || 'sub-inf', name: 'Informatika' }
+      const subject = (db.subjects || []).find(s => s.school_id === currentSchoolId && s.id === body.subject_id) ||
+                      (db.subjects || []).find(s => s.school_id === currentSchoolId) ||
+                      { id: body.subject_id || '', name: body.subject_name || 'Mata Pelajaran' }
       const newChapter = {
         id: `chap-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 4)}`,
+        school_id: currentSchoolId,
         subject_id: subject.id,
         subject_name: subject.name,
         grade_level: Number(body.grade_level) || 7,
-        chapter_number: Number(body.chapter_number) || (db.chapters.filter(c => c.subject_id === subject.id).length + 1),
+        chapter_number: Number(body.chapter_number) || ((db.chapters || []).filter(c => c.school_id === currentSchoolId && c.subject_id === subject.id).length + 1),
         title: body.title || 'Bab Baru',
         description: body.description || '',
         tps: Array.isArray(body.tps) ? body.tps : [],
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
+      db.chapters = db.chapters || []
       db.chapters.push(newChapter)
       saveDb()
       return sendJson(res, 201, {
@@ -8254,15 +8286,18 @@ const server = http.createServer(async (req, res) => {
 
     // Mapping preview endpoint: computes real-time pre-flight matrix before committing to Rekap Nilai
     if (pathname === '/api/v1/chapters/mapping-preview' && req.method === 'GET') {
-      ensureDefaultChapters()
-      const classroomId = query.classroom_id || 'cls-7a'
-      const subjectId = query.subject_id || 'sub-inf'
-      const subject = (db.subjects || []).find(s => s.id === subjectId) || { id: subjectId, name: 'Informatika' }
-      const classroom = (db.classrooms || []).find(c => c.id === classroomId) || { id: classroomId, name: 'Kelas' }
-      const kktp = Number(query.kktp) || Number(subject.kkm) || Number(subject.kktp) || 75
+      const currentSchoolId = getReqSchoolId(req)
+      const classroomId = query.classroom_id || ''
+      const subjectId = query.subject_id || ''
+      const subject = (db.subjects || []).find(s => s.school_id === currentSchoolId && s.id === subjectId) ||
+                      (db.subjects || []).find(s => s.school_id === currentSchoolId) ||
+                      { id: subjectId, name: 'Mata Pelajaran' }
+      const classroom = (db.classrooms || []).find(c => c.school_id === currentSchoolId && c.id === classroomId) ||
+                        (db.classrooms || []).find(c => c.school_id === currentSchoolId)
+      const kktp = Number(query.kktp) || Number(subject?.kkm) || Number(subject?.kktp) || 75
 
-      // Filter chapters for this subject
-      const chapters = (db.chapters || []).filter(c => c.subject_id === subjectId)
+      // Filter chapters for this subject and school
+      const chapters = (db.chapters || []).filter(c => c.school_id === currentSchoolId && (!subjectId || c.subject_id === subjectId))
       chapters.sort((a, b) => (Number(a.chapter_number) || 0) - (Number(b.chapter_number) || 0))
 
       // Collect all TPs
@@ -8275,29 +8310,33 @@ const server = http.createServer(async (req, res) => {
 
       // Class sessions & attendance
       const classSessions = (db.sessions || []).filter(s =>
-        s.classroom_id === classroomId &&
+        s.school_id === currentSchoolId &&
+        (!classroomId || s.classroom_id === classroomId) &&
         (!s.subject_id || !subjectId || s.subject_id === subjectId)
       )
       const totalSessions = classSessions.length
 
       // Assignments for this classroom & subject
       const allClassAssignments = (db.assignments || []).filter(a =>
-        a.classroom_id === classroomId &&
+        a.school_id === currentSchoolId &&
+        (!classroomId || a.classroom_id === classroomId) &&
         (!a.subject_id || !subjectId || a.subject_id === subjectId || a.subject === subject.name)
       )
 
       // Ulangan Gamifikasi Sessions for this classroom & subject
       const allGamifikasiSessions = (db.ulanganGamifikasiSessions || []).filter(g =>
-        g.classroom_id === classroomId || g.classroom_name === classroom.name
+        g.school_id === currentSchoolId &&
+        (!classroomId || g.classroom_id === classroomId || g.classroom_name === classroom?.name)
       )
 
       // CBT Exams
       const allCbtExams = (db.exams || []).filter(e =>
-        e.classroom_id === classroomId || e.classroom_name === classroom.name || !e.classroom_id
+        e.school_id === currentSchoolId &&
+        (!classroomId || e.classroom_id === classroomId || e.classroom_name === classroom?.name || !e.classroom_id)
       )
 
       // Students
-      const students = (db.students || []).filter(s => s.classroom_id === classroomId)
+      const students = classroom ? (db.students || []).filter(s => s.school_id === currentSchoolId && s.classroom_id === classroom.id) : []
 
       // Pre-flight calculation per student
       const studentsMatrix = students.map(stu => {
@@ -8688,27 +8727,28 @@ const server = http.createServer(async (req, res) => {
     // SUBJECT GRADES RECAP (INFORMATIKA & KKA)
     // -------------------------------------------------------------
     if (pathname === '/api/v1/reports/grades' && req.method === 'GET') {
+      const currentSchoolId = getReqSchoolId(req)
       const classroomId = query.classroom_id || ''
       let subjectId = query.subject_id || ''
 
-      // Otomatis sinkronkan mata pelajaran sesuai jadwal mengajar:
-      // Kelas 7 -> KKA (sub-kka), Kelas 9 -> Informatika (sub-inf)
       if (classroomId) {
-        const cls = (db.classrooms || []).find(c => c.id === classroomId)
-        const isGrade9 = cls ? (Number(cls.grade_level) === 9 || String(cls.name).includes('IX') || String(cls.name).includes('9'))
-                             : (String(classroomId).includes('9') || String(classroomId).includes('IX'))
-        subjectId = isGrade9 ? 'sub-inf' : 'sub-kka'
-        autoComputeGradesForClass(classroomId, subjectId)
-      } else if (subjectId) {
-        // Jika tidak ada classroom_id tertentu
+        const cls = (db.classrooms || []).find(c => c.id === classroomId && c.school_id === currentSchoolId)
+        if (!subjectId) {
+          const sub = (db.subjects || []).find(s => s.school_id === currentSchoolId)
+          if (sub) subjectId = sub.id
+        }
+        if (cls && subjectId) {
+          autoComputeGradesForClass(classroomId, subjectId)
+        }
       }
 
-      const subject = (db.subjects || []).find(s => s.id === subjectId)
+      const subject = (db.subjects || []).find(s => s.id === subjectId && s.school_id === currentSchoolId) ||
+                      (db.subjects || []).find(s => s.school_id === currentSchoolId)
       const kktp = Number(query.kktp) || Number(subject?.kkm) || Number(subject?.kktp) || 75
 
-      let filtered = db.subjectGrades || []
+      let filtered = (db.subjectGrades || []).filter(g => g.school_id === currentSchoolId)
       if (classroomId) {
-        const classStudents = (db.students || []).filter(s => s.classroom_id === classroomId)
+        const classStudents = (db.students || []).filter(s => s.school_id === currentSchoolId && s.classroom_id === classroomId)
         if (classStudents.length > 0) {
           const classStudentIds = new Set(classStudents.map(s => s.id))
           const classStudentNises = new Set(classStudents.map(s => s.nis).filter(Boolean))
@@ -9513,18 +9553,20 @@ const server = http.createServer(async (req, res) => {
       const message = (body.message || '').trim()
       const history = body.history || []
       const apiKey = (body.apiKey || process.env.GEMINI_API_KEY || '').trim()
+      const currentSchoolId = getReqSchoolId(req)
       const context = {
         ...(body.context || {}),
         schoolName: currentSchool?.name || 'Satuan Pendidikan',
         teacherName: authUser?.name || 'Bapak/Ibu Guru',
         teacherNip: authUser?.nip || '',
-        totalStudents: (db.students || []).filter(s => !s.school_id || s.school_id === currentSchool.id).length,
-        totalClasses: (db.classrooms || []).filter(c => !c.school_id || c.school_id === currentSchool.id).length,
-        totalPresentations: (db.presentations || []).length,
-        totalQuestions: (db.questions || []).length,
-        totalExams: (db.exams || []).filter(e => !e.school_id || e.school_id === currentSchool.id).length,
-        activePresentationSession: (db.presentationSessions || []).find(s => s.status === 'active'),
-        activeGameSession: (db.gameSessions || []).find(s => s.status === 'active')
+        teacherSubject: authUser?.subject || 'Mata Pelajaran',
+        totalStudents: (db.students || []).filter(s => s.school_id === currentSchoolId).length,
+        totalClasses: (db.classrooms || []).filter(c => c.school_id === currentSchoolId).length,
+        totalPresentations: (db.presentations || []).filter(p => p.school_id === currentSchoolId).length,
+        totalQuestions: (db.questions || []).filter(q => q.school_id === currentSchoolId).length,
+        totalExams: (db.exams || []).filter(e => e.school_id === currentSchoolId).length,
+        activePresentationSession: (db.presentationSessions || []).find(s => s.school_id === currentSchoolId && s.status === 'active'),
+        activeGameSession: (db.gameSessions || []).find(s => s.school_id === currentSchoolId && s.status === 'active')
       }
 
       if (!message) {

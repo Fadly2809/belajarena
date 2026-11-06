@@ -13,7 +13,7 @@
 
       <div class="flex items-center gap-2">
         <span class="px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200/80 text-blue-700 text-xs font-bold font-mono">
-          NIP: {{ profile.nip || '199509282020121003' }}
+          NIP: {{ profile.nip || '-' }}
         </span>
       </div>
     </div>
@@ -312,13 +312,13 @@ const authStore = useAuthStore()
 const currentSchoolName = computed(() => authStore.currentSchool?.name || 'Satuan Pendidikan')
 
 const profile = ref({
-  name: 'Muhammad Fadly Akbar Arsandi, S.Pd.',
-  email: 'fadly.arsandi@smpn6kendari.sch.id',
-  nip: '199509282020121003',
-  nuptk: '',
-  phone: '081245678901',
-  subject: '',
-  avatar_url: ''
+  name: authStore.user?.name || '',
+  email: authStore.user?.email || '',
+  nip: (authStore.user as any)?.nip || '',
+  nuptk: (authStore.user as any)?.nuptk || '',
+  phone: (authStore.user as any)?.phone || '',
+  subject: (authStore.user as any)?.subject || '',
+  avatar_url: authStore.user?.avatar_url || authStore.user?.avatar_path || ''
 })
 
 const passwordForm = ref({

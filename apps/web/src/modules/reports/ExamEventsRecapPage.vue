@@ -24,8 +24,7 @@
           class="px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none"
         >
           <option value="">Semua Mata Pelajaran</option>
-          <option value="sub-kka">KKA (Koding &amp; Kecerdasan Artifisial) — Kelas 7</option>
-          <option value="sub-inf">Informatika — Kelas 9</option>
+          <option v-for="s in availableSubjects" :key="s.id" :value="s.id">{{ s.name }}</option>
         </select>
 
         <!-- Filter Kelas -->
@@ -659,6 +658,8 @@ async function fetchSessions() {
   }
 }
 
+const availableSubjects = computed(() => getAvailableSubjectsForClass(selectedClassId.value))
+
 const filteredSessions = computed(() => {
   return sessions.value.filter(s => {
     // Filter Kelas
@@ -666,11 +667,8 @@ const filteredSessions = computed(() => {
       return false
     }
     // Filter Mapel
-    if (selectedSubjectId.value) {
-      const isKka = s.subject_id === 'sub-kka' || s.title?.toLowerCase().includes('kka') || s.topic?.toLowerCase().includes('kka')
-      const isInf = s.subject_id === 'sub-inf' || s.title?.toLowerCase().includes('informatika') || s.topic?.toLowerCase().includes('informatika') || (!isKka)
-      if (selectedSubjectId.value === 'sub-kka' && !isKka) return false
-      if (selectedSubjectId.value === 'sub-inf' && !isInf && isKka) return false
+    if (selectedSubjectId.value && s.subject_id && s.subject_id !== selectedSubjectId.value) {
+      return false
     }
     // Filter Status
     if (selectedStatus.value) {
@@ -742,10 +740,9 @@ function formatQuizType(type: string) {
 }
 
 function formatSubject(session: any) {
-  if (session.subject_id === 'sub-kka' || session.title?.toLowerCase().includes('kka') || session.topic?.toLowerCase().includes('kka')) {
-    return 'KKA (Koding & AI)'
-  }
-  return 'Informatika'
+  if (session.subject_name) return session.subject_name
+  const found = availableSubjects.value.find(s => s.id === session.subject_id)
+  return found?.name || authStore.user?.subject || 'Mata Pelajaran'
 }
 
 function formatClassBadge(session: any): string {

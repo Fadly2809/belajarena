@@ -504,8 +504,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
 import { useClassrooms } from '@/composables/useClassrooms'
 
+const authStore = useAuthStore()
 const {
   classrooms,
   fetchClassrooms,
@@ -528,7 +530,7 @@ const activeImportAssignment = ref<any>(null)
 const isSubmittingImport = ref(false)
 const importForm = ref({
   classroom_id: '',
-  subject_id: 'sub-inf',
+  subject_id: '',
   component_type: 'formatif',
   component_key: 'tugas1',
   component_label: 'Formatif — Tugas 1'
@@ -545,7 +547,7 @@ function onImportClassroomChange() {
 function openImportModal(item: any) {
   activeImportAssignment.value = item
   const cls = classrooms.value.find(c => c.name === item.classroom)
-  importForm.value.classroom_id = cls?.id || (classrooms.value[0]?.id || 'cls-7a')
+  importForm.value.classroom_id = cls?.id || (classrooms.value[0]?.id || '')
   importForm.value.subject_id = getSubjectIdForClass(importForm.value.classroom_id)
   showImportModal.value = true
 }
@@ -620,7 +622,7 @@ async function loadChapters() {
 const newTask = ref({
   title: '',
   classroom: '',
-  subject: 'KKA (Koding dan Kecerdasan Artifisial)',
+  subject: authStore.user?.subject || 'Mata Pelajaran',
   tp_id: '',
   description: '',
   deadline: '',
@@ -651,11 +653,14 @@ async function loadAssignments() {
 }
 
 async function loadClassrooms() {
-  await fetchClassrooms()
+  await fetchClassrooms(true)
   if (classrooms.value.length > 0 && !newTask.value.classroom) {
     newTask.value.classroom = classrooms.value[0].name
     newTask.value.subject = getSubjectNameForClass(newTask.value.classroom)
     await loadChapters()
+  } else if (classrooms.value.length === 0) {
+    newTask.value.classroom = ''
+    newTask.value.subject = authStore.user?.subject || ''
   }
 }
 

@@ -168,9 +168,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 import { useClassrooms } from '@/composables/useClassrooms'
 
-const { classrooms, fetchClassrooms, formatClassLabel, getClassName, getSubjectNameForClass, getAvailableSubjectsForClass } = useClassrooms()
+const authStore = useAuthStore()
+const { classrooms, fetchClassrooms, fetchSubjects, formatClassLabel, getClassName, getSubjectNameForClass, getAvailableSubjectsForClass } = useClassrooms()
 
 const selectedClass = ref('all')
 const selectedSubject = ref('all')
@@ -199,13 +201,13 @@ function onNewJournalClassChange() {
   newJournal.value.subject = getSubjectNameForClass(newJournal.value.classroom)
 }
 
-const journals = ref([
+const defaultSmp6Journals = [
   {
     id: 'j-01',
     date: '2024-10-24',
     time: '08:20 - 09:40',
     classroom: 'VII A',
-    subject: 'KKA (Koding dan Kecerdasan Artifisial)',
+    subject: 'Informatika & KKA',
     meetingNumber: 12,
     topic: 'Praktik Pemrograman Visual: Percabangan Kondisional IF-ELSE',
     activities: 'Siswa mempraktikkan pembuatan kuis tebak angka menggunakan blok Scratch di Lab Komputer 1.',
@@ -218,7 +220,7 @@ const journals = ref([
     date: '2024-10-21',
     time: '07:00 - 08:20',
     classroom: 'VII B',
-    subject: 'KKA (Koding dan Kecerdasan Artifisial)',
+    subject: 'Informatika & KKA',
     meetingNumber: 11,
     topic: 'Logika Algoritma & Prompt Engineering Dasar AI',
     activities: 'Menyusun perintah prompt AI terstruktur dan memahami etika kecerdasan buatan.',
@@ -239,7 +241,9 @@ const journals = ref([
     totalStudents: 27,
     notes: 'Seluruh peserta didik tuntas menyelesaikan tugas lab.'
   }
-])
+]
+
+const journals = ref<any[]>(authStore.currentSchool?.id === 'sch-smpn6kendari' ? defaultSmp6Journals : [])
 
 function normalizeClass(nameOrId: string) {
   return (nameOrId || '').replace(/[\s-]/g, '').toLowerCase()
@@ -257,16 +261,19 @@ const filteredJournals = computed(() => {
 
 const newJournal = ref({
   date: new Date().toISOString().split('T')[0],
-  classroom: 'VII A',
-  subject: 'Informatika',
-  meetingNumber: 13,
+  classroom: '',
+  subject: authStore.user?.subject || '',
+  meetingNumber: 1,
   topic: '',
   activities: '',
   notes: ''
 })
 
 onMounted(async () => {
-  await fetchClassrooms()
+  await Promise.all([fetchClassrooms(true), fetchSubjects(true)])
+  if (authStore.currentSchool?.id !== 'sch-smpn6kendari') {
+    journals.value = []
+  }
   if (classrooms.value.length > 0) {
     newJournal.value.classroom = classrooms.value[0].name
     newJournal.value.subject = getSubjectNameForClass(newJournal.value.classroom)

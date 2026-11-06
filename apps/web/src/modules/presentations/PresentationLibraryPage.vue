@@ -157,8 +157,7 @@
             class="bg-transparent text-xs text-white/90 font-medium focus:outline-none cursor-pointer pr-1"
           >
             <option value="all" class="bg-slate-900 text-white">Semua Mapel</option>
-            <option value="Informatika" class="bg-slate-900 text-white">Informatika</option>
-            <option value="KKA (Koding dan Kecerdasan Artifisial)" class="bg-slate-900 text-white">KKA</option>
+            <option v-for="s in availableSubjects" :key="s" :value="s" class="bg-slate-900 text-white">{{ s }}</option>
           </select>
 
           <div class="w-px h-4 bg-white/20"></div>
@@ -233,8 +232,7 @@
         />
         <select v-model="filterSubject" class="bg-black/40 text-xs text-white rounded-xl px-2.5 py-1.5 border border-white/15">
           <option value="all">Semua Mapel</option>
-          <option value="Informatika">Informatika</option>
-          <option value="KKA (Koding dan Kecerdasan Artifisial)">KKA</option>
+          <option v-for="s in availableSubjects" :key="s" :value="s">{{ s }}</option>
         </select>
         <select v-model="filterClass" class="bg-black/40 text-xs text-white rounded-xl px-2.5 py-1.5 border border-white/15">
           <option value="all">Semua Rombel</option>
@@ -815,8 +813,7 @@
           <div>
             <select v-model="filterSubject" class="px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#0c2b3d]/20 focus:border-[#0c2b3d] transition">
               <option value="all">Semua Mata Pelajaran</option>
-              <option value="Informatika">Informatika</option>
-              <option value="KKA (Koding dan Kecerdasan Artifisial)">KKA (Koding dan Kecerdasan Artifisial)</option>
+              <option v-for="s in availableSubjects" :key="s" :value="s">{{ s }}</option>
             </select>
           </div>
           <!-- A3: Filter Rombel -->
@@ -1091,8 +1088,7 @@
           <div>
             <label class="block font-bold text-slate-700 mb-1">Mata Pelajaran</label>
             <select v-model="uploadForm.subject" class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#0c2b3d]/20 focus:border-[#0c2b3d] transition">
-              <option value="Informatika">Informatika</option>
-              <option value="KKA (Koding dan Kecerdasan Artifisial)">KKA (Koding dan Kecerdasan Artifisial)</option>
+              <option v-for="s in availableSubjects" :key="s" :value="s">{{ s }}</option>
             </select>
           </div>
 
@@ -1472,8 +1468,7 @@
           <div>
             <label class="block font-bold text-slate-700 mb-1">Mata Pelajaran</label>
             <select v-model="editForm.subject" class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#0c2b3d]/20 focus:border-[#0c2b3d] transition">
-              <option value="Informatika">Informatika</option>
-              <option value="KKA (Koding dan Kecerdasan Artifisial)">KKA (Koding dan Kecerdasan Artifisial)</option>
+              <option v-for="s in availableSubjects" :key="s" :value="s">{{ s }}</option>
             </select>
           </div>
 
@@ -1706,6 +1701,18 @@ function resetFilters() {
 const classrooms = ref<any[]>([])
 const presentations = ref<any[]>([])
 const activeSession = ref<any>(null)
+
+const availableSubjects = computed(() => {
+  const set = new Set<string>()
+  if (authStore.user?.subject) set.add(authStore.user.subject)
+  presentations.value.forEach(p => {
+    if (p.subject) set.add(p.subject)
+  })
+  if (set.size === 0) {
+    set.add('Mata Pelajaran')
+  }
+  return Array.from(set)
+})
 
 // Stats Computed
 const totalReadySlides = computed(() => {
@@ -1956,15 +1963,15 @@ const editForm = ref({
 
 const uploadForm = ref({
   title: '',
-  subject: 'Informatika',
+  subject: authStore.user?.subject || 'Mata Pelajaran',
   classroom_ids: [] as string[],
   description: ''
 })
 
 const sessionForm = ref({
   title: '',
-  classroom: 'VII A',
-  accessCode: 'PRS-7A',
+  classroom: '',
+  accessCode: '',
   allowAnonymous: true,
   allowChangeAnswer: false
 })

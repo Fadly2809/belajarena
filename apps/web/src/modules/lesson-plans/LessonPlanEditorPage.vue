@@ -298,7 +298,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
+const authStore = useAuthStore()
 const router = useRouter()
 const currentTab = ref('info')
 const showPreview = ref(false)
@@ -320,16 +322,23 @@ const allDimensions = [
 ]
 
 const availableSubjects = computed(() => {
-  return form.value.grade === '7' ? ['KKA (Koding dan Kecerdasan Artifisial)'] : ['Informatika']
+  if (authStore.user?.subject) {
+    return [authStore.user.subject]
+  }
+  return form.value.grade === '7' ? ['Informatika & KKA'] : ['Informatika']
 })
 
 function onGradeChange() {
-  form.value.subject = form.value.grade === '7' ? 'KKA (Koding dan Kecerdasan Artifisial)' : 'Informatika'
+  if (authStore.user?.subject) {
+    form.value.subject = authStore.user.subject
+  } else {
+    form.value.subject = form.value.grade === '7' ? 'Informatika & KKA' : 'Informatika'
+  }
 }
 
 const form = ref({
-  title: 'Logika Dasar Koding dan Blok Sekuensial',
-  subject: 'KKA (Koding dan Kecerdasan Artifisial)',
+  title: 'Logika Dasar Pembelajaran Interaktif',
+  subject: authStore.user?.subject || 'Mata Pelajaran',
   grade: '7',
   duration: 4,
   meetings: 2,

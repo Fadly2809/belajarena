@@ -297,6 +297,9 @@ function generateBuiltInResponse(message, context = {}, history = []) {
   const rawText = message.trim()
   const text = rawText.toLowerCase()
   const currentRoute = context.currentRoute || '/dashboard'
+  const teacherName = context.teacherName || 'Bapak/Ibu Guru'
+  const schoolName = context.schoolName || 'Satuan Pendidikan'
+  const teacherSubject = context.teacherSubject || 'Mata Pelajaran'
 
   // Periksa apakah pesan sebelumnya dari bot adalah pertanyaan klarifikasi soal
   const lastBotMsg = history.length > 0 ? (history[history.length - 1].content || '').toLowerCase() : ''
@@ -328,22 +331,20 @@ function generateBuiltInResponse(message, context = {}, history = []) {
     // KASUS A: Permintaan masih umum (misal: "minta soal", "buatkan soal", "bikin soal", "butuh soal")
     // -> BOT BERTANYA BALIK SEPERTI CHATGPT/GEMINI!
     if (!hasTopic && !isFollowUpToQuestionClarification) {
-      return `### 🤖 Siap Membantu, Pak Fadly!
+      return `### 🤖 Siap Membantu, ${teacherName}!
 
-Agar paket soal yang saya buatkan benar-benar tepat sasaran dan sesuai dengan tujuan pembelajaran Bapak di kelas, boleh saya konfirmasi beberapa detail berikut?
+Agar paket soal yang saya buatkan benar-benar tepat sasaran dan sesuai dengan tujuan pembelajaran Anda di ${schoolName}, boleh saya konfirmasi beberapa detail berikut?
 
-1. 📚 **Mata Pelajaran**: Mau untuk **Informatika** atau **KKA (Koding & Kecerdasan Artifisial)**?
-2. 🎯 **Materi / Topik Utama**:
-   - *Informatika*: Berpikir Komputasional, Sistem Komputer, Jaringan Komputer & Internet, Analisis Data, atau Algoritma Pemrograman?
-   - *KKA*: Konsep Dasar AI, Machine Learning, Computer Vision, Prompt Engineering, atau Etika Digital AI?
+1. 📚 **Mata Pelajaran**: Mau untuk **${teacherSubject}** atau materi khusus lainnya?
+2. 🎯 **Materi / Topik Utama**: Silakan sebutkan bab atau topik materi yang sedang dibahas.
 3. 🏫 **Tingkatan Kelas**: Kelas **VII**, **VIII**, atau **IX** SMP?
 4. 🔢 **Jumlah Nomor Soal**: Mau dibuatkan berapa butir? *(contoh: 3, 5, atau 10 nomor)*
 5. 📝 **Bentuk Soal**: Pilihan Ganda (A–D) HOTS dengan stimulus narasi/studi kasus, atau Soal Essay/Uraian?
 
 ---
 
-> 💡 **Atau Bapak cukup ketik satu kalimat spesifik, contohnya:**  
-> *"Buatkan 5 butir soal pilihan ganda HOTS Informatika Kelas 7 materi Jaringan Komputer"*`
+> 💡 **Atau Anda cukup ketik satu kalimat spesifik, contohnya:**  
+> *"Buatkan 5 butir soal pilihan ganda HOTS ${teacherSubject} materi Bab 1"*`
     }
 
     // KASUS B: Sudah ada topik spesifik (atau jawaban dari klarifikasi)
@@ -358,7 +359,7 @@ Agar paket soal yang saya buatkan benar-benar tepat sasaran dan sesuai dengan tu
       sampleQuestions = [
         {
           num: 1,
-          stimulus: 'Di Lab Komputer SMP Negeri 6 Kendari, 20 unit komputer dapat saling berbagi pakai printer tanpa harus memindahkan kabel colokan ke tiap komputer.',
+          stimulus: `Di lingkungan kelas dan lab ${schoolName}, 20 unit perangkat dapat saling berbagi pakai printer tanpa harus memindahkan kabel colokan ke tiap perangkat.`,
           question: 'Arsitektur jaringan komputer lokal yang paling tepat menggambarkan kondisi pemanfaatan perangkat di lab tersebut adalah...',
           options: [
             'A. WAN (Wide Area Network) berbasis satelit antar-wilayah.',
@@ -461,11 +462,11 @@ Agar paket soal yang saya buatkan benar-benar tepat sasaran dan sesuai dengan tu
       ]
     }
 
-    let questionsOutput = `### 📋 Paket Butir Soal HOTS — ${subjectName}\n`
+    let questionsOutput = `### 📋 Paket Butir Soal HOTS — ${subjectName || teacherSubject}\n`
     questionsOutput += `**Topik Materi**: ${detectedTopic}  \n`
-    questionsOutput += `**Satuan Pendidikan**: SMP Negeri 6 Kendari  \n`
+    questionsOutput += `**Satuan Pendidikan**: ${schoolName}  \n`
     questionsOutput += `**Fase / Kelas**: Fase D (SMP)  \n`
-    questionsOutput += `**Penyusun**: Muhammad Fadly Akbar Arsandi, S.Pd.\n\n---\n\n`
+    questionsOutput += `**Penyusun**: ${teacherName}\n\n---\n\n`
 
     sampleQuestions.forEach(q => {
       questionsOutput += `#### Nomor ${q.num}: Analisis Kasus\n`
@@ -490,18 +491,18 @@ Agar paket soal yang saya buatkan benar-benar tepat sasaran dan sesuai dengan tu
   if (text.includes('modul ajar') || text.includes('rpp') || text.includes('perangkat ajar')) {
     if (!text.includes('elemen') && !text.includes('jp') && !text.includes('bab') && !text.includes('topik')) {
       return `### 📘 Draf Perangkat Ajar Kurikulum Merdeka (Fase D SMP)
-Halo Pak Fadly! Saya siap merumuskan modul ajar yang lengkap dan terstruktur sesuai panduan Kurikulum Merdeka SMPN 6 Kendari.
+Halo ${teacherName}! Saya siap merumuskan modul ajar yang lengkap dan terstruktur sesuai panduan Kurikulum Merdeka ${schoolName}.
 
 Agar modul ajar sesuai dengan target pertemuan minggu ini, mohon konfirmasi beberapa hal:
-1. **Mata Pelajaran**: **Informatika** atau **KKA**?
-2. **Elemen Capaian**: Berpikir Komputasional (BK), Teknologi Informasi & Komunikasi (TIK), Sistem Komputer (SK), Jaringan Komputer & Internet (JKI), Analisis Data (AD), atau Algoritma Pemrograman (AP)?
+1. **Mata Pelajaran**: **${teacherSubject}** atau muatan lain?
+2. **Elemen Capaian / Topik Materi**: Silakan tentukan bab atau capaian yang ingin dicapai.
 3. **Sasaran Kelas & Alokasi Waktu**: Kelas VII, VIII, atau IX (berapa JP, misal 2 x 40 menit)?
 4. **Model Pembelajaran**: Mau menggunakan *Project-Based Learning (PjBL)*, *Problem-Based Learning (PBL)*, atau *Discovery Learning*?
 
 ---
 
 > 💡 **Ketik cepat jika ingin langsung dibuatkan contoh lengkap:**  
-> *"Buatkan modul ajar Informatika Fase D elemen Algoritma Pemrograman 2 JP model PjBL"*`
+> *"Buatkan modul ajar ${teacherSubject} Fase D 2 JP model PBL"*`
     }
   }
 
@@ -510,17 +511,17 @@ Agar modul ajar sesuai dengan target pertemuan minggu ini, mohon konfirmasi bebe
   // -------------------------------------------------------------
   if (text.includes('koding') || text.includes('coding') || text.includes('python') || text.includes('scratch') || text.includes('program') || text.includes('kode') || text.includes('script')) {
     if (text.includes('python') || text.includes('scratch') || text.includes('contoh')) {
-      return `### 💻 Contoh Script Praktikum Siswa SMPN 6 Kendari
-**Topik**: Logika Percabangan Nilai Kelulusan Proyek Komputasi  
-**Guru Pengampu**: Muhammad Fadly Akbar Arsandi, S.Pd.
+      return `### 💻 Contoh Script Pembelajaran Siswa di ${schoolName}
+**Topik**: Logika Percabangan Nilai Kelulusan Proyek Belajar  
+**Guru Pengampu**: ${teacherName}
 
 \`\`\`python
 # ==========================================================
-# Program: Pengecekan Ketuntasan KKA SMP Negeri 6 Kendari
+# Program: Pengecekan Ketuntasan ${teacherSubject} di ${schoolName}
 # ==========================================================
 
 nama = input("Nama Siswa : ")
-nilai = float(input("Nilai Proyek Koding (0-100): "))
+nilai = float(input("Nilai Evaluasi (0-100): "))
 
 print("\\n--- HASIL EVALUASI ---")
 if nilai >= 85:
@@ -528,16 +529,16 @@ if nilai >= 85:
 elif nilai >= 75:
     status = "Tuntas - Memenuhi Standar KKTP (Kategori B)"
 else:
-    status = "Perlu Pendampingan Remedial di Lab (Kategori C)"
+    status = "Perlu Pendampingan Remedial (Kategori C)"
 
 print(f"Siswa: {nama} | Status: {status}")
 \`\`\`
 
-> 💡 **Praktikum Lab:** Mintalah siswa menjalankan kode ini di IDLE Python atau VS Code di lab komputer dan memasukkan nilai mereka masing-masing.`
+> 💡 **Praktik Kelas:** Mintalah siswa menjalankan kode ini di komputer/HP dan memasukkan nilai mereka masing-masing.`
     }
 
-    return `### 💻 Bantuan Praktikum Koding & Pemrograman
-Halo Pak Fadly! Belajarena mendukung materi koding ramah siswa SMP.
+    return `### 💻 Bantuan Praktik Pembelajaran Digital & Koding
+Halo ${teacherName}! Belajarena mendukung materi koding dan perangkat ajar interaktif.
 
 Mau saya bantu buatkan contoh kode untuk topik apa?
 1. **Bahasa Pemrograman**: Mau berbasis visual (**Scratch / MakeCode Block**) atau teks (**Python**)?
@@ -554,7 +555,7 @@ Mau saya bantu buatkan contoh kode untuk topik apa?
   // -------------------------------------------------------------
   if (text.includes('presentasi') || text.includes('slide') || text.includes('studio') || text.includes('proyektor') || text.includes('mirroring')) {
     return `### 📡 Panduan Lengkap Fitur Live Presentasi Interaktif
-Halo Pak Fadly! Menu **Live Presentasi** adalah fitur unggulan Belajarena untuk memproyeksikan slide ke proyektor kelas dengan sinkronisasi real-time mirroring langsung ke HP siswa.
+Halo ${teacherName}! Menu **Live Presentasi** adalah fitur unggulan Belajarena untuk memproyeksikan slide ke proyektor kelas dengan sinkronisasi real-time mirroring langsung ke HP siswa.
 
 ---
 
@@ -652,8 +653,6 @@ Buka menu [Absensi Siswa →](/attendance):
   // -------------------------------------------------------------
   // 10. DEFAULT / PERCAKAPAN UMUM
   // -------------------------------------------------------------
-  const schoolName = context.schoolName || context.school?.name || 'Satuan Pendidikan'
-  const teacherName = context.teacherName || context.user?.name || 'Bapak/Ibu Guru'
   const teacherNip = context.teacherNip || context.user?.nip ? `(NIP: ${context.teacherNip || context.user?.nip})` : ''
 
   return `### 🤖 Asisten AI Belajarena — ${schoolName}

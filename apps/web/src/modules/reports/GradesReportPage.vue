@@ -1238,6 +1238,7 @@ const currentSchoolName = computed(() => authStore.currentSchool?.name || 'Satua
 
 const {
   classrooms,
+  subjects,
   fetchClassrooms,
   formatClassLabel,
   getClassName,
@@ -1858,7 +1859,9 @@ async function saveBatchGrades() {
 }
 
 function getSubjectName(id: string) {
-  return id === 'sub-kka' ? 'KKA (Koding dan Kecerdasan Artifisial)' : 'Informatika'
+  const found = (subjects.value || []).find(s => s.id === id)
+  if (found) return found.name
+  return authStore.user?.subject || 'Mata Pelajaran'
 }
 
 function printReport() {

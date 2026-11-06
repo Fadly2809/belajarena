@@ -218,6 +218,7 @@ import { renderMarkdown } from '@/utils/markdown'
 
 const authStore = useAuthStore()
 const currentSchoolName = computed(() => authStore.currentSchool?.name || 'Satuan Pendidikan')
+const teacherSubject = computed(() => (authStore.user as any)?.subject || 'Mata Pelajaran')
 
 const {
   isOpen,
@@ -241,10 +242,10 @@ const quickChips = computed(() => [
   { icon: '📡', label: 'Cara Live Presentasi', prompt: 'Bagaimana cara memulai sesi Live Presentasi dan menghubungkannya ke HP siswa?' },
   { icon: '🎮', label: 'Cara Main Edu-Games', prompt: 'Bagaimana langkah menjalankan Edu-Games Boss Battle 3D di kelas?' },
   { icon: '📝', label: 'Panduan Bank Soal & CBT', prompt: 'Bagaimana cara membuat Bank Soal, import dari Word/Excel, dan menyelenggarakan Ujian CBT?' },
-  { icon: '📋', label: '5 Soal HOTS KKA', prompt: `Buatkan 5 butir soal pilihan ganda HOTS lengkap dengan stimulus dan kunci jawaban untuk mata pelajaran KKA (Koding dan Kecerdasan Artifisial) di ${currentSchoolName.value}.` },
-  { icon: '📘', label: 'Modul Ajar Informatika', prompt: `Buatkan draf Modul Ajar Kurikulum Merdeka Fase D untuk mata pelajaran Informatika elemen Algoritma dan Pemrograman 2 JP di ${currentSchoolName.value}.` },
-  { icon: '💻', label: 'Script Python SMP', prompt: 'Berikan contoh program Python sederhana yang menarik untuk diajarkan di Lab Komputer siswa SMP kelas VII beserta penjelasan baris per baris kodenya.' },
-  { icon: '🤖', label: 'Ide Proyek AI & Vision', prompt: 'Berikan 3 ide proyek praktikum Kecerdasan Artifisial (AI) yang ramah siswa SMP menggunakan kamera/webcam di Lab Komputer.' }
+  { icon: '📋', label: '5 Soal HOTS', prompt: `Buatkan 5 butir soal pilihan ganda HOTS lengkap dengan stimulus dan kunci jawaban untuk mata pelajaran ${teacherSubject.value} di ${currentSchoolName.value}.` },
+  { icon: '📘', label: 'Modul Ajar', prompt: `Buatkan draf Modul Ajar Kurikulum Merdeka Fase D untuk mata pelajaran ${teacherSubject.value} 2 JP di ${currentSchoolName.value}.` },
+  { icon: '💡', label: 'Ide Aktivitas Kelas', prompt: `Berikan 3 ide aktivitas belajar interaktif dan diskusi kelompok yang menarik untuk mata pelajaran ${teacherSubject.value} di ${currentSchoolName.value}.` },
+  { icon: '📊', label: 'Rubrik Asesmen', prompt: `Buatkan rubrik penilaian formatif dan lembar observasi keaktifan siswa untuk pembelajaran ${teacherSubject.value} di kelas.` }
 ])
 
 function submitMessage() {

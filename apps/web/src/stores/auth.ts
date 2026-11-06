@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/services/api'
+import { resetClassroomsCache } from '@/composables/useClassrooms'
 
 export interface SchoolInfo {
   id: string
@@ -110,6 +111,7 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await api.post('/auth/login', credentials)
       const { token, user: userData, school: schoolData } = response.data.data
 
+      resetClassroomsCache()
       localStorage.setItem('auth_token', token)
       localStorage.setItem('auth_user', JSON.stringify(userData))
       if (schoolData) {
@@ -121,61 +123,9 @@ export const useAuthStore = defineStore('auth', () => {
 
       return { success: true }
     } catch (error: any) {
-      // Fallback otentikasi darurat jika jaringan benar-benar offline / server down
-      const isNetworkError = !error.response || error.code === 'ERR_NETWORK' || error.response.status === 502 || error.response.status === 503
-      if (isNetworkError) {
-        console.warn('Backend server uncontactable, falling back to local session')
-        const term = (credentials.email || '').toLowerCase().trim()
-        const isStudentIdentifier =
-          /^\d+$/.test(term) ||
-          term.includes('siswa') ||
-          term.includes('student') ||
-          term.startsWith('std-')
-
-        if (isStudentIdentifier) {
-          const fallbackStudent: User = {
-            id: 'std-' + (term || '10527'),
-            name: 'Abizar (Siswa)',
-            email: term.includes('@') ? term : `${term}@siswa.smpn6kendari.sch.id`,
-            school_id: 'sch-smpn6kendari',
-            roles: ['student'],
-            role: 'student',
-            permissions: ['student.view', 'student.exam', 'student.assignment', 'student.attendance'],
-            classroom_id: 'cls-7a',
-            classroom_name: 'Kelas VII A',
-            nis: /^\d+$/.test(term) ? term : '10527',
-            is_student: true,
-            avatar_url: ''
-          }
-          localStorage.setItem('auth_token', 'agd_token_student_session')
-          localStorage.setItem('auth_user', JSON.stringify(fallbackStudent))
-          user.value = fallbackStudent
-          initialized.value = true
-          return { success: true }
-        }
-
-        const fallbackTeacher: User = {
-          id: 'usr-teacher-1',
-          name: 'Muhammad Fadly Akbar Arsandi, S.Pd.',
-          email: credentials.email || 'muhammadarsandi89@guru.smp.belajar.id',
-          school_id: 'sch-smpn6kendari',
-          roles: ['teacher', 'admin', 'superadmin'],
-          role: 'teacher',
-          permissions: ['*'],
-          classroom_id: 'cls-7a',
-          classroom_name: 'Kelas VII A',
-          avatar_url: ''
-        }
-        localStorage.setItem('auth_token', 'agd_token_local_session')
-        localStorage.setItem('auth_user', JSON.stringify(fallbackTeacher))
-        user.value = fallbackTeacher
-        initialized.value = true
-        return { success: true }
-      }
-
       return {
         success: false,
-        message: error.response?.data?.message || 'Login gagal. Periksa kembali email dan kata sandi Anda.',
+        message: error.response?.data?.message || (error.code === 'ERR_NETWORK' ? 'Tidak dapat terhubung ke server backend.' : 'Identitas akun atau kata sandi tidak cocok'),
         errors: error.response?.data?.errors || {}
       }
     } finally {
@@ -198,6 +148,7 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await api.post('/auth/register-teacher', data)
       const { token, user: userData, school: schoolData } = response.data.data
 
+      resetClassroomsCache()
       localStorage.setItem('auth_token', token)
       localStorage.setItem('auth_user', JSON.stringify(userData))
       if (schoolData) {
@@ -236,6 +187,7 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await api.post('/auth/register-school', data)
       const { token, user: userData, school: schoolData } = response.data.data
 
+      resetClassroomsCache()
       localStorage.setItem('auth_token', token)
       localStorage.setItem('auth_user', JSON.stringify(userData))
       if (schoolData) {
@@ -279,9 +231,11 @@ export const useAuthStore = defineStore('auth', () => {
     } catch {
       // Ignore logout errors — always clear local state
     } finally {
+      resetClassroomsCache()
       localStorage.removeItem('auth_token')
       localStorage.removeItem('auth_user')
       localStorage.removeItem('auth_school')
+      localStorage.removeItem('cerdika_ai_history')
       user.value = null
       currentSchool.value = null
       loading.value = false

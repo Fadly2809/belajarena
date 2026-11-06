@@ -20,6 +20,7 @@ const apiKey = ref(localStorage.getItem(STORAGE_KEY_API_KEY) || '')
 function getAiGreeting(): ChatMessage {
   let teacherName = 'Bapak/Ibu Guru'
   let schoolName = 'Satuan Pendidikan'
+  let subjectStr = 'Mata Pelajaran'
   let nipStr = ''
   try {
     const rawUser = localStorage.getItem('auth_user')
@@ -27,6 +28,7 @@ function getAiGreeting(): ChatMessage {
       const u = JSON.parse(rawUser)
       if (u?.name) teacherName = u.name
       if (u?.nip) nipStr = ` (NIP: ${u.nip})`
+      if (u?.subject) subjectStr = u.subject
     }
     const rawSchool = localStorage.getItem('auth_school')
     if (rawSchool) {
@@ -39,14 +41,13 @@ function getAiGreeting(): ChatMessage {
     id: 'msg-welcome',
     role: 'assistant',
     content: `### 🤖 Halo ${teacherName}!
-Saya adalah **Asisten AI Belajarena** untuk guru Informatika & KKA di **${schoolName}**${nipStr}.
+Saya adalah **Asisten AI Belajarena** untuk mata pelajaran **${subjectStr}** di **${schoolName}**${nipStr}.
 
 Saya siap membantu Anda menyusun perangkat ajar dan aktivitas belajar interaktif secara instan:
-* 📋 **Penyusunan Soal HOTS & MOTS** (Kurikulum Merdeka Fase D).
+* 📋 **Penyusunan Soal HOTS & Asesmen Pembelajaran**.
 * 📘 **Pembuatan Draf Modul Ajar, ATP, & KKTP**.
-* 💻 **Contoh Kode Python, Scratch, & Block Coding** ramah siswa.
-* 🤖 **Ide Praktikum Kecerdasan Artifisial & Machine Learning**.
-* 📊 **Panduan Asesmen Formatif & Sumatif**.
+* 💡 **Ide Aktivitas Belajar & Diskusi Interaktif**.
+* 📊 **Panduan Penilaian Formatif & Sumatif**.
 
 Silakan ketik pertanyaan Anda atau pilih tombol cepat di bawah!`,
     timestamp: new Date().toISOString(),

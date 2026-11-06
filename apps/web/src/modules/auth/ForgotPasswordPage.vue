@@ -28,7 +28,7 @@
             v-model="email"
             type="email"
             class="input text-xs"
-            placeholder="nama.guru@smpn6kendari.sch.id"
+            placeholder="nama.guru@sekolah.sch.id"
             required
           />
         </div>
