@@ -113,7 +113,7 @@
           </span>
         </div>
         <p class="text-xs sm:text-sm text-slate-600 font-medium">
-          Mata Pelajaran: <strong class="text-slate-800 font-bold">Informatika & KKA (Koding & AI)</strong>
+          Mata Pelajaran: <strong class="text-slate-800 font-bold">{{ profile.subject || authStore.user?.subject || 'Belum Diatur' }}</strong>
         </p>
         <div class="flex flex-wrap items-center justify-center sm:justify-start gap-3 pt-1 text-xs text-slate-500">
           <span>🏫 <strong class="text-slate-700">{{ currentSchoolName }}</strong></span>
@@ -192,6 +192,18 @@
                 class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-slate-800 font-semibold text-xs transition font-mono"
                 placeholder="Isi jika ada..."
               />
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Mata Pelajaran yang Diampu</label>
+              <input
+                v-model="profile.subject"
+                type="text"
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-slate-800 font-semibold text-xs transition"
+                placeholder="Contoh: Matematika, Bahasa Indonesia, Informatika, dll."
+                required
+              />
+              <p class="text-[10px] text-slate-400 mt-1">Mata pelajaran yang Anda ampu untuk kelas, jadwal rutin, modul ajar, dan penilaian rapor.</p>
             </div>
 
             <div>
@@ -305,6 +317,7 @@ const profile = ref({
   nip: '199509282020121003',
   nuptk: '',
   phone: '081245678901',
+  subject: '',
   avatar_url: ''
 })
 
@@ -333,6 +346,7 @@ async function loadProfile() {
       profile.value.nip = u.nip || profile.value.nip
       profile.value.nuptk = u.nuptk || ''
       profile.value.phone = u.phone || profile.value.phone
+      profile.value.subject = u.subject || (authStore.user as any)?.subject || ''
       profile.value.avatar_url = u.avatar_url || u.avatar_path || ''
     }
   } catch {
@@ -342,6 +356,7 @@ async function loadProfile() {
       profile.value.email = authStore.user.email || profile.value.email
       profile.value.nip = (authStore.user as any).nip || profile.value.nip
       profile.value.phone = (authStore.user as any).phone || profile.value.phone
+      profile.value.subject = (authStore.user as any)?.subject || ''
       profile.value.avatar_url = authStore.user.avatar_url || authStore.user.avatar_path || ''
     }
   }
@@ -428,6 +443,7 @@ async function handleUpdateProfile() {
       email: profile.value.email,
       nip: profile.value.nip,
       nuptk: profile.value.nuptk,
+      subject: profile.value.subject,
       phone: profile.value.phone
     })
 

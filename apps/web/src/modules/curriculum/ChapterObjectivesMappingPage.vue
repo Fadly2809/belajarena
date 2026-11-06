@@ -23,6 +23,7 @@
           @change="onClassChange"
           class="px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
+          <option v-if="classrooms.length === 0" value="" disabled>Belum ada kelas</option>
           <option v-for="c in classrooms" :key="c.id" :value="c.id">
             {{ formatClassLabel(c) }}
           </option>
@@ -34,8 +35,9 @@
           @change="onSubjectChange"
           class="px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option v-for="sub in availableSubjects" :key="sub.id" :value="sub.id">
-            {{ sub.name }}
+          <option v-if="availableSubjects.length === 0" value="" disabled>Belum ada mapel</option>
+          <option v-for="s in availableSubjects" :key="s.id" :value="s.id">
+            {{ s.name }}
           </option>
         </select>
 
@@ -776,6 +778,7 @@ import { useClassrooms } from '@/composables/useClassrooms'
 const {
   classrooms,
   fetchClassrooms,
+  fetchSubjects,
   formatClassLabel,
   getClassName,
   getClassGradeLevel,
@@ -785,8 +788,8 @@ const {
 } = useClassrooms()
 
 // State filters
-const selectedClassId = ref('cls-7a')
-const selectedSubjectId = ref(getSubjectIdForClass(selectedClassId.value))
+const selectedClassId = ref('')
+const selectedSubjectId = ref('')
 const availableSubjects = computed(() => getAvailableSubjectsForClass(selectedClassId.value))
 const selectedGrade = computed(() => getClassGradeLevel(selectedClassId.value))
 const currentKktp = ref(75)
@@ -856,9 +859,13 @@ const filteredMatrix = computed(() => {
 
 // Lifecycle
 onMounted(async () => {
-  await fetchClassrooms()
-  if (classrooms.value.length > 0 && !selectedClassId.value) {
-    selectedClassId.value = classrooms.value[0].id
+  await Promise.all([fetchClassrooms(true), fetchSubjects(true)])
+  if (classrooms.value.length > 0) {
+    if (!selectedClassId.value || !classrooms.value.some(c => c.id === selectedClassId.value)) {
+      selectedClassId.value = classrooms.value[0].id
+    }
+  } else {
+    selectedClassId.value = ''
   }
   selectedSubjectId.value = getSubjectIdForClass(selectedClassId.value)
   await Promise.all([fetchChapters(), fetchMappingPreview()])

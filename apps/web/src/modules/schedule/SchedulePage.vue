@@ -13,7 +13,7 @@
           </span>
         </div>
         <p class="text-xs sm:text-sm text-slate-600 font-medium mt-1">
-          {{ schoolName }} &bull; Guru Pengampu: <strong class="text-slate-800">{{ teacherName }}</strong> (Informatika & KKA)
+          {{ schoolName }} &bull; Guru Pengampu: <strong class="text-slate-800">{{ teacherName }}</strong> &bull; Mapel: <span class="font-bold text-slate-800">{{ teacherSubject }}</span>
         </p>
       </div>
 
@@ -118,15 +118,15 @@
               <div>
                 <span
                   class="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold mb-1"
-                  :style="{ backgroundColor: slot.color + '15', color: slot.color }"
+                  :style="{ backgroundColor: (slot.color || '#3B82F6') + '15', color: slot.color || '#3B82F6' }"
                 >
-                  {{ slot.subject_name.includes('KKA') ? 'KKA (Koding & AI)' : 'Informatika' }}
+                  {{ slot.subject_name || teacherSubject }}
                 </span>
                 <h4 class="text-xs font-bold text-slate-900 leading-tight">
-                  Kelas {{ slot.classroom_name }}
+                  {{ slot.classroom_name?.toLowerCase().startsWith('kelas') ? slot.classroom_name : `Kelas ${slot.classroom_name}` }}
                 </h4>
                 <p class="text-[11px] text-slate-500 mt-0.5 leading-snug">
-                  {{ slot.description || 'Praktikum Komputasi di Lab' }}
+                  {{ slot.description || 'Kegiatan Pembelajaran & Praktikum' }}
                 </p>
               </div>
 
@@ -183,6 +183,7 @@
               class="px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
               @change="onTrackingClassChange"
             >
+              <option v-if="classrooms.length === 0" value="" disabled>Belum ada kelas</option>
               <option v-for="c in classrooms" :key="c.id" :value="c.id">
                 {{ formatClassLabel(c) }}
               </option>
@@ -196,6 +197,7 @@
               v-model="selectedSubjectId"
               class="px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
+              <option v-if="availableTrackingSubjects.length === 0" value="" disabled>Belum ada mapel</option>
               <option v-for="s in availableTrackingSubjects" :key="s.id" :value="s.id">
                 {{ s.name }}
               </option>
@@ -344,22 +346,34 @@
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label class="block font-bold text-slate-700 mb-1">Kelas</label>
                 <select v-model="slotForm.classroom_id" class="w-full px-3 py-2 bg-slate-50 border rounded-xl font-semibold" @change="onSlotClassChange">
+                  <option v-if="classrooms.length === 0" value="" disabled>-- Belum ada kelas (buat di Manajemen Kelas) --</option>
                   <option v-for="c in classrooms" :key="c.id" :value="c.id">
                     {{ formatClassLabel(c) }}
                   </option>
                 </select>
+                <div v-if="classrooms.length === 0" class="mt-1">
+                  <RouterLink to="/classrooms" class="text-[11px] text-blue-600 font-bold hover:underline flex items-center gap-1">
+                    <span>➕</span> Buat kelas di Manajemen Kelas
+                  </RouterLink>
+                </div>
               </div>
               <div>
                 <label class="block font-bold text-slate-700 mb-1">Mata Pelajaran</label>
                 <select v-model="slotForm.subject_id" class="w-full px-3 py-2 bg-slate-50 border rounded-xl font-semibold">
+                  <option v-if="availableSlotSubjects.length === 0" value="" disabled>-- Belum ada mata pelajaran (atur di Profil) --</option>
                   <option v-for="s in availableSlotSubjects" :key="s.id" :value="s.id">
                     {{ s.name }}
                   </option>
                 </select>
+                <div v-if="availableSlotSubjects.length === 0" class="mt-1">
+                  <RouterLink to="/settings/profile" class="text-[11px] text-blue-600 font-bold hover:underline flex items-center gap-1">
+                    <span>⚙️</span> Atur Mapel di Profil Pendidik
+                  </RouterLink>
+                </div>
               </div>
             </div>
 
@@ -510,16 +524,17 @@ import {
 const authStore = useAuthStore()
 const schoolName = computed(() => authStore.currentSchool?.name || 'Satuan Pendidikan')
 const teacherName = computed(() => authStore.user?.name || 'Guru Pengampu')
+const teacherSubject = computed(() => authStore.user?.subject || 'Semua Mata Pelajaran')
 
-const { classrooms, fetchClassrooms, formatClassLabel, getClassName } = useClassrooms()
+const { classrooms, fetchClassrooms, formatClassLabel, getClassName, fetchSubjects } = useClassrooms()
 
 const activeTab = ref<'weekly' | 'meetings'>('weekly')
 const daysOfWeek = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat']
 
 const weeklySlots = ref<any[]>([])
 const meetingLogs = ref<any[]>([])
-const selectedClassId = ref('cls-7a')
-const selectedSubjectId = ref('sub-kka')
+const selectedClassId = ref('')
+const selectedSubjectId = ref('')
 
 const availableTrackingSubjects = computed(() => getAvailableSubjectsForClass(selectedClassId.value))
 
@@ -534,9 +549,9 @@ const slotForm = ref({
   day_index: 1,
   time_start: '07:30',
   time_end: '08:50',
-  subject_id: 'sub-kka',
-  classroom_id: 'cls-7a',
-  room: 'Lab Komputer 1',
+  subject_id: '',
+  classroom_id: '',
+  room: 'Ruang Kelas',
   description: ''
 })
 
@@ -563,10 +578,12 @@ async function fetchWeeklyData() {
 }
 
 onMounted(async () => {
-  await fetchClassrooms()
-  if (classrooms.value.length > 0 && !classrooms.value.some(c => c.id === selectedClassId.value)) {
-    selectedClassId.value = classrooms.value[0].id
-    slotForm.value.classroom_id = classrooms.value[0].id
+  await Promise.all([fetchClassrooms(true), fetchSubjects(true)])
+  if (classrooms.value.length > 0) {
+    if (!classrooms.value.some(c => c.id === selectedClassId.value)) {
+      selectedClassId.value = classrooms.value[0].id
+      slotForm.value.classroom_id = classrooms.value[0].id
+    }
   }
   selectedSubjectId.value = getSubjectIdForClass(selectedClassId.value)
   slotForm.value.subject_id = getSubjectIdForClass(slotForm.value.classroom_id)
@@ -591,15 +608,15 @@ const currentMeetings = computed(() => {
 
 function openSlotModal() {
   editingSlotId.value = null
-  const defaultClass = classrooms.value[0]?.id || 'cls-7a'
+  const defaultClass = classrooms.value[0]?.id || ''
   slotForm.value = {
     day: 'Senin',
     day_index: 1,
     time_start: '07:30',
     time_end: '08:50',
-    subject_id: getSubjectIdForClass(defaultClass),
+    subject_id: getSubjectIdForClass(defaultClass) || '',
     classroom_id: defaultClass,
-    room: 'Lab Komputer 1',
+    room: 'Ruang Kelas',
     description: ''
   }
   showSlotModal.value = true
@@ -621,14 +638,24 @@ function editSlot(slot: any) {
 }
 
 async function saveSlotForm() {
+  if (!slotForm.value.classroom_id) {
+    alert('Silakan pilih kelas terlebih dahulu. Jika belum ada kelas, buat kelas baru di menu Manajemen Kelas.')
+    return
+  }
   const dayMap: Record<string, number> = { Senin: 1, Selasa: 2, Rabu: 3, Kamis: 4, Jumat: 5 }
+  const chosenSub = availableSlotSubjects.value.find(s => s.id === slotForm.value.subject_id) || availableSlotSubjects.value[0]
+  const chosenClass = classrooms.value.find(c => c.id === slotForm.value.classroom_id)
+  const subjectName = chosenSub?.name || authStore.user?.subject || 'Mata Pelajaran'
+  const classroomName = chosenClass ? formatClassLabel(chosenClass) : getClassName(slotForm.value.classroom_id)
+
   const payload = {
     ...slotForm.value,
     day_index: dayMap[slotForm.value.day] || 1,
-    subject_name: slotForm.value.subject_id === 'sub-kka' ? 'KKA (Koding dan Kecerdasan Artifisial)' : 'Informatika',
-    classroom_name: getClassName(slotForm.value.classroom_id),
-    color: slotForm.value.subject_id === 'sub-kka' ? '#8B5CF6' : '#3B82F6',
-    icon: slotForm.value.subject_id === 'sub-kka' ? '🤖' : '💻'
+    subject_id: slotForm.value.subject_id || chosenSub?.id || 'sub-1',
+    subject_name: subjectName,
+    classroom_name: classroomName,
+    color: '#3B82F6',
+    icon: '📚'
   }
 
   try {
@@ -639,8 +666,9 @@ async function saveSlotForm() {
     }
     showSlotModal.value = false
     await fetchWeeklyData()
-  } catch (err) {
+  } catch (err: any) {
     console.error('Failed to save slot:', err)
+    alert(err.response?.data?.message || 'Gagal menyimpan slot jadwal')
   }
 }
 
@@ -747,7 +775,8 @@ function formatDate(iso: string): string {
 
 
 function getSubjectName(id: string) {
-  return id === 'sub-kka' ? 'KKA (Koding & Kecerdasan Artifisial)' : 'Informatika'
+  const found = availableSlotSubjects.value.find(s => s.id === id) || availableTrackingSubjects.value.find(s => s.id === id)
+  return found?.name || authStore.user?.subject || 'Mata Pelajaran'
 }
 
 function printSchedule() {

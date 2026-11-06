@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
 import api from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
 
 export interface ClassroomOption {
   id: string
@@ -16,61 +17,83 @@ export interface TeachingSubject {
   id: string
   code: string
   name: string
-  grade_level: 7 | 9
+  grade_level?: number | string
   kkm: number
   kktp: number
 }
 
-// Jadwal resmi mengajar guru:
-// - Kelas 7: KKA (Koding dan Kecerdasan Artifisial)
-// - Kelas 9: Informatika
-export const TEACHING_SUBJECTS: Record<7 | 9, TeachingSubject> = {
-  7: {
-    id: 'sub-kka',
-    code: 'KKA',
-    name: 'KKA (Koding dan Kecerdasan Artifisial)',
-    grade_level: 7,
-    kkm: 75,
-    kktp: 75,
-  },
-  9: {
-    id: 'sub-inf',
-    code: 'INF',
-    name: 'Informatika',
-    grade_level: 9,
-    kkm: 78,
-    kktp: 78,
-  },
-}
+// Global cached state so multiple components share reactive data
+const classrooms = ref<ClassroomOption[]>([])
+const classroomsLoading = ref(false)
+const classroomsLoaded = ref(false)
+
+const subjects = ref<TeachingSubject[]>([])
+const subjectsLoading = ref(false)
+const subjectsLoaded = ref(false)
 
 /**
- * Mendeteksi tingkatan kelas (7 atau 9) dari id, nama, atau objek kelas
+ * Mendeteksi tingkatan kelas dari id, nama, atau objek kelas
  */
-export function getClassGradeLevel(classIdOrNameOrObj: any): 7 | 9 {
+export function getClassGradeLevel(classIdOrNameOrObj: any): number {
   if (!classIdOrNameOrObj) return 7
   if (typeof classIdOrNameOrObj === 'object') {
     const gl = Number(classIdOrNameOrObj.grade_level)
-    if (gl === 9 || gl === 7) return gl
+    if (!isNaN(gl) && gl > 0) return gl
     const name = String(classIdOrNameOrObj.name || '').toUpperCase()
     if (name.includes('IX') || name.includes('9')) return 9
+    if (name.includes('VIII') || name.includes('8')) return 8
     return 7
   }
   const str = String(classIdOrNameOrObj).toUpperCase()
   if (str.includes('9') || str.includes('IX') || str.includes('CLS-9')) return 9
+  if (str.includes('8') || str.includes('VIII') || str.includes('CLS-8')) return 8
   return 7
 }
 
 /**
- * Mengambil mata pelajaran resmi sesuai jadwal mengajar untuk kelas tertentu
- * Kelas 7 -> KKA, Kelas 9 -> Informatika
+ * Mengambil daftar mata pelajaran yang aktif untuk guru dan kelas terpilih
  */
-export function getSubjectForClass(classIdOrNameOrObj: any): TeachingSubject {
-  const grade = getClassGradeLevel(classIdOrNameOrObj)
-  return grade === 9 ? TEACHING_SUBJECTS[9] : TEACHING_SUBJECTS[7]
+export function getAvailableSubjectsForClass(classIdOrNameOrObj?: any): TeachingSubject[] {
+  if (subjects.value.length > 0) {
+    return subjects.value
+  }
+  try {
+    const authStore = useAuthStore()
+    const userSub = authStore.user?.subject
+    if (userSub && userSub.trim()) {
+      return [
+        {
+          id: 'sub-user-active',
+          code: userSub.replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase() || 'MAPEL',
+          name: userSub.trim(),
+          kkm: 75,
+          kktp: 75
+        }
+      ]
+    }
+  } catch {}
+
+  return [
+    {
+      id: 'sub-default',
+      code: 'MAPEL',
+      name: 'Mata Pelajaran',
+      kkm: 75,
+      kktp: 75
+    }
+  ]
 }
 
-export function getSubjectIdForClass(classIdOrNameOrObj: any): 'sub-inf' | 'sub-kka' {
-  return getSubjectForClass(classIdOrNameOrObj).id as 'sub-inf' | 'sub-kka'
+/**
+ * Mengambil mata pelajaran yang diampu guru
+ */
+export function getSubjectForClass(classIdOrNameOrObj: any): TeachingSubject {
+  const available = getAvailableSubjectsForClass(classIdOrNameOrObj)
+  return available[0]
+}
+
+export function getSubjectIdForClass(classIdOrNameOrObj: any): string {
+  return getSubjectForClass(classIdOrNameOrObj).id
 }
 
 export function getSubjectNameForClass(classIdOrNameOrObj: any): string {
@@ -78,67 +101,75 @@ export function getSubjectNameForClass(classIdOrNameOrObj: any): string {
 }
 
 /**
- * Daftar mata pelajaran yang tersedia untuk kelas yang dipilih.
- * Jika kelas sudah dipilih, HANYA mengembalikan mapel yang diajarkan pada kelas tersebut
- * (misal jika kelas 9 -> hanya Informatika, jika kelas 7 -> hanya KKA)
- */
-export function getAvailableSubjectsForClass(classIdOrNameOrObj?: any): TeachingSubject[] {
-  if (!classIdOrNameOrObj) {
-    return [TEACHING_SUBJECTS[7], TEACHING_SUBJECTS[9]]
-  }
-  return [getSubjectForClass(classIdOrNameOrObj)]
-}
-
-/**
  * Memfilter daftar kelas berdasarkan mata pelajaran
- * Jika KKA -> hanya kelas 7, jika Informatika -> hanya kelas 9
+ * Semua rombel kelas yang dibuat guru dapat digunakan untuk mata pelajaran guru
  */
 export function filterClassroomsBySubject(classroomsList: ClassroomOption[], subjectIdOrName?: string): ClassroomOption[] {
   if (!subjectIdOrName) return classroomsList
-  const s = String(subjectIdOrName).toLowerCase()
-  if (s.includes('kka') || s.includes('koding') || s.includes('kecerdasan')) {
-    return classroomsList.filter(c => getClassGradeLevel(c) === 7)
-  }
-  if (s.includes('inf') || s.includes('informatika')) {
-    return classroomsList.filter(c => getClassGradeLevel(c) === 9)
-  }
   return classroomsList
 }
 
-// Global cached state so multiple components share the same reactive classrooms data
-const classrooms = ref<ClassroomOption[]>([])
-const loading = ref(false)
-const hasLoaded = ref(false)
+export const TEACHING_SUBJECTS: Record<string, TeachingSubject> = {}
+
+export async function fetchSubjects(force = false): Promise<TeachingSubject[]> {
+  if (subjectsLoaded.value && !force && subjects.value.length > 0) {
+    return subjects.value
+  }
+  subjectsLoading.value = true
+  try {
+    const res = await api.get('/subjects')
+    if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+      subjects.value = res.data.data
+      subjectsLoaded.value = true
+      return subjects.value
+    }
+  } catch (err) {
+    console.warn('Failed to load subjects:', err)
+  } finally {
+    subjectsLoading.value = false
+  }
+
+  // Fallback to auth user subject
+  try {
+    const authStore = useAuthStore()
+    const userSub = authStore.user?.subject
+    if (userSub && userSub.trim()) {
+      subjects.value = [
+        {
+          id: 'sub-user-active',
+          code: userSub.replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase() || 'MAPEL',
+          name: userSub.trim(),
+          kkm: 75,
+          kktp: 75
+        }
+      ]
+      subjectsLoaded.value = true
+      return subjects.value
+    }
+  } catch {}
+
+  return subjects.value
+}
 
 export function useClassrooms() {
-  async function fetchClassrooms(force = false) {
-    if (hasLoaded.value && !force && classrooms.value.length > 0) {
+  async function fetchClassrooms(force = false): Promise<ClassroomOption[]> {
+    if (classroomsLoaded.value && !force && classrooms.value.length > 0) {
       return classrooms.value
     }
-    loading.value = true
+    classroomsLoading.value = true
     try {
       const res = await api.get('/classrooms', { params: { per_page: 100 } })
       if (res.data?.data && Array.isArray(res.data.data)) {
         classrooms.value = res.data.data
-        hasLoaded.value = true
+        classroomsLoaded.value = true
+      } else {
+        classrooms.value = []
       }
     } catch (err) {
       console.warn('Failed to load classrooms from Manajemen Kelas:', err)
-      // Fallback defaults if API fails
-      if (classrooms.value.length === 0) {
-        classrooms.value = [
-          { id: 'cls-7a', name: 'VII A', grade_level: 7 },
-          { id: 'cls-7b', name: 'VII B', grade_level: 7 },
-          { id: 'cls-7c', name: 'VII C', grade_level: 7 },
-          { id: 'cls-7d', name: 'VII D', grade_level: 7 },
-          { id: 'cls-9a', name: 'IX A', grade_level: 9 },
-          { id: 'cls-9b', name: 'IX B', grade_level: 9 },
-          { id: 'cls-9c', name: 'IX C', grade_level: 9 },
-          { id: 'cls-9d', name: 'IX D', grade_level: 9 },
-        ]
-      }
+      classrooms.value = []
     } finally {
-      loading.value = false
+      classroomsLoading.value = false
     }
     return classrooms.value
   }
@@ -168,9 +199,12 @@ export function useClassrooms() {
 
   return {
     classrooms,
-    loadingClassrooms: loading,
-    hasLoadedClassrooms: hasLoaded,
+    subjects,
+    loadingClassrooms: classroomsLoading,
+    hasLoadedClassrooms: classroomsLoaded,
+    loadingSubjects: subjectsLoading,
     fetchClassrooms,
+    fetchSubjects,
     formatClassLabel,
     getClassName,
     getClassGradeLevel,

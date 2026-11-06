@@ -36,6 +36,7 @@ export interface User {
   is_student?: boolean
   nis?: string
   nip?: string
+  subject?: string
   classroom_id?: string
   classroom_name?: string
 }
@@ -350,7 +351,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function updateProfile(data: Partial<User & { password?: string; current_password?: string; nip?: string; nuptk?: string; phone?: string }>) {
+  async function updateProfile(data: Partial<User & { password?: string; current_password?: string; nip?: string; nuptk?: string; phone?: string; subject?: string }>) {
     loading.value = true
     try {
       const response = await api.put('/profile', data)

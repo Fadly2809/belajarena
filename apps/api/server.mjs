@@ -1440,6 +1440,27 @@ const server = http.createServer(async (req, res) => {
       if (body.nuptk !== undefined) targetUser.nuptk = String(body.nuptk).trim()
       if (body.phone !== undefined) targetUser.phone = String(body.phone).trim()
       if (body.secondary_email !== undefined) targetUser.secondary_email = String(body.secondary_email).trim()
+      if (body.subject !== undefined) {
+        targetUser.subject = String(body.subject).trim()
+        if (targetUser.school_id && targetUser.subject) {
+          db.subjects = db.subjects || []
+          const existing = db.subjects.find(s => s.school_id === targetUser.school_id)
+          if (existing) {
+            existing.name = targetUser.subject
+            existing.code = targetUser.subject.replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase() || 'MAPEL'
+          } else {
+            db.subjects.push({
+              id: `sub-${targetUser.school_id}-${Date.now().toString(36)}`,
+              name: targetUser.subject,
+              code: targetUser.subject.replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase() || 'MAPEL',
+              school_id: targetUser.school_id,
+              kktp: 75,
+              kkm: 75,
+              created_at: new Date().toISOString()
+            })
+          }
+        }
+      }
 
       const rawAvatar = body.avatar_path ?? body.avatar_url ?? body.avatar
       if (rawAvatar !== undefined) {
@@ -2291,21 +2312,26 @@ const server = http.createServer(async (req, res) => {
     // -------------------------------------------------------------
     if (pathname === '/api/v1/subjects' && req.method === 'GET') {
       const currentSchoolId = getReqSchoolId(req)
+      const authUser = getAuthUser(req)
       db.subjects = db.subjects || []
       let result = db.subjects.filter(s => s.school_id === currentSchoolId)
-      const classroomId = query.classroom_id || query.classroomId
-      const grade = query.grade || query.grade_level
-      if (classroomId) {
-        const cls = (db.classrooms || []).find(c => c.id === classroomId || c.name === classroomId)
-        const isGrade9 = cls ? (Number(cls.grade_level) === 9 || String(cls.name).includes('IX') || String(cls.name).includes('9'))
-                             : (String(classroomId).includes('9') || String(classroomId).includes('IX'))
-        const filteredByGrade = result.filter(s => isGrade9 ? (s.code === 'INF' || s.id.includes('inf')) : (s.code === 'KKA' || s.id.includes('kka')))
-        if (filteredByGrade.length > 0) result = filteredByGrade
-      } else if (grade) {
-        const gNum = Number(grade)
-        const filteredByGrade = result.filter(s => gNum === 9 ? (s.code === 'INF' || s.id.includes('inf')) : (s.code === 'KKA' || s.id.includes('kka')))
-        if (filteredByGrade.length > 0) result = filteredByGrade
+
+      // Jika belum ada data mapel untuk sekolah ini tapi guru memiliki subject di profilnya
+      if (result.length === 0 && authUser?.subject) {
+        const generatedSub = {
+          id: `sub-${currentSchoolId || 'sch'}-1`,
+          name: authUser.subject,
+          code: authUser.subject.replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase() || 'MAPEL',
+          school_id: currentSchoolId,
+          kktp: 75,
+          kkm: 75,
+          created_at: new Date().toISOString()
+        }
+        db.subjects.push(generatedSub)
+        saveDb()
+        result = [generatedSub]
       }
+
       return sendJson(res, 200, { status: 'success', data: result })
     }
 
@@ -7490,13 +7516,13 @@ const server = http.createServer(async (req, res) => {
         day_index: Number(body.day_index) || 1,
         time_start: body.time_start || '07:30',
         time_end: body.time_end || '08:50',
-        subject_id: body.subject_id || 'sub-kka',
-        subject_name: body.subject_name || 'KKA (Koding dan Kecerdasan Artifisial)',
-        classroom_id: body.classroom_id || 'cls-7a',
-        classroom_name: body.classroom_name || 'VII A',
-        room: body.room || 'Lab Komputer 1',
-        color: body.color || '#8B5CF6',
-        icon: body.icon || '🤖',
+        subject_id: body.subject_id || '',
+        subject_name: body.subject_name || 'Mata Pelajaran',
+        classroom_id: body.classroom_id || '',
+        classroom_name: body.classroom_name || '',
+        room: body.room || 'Ruang Kelas',
+        color: body.color || '#3B82F6',
+        icon: body.icon || '📚',
         description: body.description || ''
       }
       db.weeklySchedules.push(newSlot)
