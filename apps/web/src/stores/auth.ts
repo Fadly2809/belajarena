@@ -100,7 +100,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function isSuperAdmin(): boolean {
-    return hasRole('superadmin')
+    return hasRole('superadmin') || user.value?.role === 'superadmin' || user.value?.email === 'admin@belajarena.id'
   }
 
   async function login(credentials: { email: string; password: string; school_id?: string }) {
@@ -175,6 +175,41 @@ export const useAuthStore = defineStore('auth', () => {
       return {
         success: false,
         message: error.response?.data?.message || 'Login gagal. Periksa kembali email dan kata sandi Anda.',
+        errors: error.response?.data?.errors || {}
+      }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function registerTeacher(data: {
+    teacher_name: string
+    school_name?: string
+    nip?: string
+    subject?: string
+    city?: string
+    province?: string
+    email: string
+    password: string
+  }) {
+    loading.value = true
+    try {
+      const response = await api.post('/auth/register-teacher', data)
+      const { token, user: userData, school: schoolData } = response.data.data
+
+      localStorage.setItem('auth_token', token)
+      localStorage.setItem('auth_user', JSON.stringify(userData))
+      if (schoolData) {
+        localStorage.setItem('auth_school', JSON.stringify(schoolData))
+        currentSchool.value = schoolData
+      }
+      user.value = userData
+      initialized.value = true
+      return { success: true, message: response.data?.message }
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Registrasi akun guru gagal. Periksa kembali formulir Anda.',
         errors: error.response?.data?.errors || {}
       }
     } finally {
@@ -369,6 +404,7 @@ export const useAuthStore = defineStore('auth', () => {
     hasPermission,
     isSuperAdmin,
     login,
+    registerTeacher,
     registerSchool,
     setSchool,
     fetchActiveSchool,

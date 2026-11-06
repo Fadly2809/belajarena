@@ -51,6 +51,41 @@
           :style="indicatorStyle"
         ></div>
 
+        <!-- MENU KHUSUS ADMINISTRATOR WEBSITE -->
+        <template v-if="isPlatformAdmin">
+          <div class="px-3 pt-1 pb-2">
+            <div v-if="sidebarOpen" class="px-2 pb-2 text-[10px] font-black tracking-wider uppercase text-blue-300 flex items-center justify-between">
+              <span class="flex items-center gap-1.5">🛠️ ADMIN WEBSITE</span>
+              <span class="text-[9px] bg-blue-500/20 text-blue-200 px-1.5 py-0.5 rounded font-mono font-bold">PUSAT KENDALI</span>
+            </div>
+            <div v-else class="my-2 border-t border-white/10"></div>
+
+            <div class="space-y-1">
+              <RouterLink
+                v-for="item in rawAdminMenu"
+                :key="item.to"
+                :to="item.to"
+                :ref="(el) => setNavItemRef(item.to, el)"
+                class="nav-item-link group"
+                :class="{ 'active-text': isRouteActive(item.to) }"
+                :title="!sidebarOpen ? item.label : undefined"
+                @click="handleNavClick(item.to)"
+              >
+                <span
+                  class="w-5 h-5 flex-shrink-0 transition-colors duration-200"
+                  :class="isRouteActive(item.to) ? 'text-[#0c2b3d]' : 'text-slate-300/80 group-hover:text-white'"
+                  v-html="item.icon"
+                ></span>
+                <span v-if="sidebarOpen" class="truncate text-sm tracking-wide transition-colors duration-200">
+                  {{ item.label }}
+                </span>
+              </RouterLink>
+            </div>
+          </div>
+        </template>
+
+        <!-- MENU GURU (PEMBELAJARAN, KELAS, ASESMEN, REKAP NILAI) -->
+        <template v-else>
         <!-- 1. BERANDA / DASHBOARD -->
         <div>
           <RouterLink
@@ -352,6 +387,7 @@
             </RouterLink>
           </div>
         </div>
+        </template>
       </nav>
 
       <!-- Bottom Mini Calendar Widget (Reference Dashboard Style) -->
@@ -710,13 +746,18 @@ const isStudent = computed(() => {
     !!authStore.user?.nis
   )
 })
+const isPlatformAdmin = computed(() => {
+  return authStore.isSuperAdmin()
+})
 const userClassOrRole = computed(() => {
+  if (isPlatformAdmin.value) return 'Administrator Website'
   if (isStudent.value) return 'Kelas XI IPA 1'
-  return 'Guru Informatika & KKA'
+  return 'Guru Pengajar Mandiri'
 })
 const userStatusText = computed(() => {
+  if (isPlatformAdmin.value) return 'Admin Platform Aktif'
   if (isStudent.value) return 'Siswa Aktif'
-  return 'Guru Aktif · SMPN 6'
+  return 'Ruang Mengajar Guru'
 })
 const userEmailOrNip = computed(() => {
   return authStore.user?.email || `NIP: ${userNip.value}`
@@ -887,6 +928,30 @@ interface NavSubItem {
   teacherOnly?: boolean
 }
 
+// 0. MENU ADMINISTRATOR WEBSITE PLATFORM
+const rawAdminMenu: NavSubItem[] = [
+  {
+    to: '/admin/overview',
+    label: 'Ringkasan Platform',
+    icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>`
+  },
+  {
+    to: '/admin/schools',
+    label: 'Data Satuan Pendidikan',
+    icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/></svg>`
+  },
+  {
+    to: '/admin/users',
+    label: 'Data Pengguna & Guru',
+    icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>`
+  },
+  {
+    to: '/profile',
+    label: 'Profil Akun Admin',
+    icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>`
+  }
+]
+
 // 1. KELAS & SISWA
 const rawKelasSiswa: NavSubItem[] = [
   {
@@ -968,7 +1033,7 @@ const rawLaporanMateri: NavSubItem[] = [
 const rawPengaturan: NavSubItem[] = [
   {
     to: '/school/settings',
-    label: 'Pengaturan Sekolah',
+    label: 'Identitas Sekolah & Dokumen',
     icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/></svg>`,
     teacherOnly: true
   },
@@ -1080,6 +1145,17 @@ function setNavItemRef(key: string, el: any) {
 }
 
 function getActiveElement(): HTMLElement | null {
+  // If platform admin
+  if (isPlatformAdmin.value) {
+    for (const item of rawAdminMenu) {
+      if (isRouteActive(item.to)) {
+        const el = navItemDomMap.get(item.to)
+        if (el && el.offsetParent !== null) return el
+      }
+    }
+    return null
+  }
+
   // If sidebar is collapsed (!sidebarOpen) and route is in Akademik:
   if (!sidebarOpen.value && isCurrentRouteInAkademik()) {
     const hubEl = navItemDomMap.get('/academic')

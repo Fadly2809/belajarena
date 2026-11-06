@@ -25,15 +25,15 @@
           <p class="text-slate-500 text-xs mt-1">Pilih jenis akun untuk melanjutkan</p>
         </div>
 
-        <!-- New School Registration Banner -->
+        <!-- New Teacher Registration Banner -->
         <div class="mb-5 p-3 rounded-2xl bg-gradient-to-r from-blue-50 via-indigo-50 to-sky-50 border border-blue-200/80 text-xs flex items-center justify-between gap-3 shadow-xs">
           <div class="flex items-center gap-2.5">
             <div class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center text-sm shadow-xs flex-shrink-0">
-              🏛️
+              👨‍🏫
             </div>
             <div>
-              <p class="font-bold text-blue-950 text-xs">Ingin mengelola sekolah baru?</p>
-              <p class="text-[10px] text-blue-700">Daftarkan sekolah Anda mandiri dengan database dan akun siswa terisolasi.</p>
+              <p class="font-bold text-blue-950 text-xs">Guru Baru? Belum punya akun?</p>
+              <p class="text-[10px] text-blue-700">Daftarkan akun ruang mengajar mandiri Anda untuk kelola mapel, kelas, dan asesmen AI.</p>
             </div>
           </div>
           <button
@@ -41,45 +41,65 @@
             @click="openRegisterModal"
             class="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] transition shadow-xs whitespace-nowrap flex-shrink-0 active:scale-95"
           >
-            Daftar Sekolah
+            Daftar Akun Guru
           </button>
         </div>
 
-        <!-- 2 Account Types Selector -->
-        <div class="grid grid-cols-2 gap-2 p-1.5 bg-slate-100 rounded-2xl mb-5">
+        <!-- 3 Account Types Selector -->
+        <div class="grid grid-cols-3 gap-1.5 p-1.5 bg-slate-100 rounded-2xl mb-5">
           <button
             type="button"
             @click="selectAccountType('teacher')"
-            class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all shadow-xs"
+            class="flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-xs font-bold transition-all shadow-xs"
             :class="accountType === 'teacher' 
               ? 'bg-[#0c2b3d] text-white shadow-md shadow-[#0c2b3d]/20' 
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'"
           >
             <span>👨‍🏫</span>
-            <span>Akun Guru / Admin</span>
+            <span>Guru</span>
           </button>
           <button
             type="button"
             @click="selectAccountType('student')"
-            class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all shadow-xs"
+            class="flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-xs font-bold transition-all shadow-xs"
             :class="accountType === 'student' 
               ? 'bg-[#f59e0b] text-slate-950 shadow-md shadow-[#f59e0b]/20 font-black' 
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'"
           >
             <span>🎓</span>
-            <span>Akun Siswa</span>
+            <span>Siswa</span>
+          </button>
+          <button
+            type="button"
+            @click="selectAccountType('admin')"
+            class="flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-xs font-bold transition-all shadow-xs"
+            :class="accountType === 'admin' 
+              ? 'bg-purple-700 text-white shadow-md shadow-purple-700/20 font-black' 
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'"
+          >
+            <span>🛠️</span>
+            <span>Admin Web</span>
           </button>
         </div>
 
         <!-- Role Badge Info -->
         <div class="mb-5 p-3 rounded-xl text-xs border"
-          :class="accountType === 'teacher' ? 'bg-blue-50/80 border-blue-200 text-blue-900' : 'bg-emerald-50/80 border-emerald-200 text-emerald-900'"
+          :class="accountType === 'admin' 
+            ? 'bg-purple-50/80 border-purple-200 text-purple-900' 
+            : (accountType === 'teacher' ? 'bg-blue-50/80 border-blue-200 text-blue-900' : 'bg-emerald-50/80 border-emerald-200 text-emerald-900')"
         >
-          <div v-if="accountType === 'teacher'" class="flex items-start gap-2">
+          <div v-if="accountType === 'admin'" class="flex items-start gap-2">
+            <span class="text-sm">🛠️</span>
+            <div>
+              <p class="font-bold">Portal Administrator Platform</p>
+              <p class="text-[11px] text-purple-700 mt-0.5">Kelola data satuan pendidikan, data pengguna terdaftar, dan status lisensi platform.</p>
+            </div>
+          </div>
+          <div v-else-if="accountType === 'teacher'" class="flex items-start gap-2">
             <span class="text-sm">🔑</span>
             <div>
-              <p class="font-bold">Akun Guru & Tenaga Pendidik</p>
-              <p class="text-[11px] text-blue-700 mt-0.5">Masuk dengan Email / NIP yang didaftarkan untuk mengelola kelas, materi, dan asesmen.</p>
+              <p class="font-bold">Akun Guru Mandiri</p>
+              <p class="text-[11px] text-blue-700 mt-0.5">Masuk dengan Email / NIP yang didaftarkan untuk mengelola kelas, materi, dan asesmen AI.</p>
             </div>
           </div>
           <div v-else class="flex items-start gap-2">
@@ -118,7 +138,7 @@
           <!-- Identifier (NIP / Email / NISN) -->
           <div>
             <label for="email" class="label text-xs font-semibold">
-              {{ accountType === 'teacher' ? 'NIP atau Email Guru / Admin' : 'NIS / NISN Siswa' }}
+              {{ accountType === 'admin' ? 'Email Administrator Website' : (accountType === 'teacher' ? 'NIP atau Email Guru Mandiri' : 'NIS / NISN Siswa') }}
             </label>
             <input
               id="email"
@@ -126,7 +146,7 @@
               type="text"
               class="input text-xs"
               :class="{ 'input-error': errors.email }"
-              :placeholder="accountType === 'teacher' ? 'NIP atau alamat email Guru / Pengelola' : 'Masukkan NIS atau NISN siswa'"
+              :placeholder="accountType === 'admin' ? 'admin@belajarena.id' : (accountType === 'teacher' ? 'NIP atau alamat email Guru Mandiri' : 'Masukkan NIS atau NISN siswa')"
               autocomplete="username email"
               :disabled="loading"
             />
@@ -179,15 +199,26 @@
           <button
             type="submit"
             class="w-full py-3 rounded-2xl font-bold text-xs shadow-md mt-2 transition active:scale-[0.99] flex items-center justify-center gap-2"
-            :class="accountType === 'teacher' ? 'bg-[#0c2b3d] hover:bg-[#164255] text-white' : 'bg-[#f59e0b] hover:bg-[#d97706] text-slate-950 font-black'"
+            :class="accountType === 'admin'
+              ? 'bg-purple-700 hover:bg-purple-800 text-white'
+              : (accountType === 'teacher' ? 'bg-[#0c2b3d] hover:bg-[#164255] text-white' : 'bg-[#f59e0b] hover:bg-[#d97706] text-slate-950 font-black')"
             :disabled="loading"
           >
             <svg v-if="loading" class="spinner w-4 h-4" viewBox="0 0 24 24"></svg>
-            <span>{{ loading ? 'Memverifikasi...' : (accountType === 'teacher' ? 'Masuk sebagai Guru / Admin' : 'Masuk sebagai Siswa') }}</span>
+            <span>{{ loading ? 'Memverifikasi...' : (accountType === 'admin' ? 'Masuk sebagai Admin Website' : (accountType === 'teacher' ? 'Masuk sebagai Guru' : 'Masuk sebagai Siswa')) }}</span>
           </button>
 
           <!-- Quick Fill Demo Options -->
-          <div v-if="accountType === 'teacher'" class="pt-2 flex flex-col gap-2">
+          <div v-if="accountType === 'admin'" class="pt-2">
+            <button
+              type="button"
+              @click="quickFillAdmin"
+              class="w-full text-center py-2 px-3 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200/80 text-[11px] font-semibold text-purple-900 transition"
+            >
+              ⚡ Klik untuk coba Akun Administrator Website
+            </button>
+          </div>
+          <div v-else-if="accountType === 'teacher'" class="pt-2 flex flex-col gap-2">
             <button
               type="button"
               @click="quickFillTeacher"
@@ -196,8 +227,6 @@
               ⚡ Klik untuk coba Akun Guru Demo
             </button>
           </div>
-
-          <!-- Quick Fill for Siswa -->
           <div v-else class="pt-2">
             <button
               type="button"
@@ -213,11 +242,11 @@
       <!-- Footer Note -->
       <p class="text-center text-primary-200 text-xs mt-6">
         © 2026 Belajarena · {{ schoolName }}<br/>
-        <span class="text-[10px] text-primary-300">Sistem Pembelajaran Multi-Satuan Pendidikan Terpadu</span>
+        <span class="text-[10px] text-primary-300">Platform Pembelajaran & Manajemen Sekolah Terpadu</span>
       </p>
     </div>
 
-    <!-- Modal Registrasi Satuan Pendidikan Baru -->
+    <!-- Modal Registrasi Akun Guru Mandiri -->
     <div
       v-if="showRegisterModal"
       class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
@@ -227,11 +256,11 @@
         <div class="flex items-start justify-between pb-4 border-b border-slate-100 mb-5">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-xl">
-              🏛️
+              👨‍🏫
             </div>
             <div>
-              <h3 class="text-base font-bold text-slate-900">Daftarkan Satuan Pendidikan Baru</h3>
-              <p class="text-xs text-slate-500 mt-0.5">Mulai sekolah baru dengan data dan rombel kelas terisolasi</p>
+              <h3 class="text-base font-bold text-slate-900">Daftar Akun Guru Mandiri</h3>
+              <p class="text-xs text-slate-500 mt-0.5">Ruang mengajar pribadi Anda. Data sekolah dipakai untuk kelengkapan kop dokumen.</p>
             </div>
           </div>
           <button
@@ -247,128 +276,95 @@
           <span>{{ registerError }}</span>
         </div>
 
-        <form @submit.prevent="handleRegisterSchool" class="space-y-3.5 text-xs">
+        <form @submit.prevent="handleRegisterTeacherSubmit" class="space-y-3.5 text-xs">
           <div>
-            <label class="block font-semibold text-slate-700 mb-1">Nama Satuan Pendidikan / Sekolah <span class="text-red-500">*</span></label>
+            <label class="block font-semibold text-slate-700 mb-1">Nama Lengkap Guru & Gelar <span class="text-red-500">*</span></label>
             <input
-              v-model="regForm.school_name"
+              v-model="regTeacherForm.teacher_name"
               type="text"
               required
               class="input text-xs font-semibold"
-              placeholder="Contoh: SMA Negeri 1 Bandung / SMP Cendekia Mandiri"
+              placeholder="Contoh: Budi Santoso, S.Pd. / Dr. Siti Rahmawati, M.Pd."
             />
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block font-semibold text-slate-700 mb-1">Jenjang Pendidikan <span class="text-red-500">*</span></label>
-              <select v-model="regForm.level" class="input text-xs font-semibold bg-white">
-                <option value="smp">SMP / MTs (Kelas 7, 8, 9)</option>
-                <option value="sma">SMA / MA (Kelas 10, 11, 12)</option>
-                <option value="smk">SMK (Kelas 10, 11, 12)</option>
-                <option value="sd">SD / MI (Kelas 1 s.d. 6)</option>
-              </select>
-            </div>
-            <div>
-              <label class="block font-semibold text-slate-700 mb-1">Kode Singkat (Opsional)</label>
+              <label class="block font-semibold text-slate-700 mb-1">NIP / NUPTK (Opsional)</label>
               <input
-                v-model="regForm.code"
-                type="text"
-                class="input text-xs font-mono uppercase"
-                placeholder="Contoh: SMAN1"
-              />
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block font-semibold text-slate-700 mb-1">NPSN (Opsional)</label>
-              <input
-                v-model="regForm.npsn"
+                v-model="regTeacherForm.nip"
                 type="text"
                 class="input text-xs font-mono"
-                placeholder="8 digit NPSN"
+                placeholder="1989xxxxxxxx"
               />
             </div>
             <div>
-              <label class="block font-semibold text-slate-700 mb-1">Kota / Kabupaten</label>
+              <label class="block font-semibold text-slate-700 mb-1">Mata Pelajaran yang Diampu <span class="text-red-500">*</span></label>
               <input
-                v-model="regForm.city"
+                v-model="regTeacherForm.subject"
                 type="text"
-                class="input text-xs"
-                placeholder="Contoh: Bandung"
+                required
+                class="input text-xs font-semibold"
+                placeholder="Misal: Matematika / Informatika"
               />
             </div>
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Asal Satuan Pendidikan / Sekolah <span class="text-red-500">*</span></label>
+            <input
+              v-model="regTeacherForm.school_name"
+              type="text"
+              required
+              class="input text-xs"
+              placeholder="Contoh: SMP Negeri 2 Kendari"
+            />
+            <p class="text-[10px] text-slate-400 mt-1">Dicantumkan pada kop lembar soal CBT, kartu ujian, dan dokumen rekap nilai Anda.</p>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block font-semibold text-slate-700 mb-1">Provinsi</label>
+              <label class="block font-semibold text-slate-700 mb-1">Kota / Kabupaten (Opsional)</label>
               <input
-                v-model="regForm.province"
+                v-model="regTeacherForm.city"
                 type="text"
                 class="input text-xs"
-                placeholder="Contoh: Jawa Barat"
+                placeholder="Contoh: Kendari"
               />
             </div>
             <div>
-              <label class="block font-semibold text-slate-700 mb-1">No. Telp Sekolah</label>
+              <label class="block font-semibold text-slate-700 mb-1">Provinsi (Opsional)</label>
               <input
-                v-model="regForm.phone"
+                v-model="regTeacherForm.province"
                 type="text"
                 class="input text-xs"
-                placeholder="022-xxxxxxx"
+                placeholder="Contoh: Sulawesi Tenggara"
               />
             </div>
           </div>
 
-          <div class="pt-2 border-t border-slate-100">
-            <h4 class="font-bold text-slate-800 text-xs mb-2 flex items-center gap-1.5">
-              <span>👤</span> <span>Akun Pengelola / Guru Pertama</span>
-            </h4>
-            <div class="space-y-3">
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label class="block font-semibold text-slate-700 mb-1">Nama Guru / Admin <span class="text-red-500">*</span></label>
-                  <input
-                    v-model="regForm.admin_name"
-                    type="text"
-                    required
-                    class="input text-xs"
-                    placeholder="Contoh: Dr. Budi Santoso, M.Pd."
-                  />
-                </div>
-                <div>
-                  <label class="block font-semibold text-slate-700 mb-1">NIP (Opsional)</label>
-                  <input
-                    v-model="regForm.admin_nip"
-                    type="text"
-                    class="input text-xs font-mono"
-                    placeholder="19890101xxxxxxxx"
-                  />
-                </div>
-              </div>
-              <div>
-                <label class="block font-semibold text-slate-700 mb-1">Email Pengelola (Untuk Login) <span class="text-red-500">*</span></label>
-                <input
-                  v-model="regForm.email"
-                  type="email"
-                  required
-                  class="input text-xs"
-                  placeholder="admin@sekolahanda.sch.id"
-                />
-              </div>
-              <div>
-                <label class="block font-semibold text-slate-700 mb-1">Kata Sandi Akun <span class="text-red-500">*</span></label>
-                <input
-                  v-model="regForm.password"
-                  type="password"
-                  required
-                  minlength="6"
-                  class="input text-xs"
-                  placeholder="Minimal 6 karakter"
-                />
-              </div>
+          <div class="pt-2 border-t border-slate-100 space-y-3">
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Email Guru (Untuk Login) <span class="text-red-500">*</span></label>
+              <input
+                v-model="regTeacherForm.email"
+                type="email"
+                required
+                class="input text-xs"
+                placeholder="budi.santoso@guru.smp.belajar.id"
+              />
+            </div>
+
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Kata Sandi Akun <span class="text-red-500">*</span></label>
+              <input
+                v-model="regTeacherForm.password"
+                type="password"
+                required
+                minlength="6"
+                class="input text-xs font-mono"
+                placeholder="Minimal 6 karakter"
+              />
             </div>
           </div>
 
@@ -386,7 +382,7 @@
               class="flex-1 py-2.5 rounded-xl bg-[#0c2b3d] hover:bg-[#164255] text-white font-bold transition flex items-center justify-center gap-2 shadow-md"
             >
               <svg v-if="registerLoading" class="spinner w-4 h-4" viewBox="0 0 24 24"></svg>
-              <span>{{ registerLoading ? 'Mendaftarkan...' : 'Daftarkan & Mulai Kelola' }}</span>
+              <span>{{ registerLoading ? 'Mendaftarkan...' : 'Daftar & Masuk ke Ruang Mengajar' }}</span>
             </button>
           </div>
         </form>
@@ -407,27 +403,24 @@ const authStore = useAuthStore()
 
 const schoolName = computed(() => authStore.currentSchool?.name || 'Belajarena LMS')
 
-const accountType = ref<'teacher' | 'student'>('teacher')
+const accountType = ref<'teacher' | 'student' | 'admin'>('teacher')
 const loading = ref(false)
 const showPassword = ref(false)
 const errorMessage = ref('')
 const availableSchools = ref<any[]>([])
 const studentSchoolId = ref('')
 
-// Register New School Modal State
+// Register Teacher Modal State
 const showRegisterModal = ref(false)
 const registerLoading = ref(false)
 const registerError = ref('')
-const regForm = reactive({
+const regTeacherForm = reactive({
+  teacher_name: '',
+  nip: '',
   school_name: '',
-  level: 'smp',
-  code: '',
-  npsn: '',
+  subject: '',
   city: '',
   province: '',
-  phone: '',
-  admin_name: '',
-  admin_nip: '',
   email: '',
   password: ''
 })
@@ -451,25 +444,23 @@ function openRegisterModal() {
   showRegisterModal.value = true
 }
 
-async function handleRegisterSchool() {
-  if (!regForm.school_name || !regForm.email || !regForm.password) {
-    registerError.value = 'Nama sekolah, email, dan kata sandi wajib diisi.'
+async function handleRegisterTeacherSubmit() {
+  if (!regTeacherForm.teacher_name || !regTeacherForm.school_name || !regTeacherForm.email || !regTeacherForm.password) {
+    registerError.value = 'Nama guru, nama sekolah tempat mengajar, email, dan kata sandi wajib diisi.'
     return
   }
   registerLoading.value = true
   registerError.value = ''
 
-  const res = await authStore.registerSchool({
-    school_name: regForm.school_name,
-    level: regForm.level,
-    code: regForm.code,
-    npsn: regForm.npsn,
-    city: regForm.city,
-    province: regForm.province,
-    phone: regForm.phone,
-    admin_name: regForm.admin_name,
-    email: regForm.email,
-    password: regForm.password
+  const res = await authStore.registerTeacher({
+    teacher_name: regTeacherForm.teacher_name,
+    nip: regTeacherForm.nip,
+    school_name: regTeacherForm.school_name,
+    subject: regTeacherForm.subject,
+    city: regTeacherForm.city,
+    province: regTeacherForm.province,
+    email: regTeacherForm.email,
+    password: regTeacherForm.password
   })
 
   registerLoading.value = false
@@ -477,7 +468,7 @@ async function handleRegisterSchool() {
     showRegisterModal.value = false
     router.push('/dashboard')
   } else {
-    registerError.value = res.message || 'Gagal mendaftarkan sekolah.'
+    registerError.value = res.message || 'Gagal mendaftarkan akun guru.'
   }
 }
 
@@ -498,18 +489,27 @@ const errors = reactive({
   password: '',
 })
 
-function selectAccountType(type: 'teacher' | 'student') {
+function selectAccountType(type: 'teacher' | 'student' | 'admin') {
   accountType.value = type
   errorMessage.value = ''
   errors.email = ''
   errors.password = ''
-  if (type === 'teacher') {
+  if (type === 'admin') {
+    form.email = 'admin@belajarena.id'
+    form.password = 'admin123'
+  } else if (type === 'teacher') {
     form.email = 'muhammadarsandi89@guru.smp.belajar.id'
     form.password = 'password'
   } else {
-    form.email = ''
-    form.password = ''
+    form.email = '10527'
+    form.password = 'password'
   }
+}
+
+function quickFillAdmin() {
+  form.email = 'admin@belajarena.id'
+  form.password = 'admin123'
+  errorMessage.value = ''
 }
 
 function quickFillTeacher() {
@@ -530,7 +530,9 @@ function validateForm(): boolean {
   let valid = true
 
   if (!form.email.trim()) {
-    errors.email = accountType.value === 'teacher' ? 'NIP atau email guru wajib diisi' : 'NIS/NISN atau email siswa wajib diisi'
+    errors.email = accountType.value === 'admin'
+      ? 'Email administrator wajib diisi'
+      : (accountType.value === 'teacher' ? 'NIP atau email guru wajib diisi' : 'NIS/NISN atau email siswa wajib diisi')
     valid = false
   }
 
@@ -566,7 +568,9 @@ async function handleLogin() {
 
   if (result.success) {
     const redirect = route.query.redirect as string
-    if (authStore.user?.role === 'student' || authStore.user?.is_student) {
+    if (authStore.isSuperAdmin()) {
+      router.push(redirect && redirect.startsWith('/admin') ? redirect : '/admin/overview')
+    } else if (authStore.user?.role === 'student' || authStore.user?.is_student) {
       const isAllowedStudentRedirect = redirect && (
         redirect.startsWith('/student') ||
         redirect.startsWith('/presentation-live') ||

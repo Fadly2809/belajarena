@@ -907,6 +907,17 @@ function isTeacherRequest(req) {
   return false
 }
 
+function isPlatformAdmin(req) {
+  const user = getAuthUser(req)
+  if (!user) return false
+  return Boolean(
+    user.role === 'superadmin' ||
+    (Array.isArray(user.roles) && user.roles.includes('superadmin')) ||
+    user.email === 'admin@belajarena.id' ||
+    user.email === 'superadmin@belajarena.id'
+  )
+}
+
 // Server router
 const server = http.createServer(async (req, res) => {
   // CORS Preflight
@@ -1258,27 +1269,23 @@ const server = http.createServer(async (req, res) => {
     }
 
     // -------------------------------------------------------------
-    // REGISTRASI SATUAN PENDIDIKAN BARU (MULTI-TENANT ONBOARDING)
+    // REGISTRASI AKUN GURU MANDIRI (INDIVIDUAL TEACHER ONBOARDING)
     // -------------------------------------------------------------
-    if (pathname === '/api/v1/auth/register-school' && req.method === 'POST') {
+    if ((pathname === '/api/v1/auth/register-teacher' || pathname === '/api/v1/auth/register-guru' || pathname === '/api/v1/auth/register-school') && req.method === 'POST') {
       const body = await parseBody(req)
-      const schoolName = (body.school_name || body.schoolName || body.name || '').trim()
+      const teacherName = (body.teacher_name || body.teacherName || body.admin_name || body.adminName || body.name || '').trim()
+      const schoolName = (body.school_name || body.schoolName || 'Satuan Pendidikan').trim()
       const adminEmail = (body.admin_email || body.adminEmail || body.email || '').trim()
       const rawPassword = (body.password || '').trim()
-      const adminName = (body.admin_name || body.adminName || body.teacher_name || 'Admin Sekolah').trim()
-      const npsn = (body.npsn || '').trim()
+      const nip = (body.nip || body.admin_nip || '').trim()
+      const subjectName = (body.subject || body.subject_name || body.mapel || '').trim()
       const city = (body.city || '').trim()
       const province = (body.province || '').trim()
-      const address = (body.address || '').trim()
-      const phone = (body.phone || '').trim()
-      const schoolEmail = (body.school_email || body.schoolEmail || adminEmail).trim()
-      const principalName = (body.principal_name || body.principalName || adminName).trim()
-      const principalNip = (body.principal_nip || body.principalNip || '').trim()
 
-      if (!schoolName || !adminEmail || !rawPassword) {
+      if (!teacherName || !adminEmail || !rawPassword) {
         return sendJson(res, 400, {
           status: 'error',
-          message: 'Nama sekolah, email akun admin/guru, dan kata sandi wajib diisi.'
+          message: 'Nama lengkap guru, alamat email, dan kata sandi wajib diisi.'
         })
       }
 
@@ -1290,28 +1297,26 @@ const server = http.createServer(async (req, res) => {
       if (existingUser) {
         return sendJson(res, 400, {
           status: 'error',
-          message: 'Alamat email ini sudah terdaftar sebagai akun guru/admin di sistem.'
+          message: 'Alamat email ini sudah terdaftar sebagai akun guru di sistem.'
         })
       }
 
-      const schoolId = `sch-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 4)}`
-      const level = (body.level || body.school_level || 'smp').toLowerCase()
-      const rawCode = (body.code || body.school_code || schoolName.replace(/[^A-Za-z0-9]/g, '').slice(0, 6) || 'SCH').toUpperCase()
-      const schoolCode = rawCode.length >= 3 ? rawCode : `${rawCode}${Math.floor(100 + Math.random() * 900)}`
+      const userId = `usr-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 4)}`
+      const schoolId = `sch-${userId}`
 
+      // Data sekolah tempat guru mengajar (untuk kelengkapan kop surat & dokumen)
       const newSchool = {
         id: schoolId,
-        code: schoolCode,
+        teacher_id: userId,
         name: schoolName,
-        level: level,
-        npsn: npsn,
+        npsn: (body.npsn || '').trim(),
         city: city,
         province: province,
-        address: address,
-        phone: phone,
-        email: schoolEmail,
-        principal_name: principalName,
-        principal_nip: principalNip,
+        address: (body.address || '').trim(),
+        phone: (body.phone || '').trim(),
+        email: cleanEmail,
+        principal_name: (body.principal_name || body.principalName || 'Kepala Sekolah').trim(),
+        principal_nip: (body.principal_nip || body.principalNip || '').trim(),
         accreditation: body.accreditation || 'A',
         curriculum: body.curriculum || 'Kurikulum Merdeka',
         kktp: Number(body.kktp) || 75,
@@ -1321,28 +1326,42 @@ const server = http.createServer(async (req, res) => {
       }
       db.schools.push(newSchool)
 
-      // Buat akun admin/guru perdana untuk sekolah ini
-      const userId = `usr-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 4)}`
+      // Akun guru mandiri
       const passwordHash = bcrypt.hashSync(rawPassword, 10)
       const newUser = {
         id: userId,
-        name: (adminName || 'Admin Sekolah').trim(),
+        name: teacherName,
         email: cleanEmail,
         username: cleanEmail.split('@')[0],
         password: passwordHash,
         role: 'teacher',
         roles: ['teacher', 'admin'],
-        permissions: ['teacher.view', 'teacher.grade', 'teacher.manage', 'school.manage', 'students.manage', 'teachers.manage'],
+        permissions: ['teacher.view', 'teacher.grade', 'teacher.manage', 'school.manage', 'students.manage'],
         school_id: schoolId,
-        nip: (body.admin_nip || '').trim(),
+        nip: nip,
+        subject: subjectName,
         created_at: new Date().toISOString()
       }
       db.users.push(newUser)
 
-      // Data rombel kelas, siswa, jadwal, tugas, dan ulangan untuk sekolah baru diawali kosong (clean slate)
-      // Pengelola sekolah baru akan membuat rombel kelas & mengelola siswa sendiri melalui menu Data Master
+      // Inisialisasi mata pelajaran yang diampu guru jika diisi
+      if (subjectName) {
+        db.subjects = db.subjects || []
+        const code = subjectName.replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase() || 'MAPEL'
+        db.subjects.push({
+          id: `sub-${schoolId}-1`,
+          name: subjectName,
+          code: code,
+          school_id: schoolId,
+          kktp: 75,
+          kkm: 75,
+          created_at: new Date().toISOString()
+        })
+      }
 
-      // Generate token login otomatis
+      // Data kelas, siswa, jadwal, tugas, dan ulangan diawali kosong (clean slate)
+      // Guru menentukan sendiri kelas, jadwal, BAB, dan TP-nya
+
       const token = 'agd_token_' + crypto.randomBytes(24).toString('hex')
       db.tokens = db.tokens || {}
       db.tokens[token] = userId
@@ -1351,7 +1370,7 @@ const server = http.createServer(async (req, res) => {
       const { password: _, ...safeUser } = newUser
       return sendJson(res, 201, {
         status: 'success',
-        message: `Satuan pendidikan "${newSchool.name}" dan akun pengelola berhasil didaftarkan!`,
+        message: `Akun guru "${teacherName}" berhasil didaftarkan! Selamat datang di Belajarena.`,
         data: {
           token,
           user: safeUser,
@@ -1770,13 +1789,306 @@ const server = http.createServer(async (req, res) => {
     }
 
     // -------------------------------------------------------------
+    // PLATFORM ADMINISTRATOR ROUTES (PORTAL ADMIN WEBSITE)
+    // -------------------------------------------------------------
+    // 1. GET /api/v1/admin/overview - Ringkasan Statistik Platform
+    if (pathname === '/api/v1/admin/overview' && req.method === 'GET') {
+      if (!isPlatformAdmin(req)) {
+        return sendJson(res, 403, { status: 'error', message: 'Akses ditolak. Khusus Administrator Platform.' })
+      }
+      db.schools = db.schools || []
+      db.users = db.users || []
+      db.students = db.students || []
+      db.classrooms = db.classrooms || []
+
+      const totalSchools = db.schools.length
+      const teachers = db.users.filter(u => u.role !== 'superadmin' && !(u.roles || []).includes('superadmin'))
+      const totalTeachers = teachers.length
+      const totalStudents = db.students.length
+      const totalClassrooms = db.classrooms.length
+
+      const schoolsSummary = db.schools.map(s => {
+        const schTeachers = teachers.filter(t => t.school_id === s.id).length
+        const schStudents = db.students.filter(std => std.school_id === s.id).length
+        const schClasses = db.classrooms.filter(c => c.school_id === s.id).length
+        return {
+          id: s.id,
+          name: s.name,
+          city: s.city || '-',
+          province: s.province || '-',
+          npsn: s.npsn || '-',
+          teacher_count: schTeachers,
+          student_count: schStudents,
+          classroom_count: schClasses,
+          created_at: s.created_at || null
+        }
+      })
+
+      const recentTeachers = [...teachers]
+        .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
+        .slice(0, 10)
+        .map(t => {
+          const sch = db.schools.find(s => s.id === t.school_id)
+          return {
+            id: t.id,
+            name: t.name,
+            email: t.email,
+            nip: t.nip || '-',
+            subject: t.subject || '-',
+            school_name: sch ? sch.name : 'Belum Ditentukan',
+            created_at: t.created_at || null,
+            is_active: t.is_active !== false
+          }
+        })
+
+      return sendJson(res, 200, {
+        status: 'success',
+        data: {
+          total_schools: totalSchools,
+          total_teachers: totalTeachers,
+          total_students: totalStudents,
+          total_classrooms: totalClassrooms,
+          schools_summary: schoolsSummary,
+          recent_teachers: recentTeachers
+        }
+      })
+    }
+
+    // 2. GET /api/v1/admin/schools - Daftar Semua Sekolah Lengkap
+    if (pathname === '/api/v1/admin/schools' && req.method === 'GET') {
+      if (!isPlatformAdmin(req)) {
+        return sendJson(res, 403, { status: 'error', message: 'Akses ditolak. Khusus Administrator Platform.' })
+      }
+      db.schools = db.schools || []
+      const list = db.schools.map(s => {
+        const teacherCount = (db.users || []).filter(u => u.school_id === s.id).length
+        const studentCount = (db.students || []).filter(std => std.school_id === s.id).length
+        const classroomCount = (db.classrooms || []).filter(c => c.school_id === s.id).length
+        return {
+          ...s,
+          teacher_count: teacherCount,
+          student_count: studentCount,
+          classroom_count: classroomCount
+        }
+      })
+      return sendJson(res, 200, { status: 'success', data: list })
+    }
+
+    // 3. POST /api/v1/admin/schools - Tambah Sekolah oleh Admin
+    if (pathname === '/api/v1/admin/schools' && req.method === 'POST') {
+      if (!isPlatformAdmin(req)) {
+        return sendJson(res, 403, { status: 'error', message: 'Akses ditolak. Khusus Administrator Platform.' })
+      }
+      const body = await parseBody(req)
+      if (!body.name) {
+        return sendJson(res, 400, { status: 'error', message: 'Nama satuan pendidikan wajib diisi.' })
+      }
+      const newSchoolId = `sch-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 4)}`
+      const newSchool = {
+        id: newSchoolId,
+        name: String(body.name).trim(),
+        npsn: (body.npsn || '').trim(),
+        institution: (body.institution || 'Pemerintah').trim(),
+        accreditation: body.accreditation || 'A',
+        city: (body.city || '').trim(),
+        province: (body.province || '').trim(),
+        address: (body.address || '').trim(),
+        phone: (body.phone || '').trim(),
+        email: (body.email || '').trim(),
+        principal_name: (body.principal_name || body.principalName || '').trim(),
+        principal_nip: (body.principal_nip || body.principalNip || '').trim(),
+        curriculum: body.curriculum || 'Kurikulum Merdeka',
+        kktp: Number(body.kktp) || 75,
+        academic_year: body.academic_year || '2026/2027',
+        is_active: true,
+        created_at: new Date().toISOString()
+      }
+      db.schools = db.schools || []
+      db.schools.push(newSchool)
+      saveDb()
+      return sendJson(res, 201, { status: 'success', message: 'Satuan pendidikan berhasil ditambahkan.', data: newSchool })
+    }
+
+    // 4. PUT & DELETE /api/v1/admin/schools/:id - Edit & Hapus Sekolah
+    const adminSchoolDetailMatch = pathname.match(/^\/api\/v1\/admin\/schools\/([^/]+)$/)
+    if (adminSchoolDetailMatch) {
+      if (!isPlatformAdmin(req)) {
+        return sendJson(res, 403, { status: 'error', message: 'Akses ditolak. Khusus Administrator Platform.' })
+      }
+      const targetSchoolId = adminSchoolDetailMatch[1]
+      db.schools = db.schools || []
+      const idx = db.schools.findIndex(s => s.id === targetSchoolId)
+      if (idx === -1) {
+        return sendJson(res, 404, { status: 'error', message: 'Satuan pendidikan tidak ditemukan.' })
+      }
+
+      if (req.method === 'PUT') {
+        const body = await parseBody(req)
+        Object.assign(db.schools[idx], {
+          name: body.name !== undefined ? String(body.name).trim() : db.schools[idx].name,
+          npsn: body.npsn !== undefined ? String(body.npsn).trim() : db.schools[idx].npsn,
+          institution: body.institution !== undefined ? String(body.institution).trim() : db.schools[idx].institution,
+          accreditation: body.accreditation !== undefined ? body.accreditation : db.schools[idx].accreditation,
+          city: body.city !== undefined ? String(body.city).trim() : db.schools[idx].city,
+          province: body.province !== undefined ? String(body.province).trim() : db.schools[idx].province,
+          address: body.address !== undefined ? String(body.address).trim() : db.schools[idx].address,
+          phone: body.phone !== undefined ? String(body.phone).trim() : db.schools[idx].phone,
+          email: body.email !== undefined ? String(body.email).trim() : db.schools[idx].email,
+          principal_name: (body.principal_name !== undefined ? body.principal_name : body.principalName !== undefined ? body.principalName : db.schools[idx].principal_name) || '',
+          principal_nip: (body.principal_nip !== undefined ? body.principal_nip : body.principalNip !== undefined ? body.principalNip : db.schools[idx].principal_nip) || '',
+          curriculum: body.curriculum !== undefined ? body.curriculum : db.schools[idx].curriculum,
+          kktp: body.kktp !== undefined ? Number(body.kktp) : db.schools[idx].kktp,
+          academic_year: body.academic_year !== undefined ? body.academic_year : db.schools[idx].academic_year,
+          updated_at: new Date().toISOString()
+        })
+        saveDb()
+        return sendJson(res, 200, { status: 'success', message: 'Data satuan pendidikan berhasil diperbarui.', data: db.schools[idx] })
+      }
+
+      if (req.method === 'DELETE') {
+        const deleted = db.schools.splice(idx, 1)[0]
+        saveDb()
+        return sendJson(res, 200, { status: 'success', message: `Satuan pendidikan "${deleted.name}" berhasil dihapus.` })
+      }
+    }
+
+    // 5. GET /api/v1/admin/users - Daftar Semua User Pengguna Terdaftar
+    if (pathname === '/api/v1/admin/users' && req.method === 'GET') {
+      if (!isPlatformAdmin(req)) {
+        return sendJson(res, 403, { status: 'error', message: 'Akses ditolak. Khusus Administrator Platform.' })
+      }
+      db.users = db.users || []
+      db.schools = db.schools || []
+      const teachersList = db.users.map(u => {
+        const sch = db.schools.find(s => s.id === u.school_id)
+        return {
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          username: u.username,
+          role: u.role || 'teacher',
+          roles: u.roles || [u.role || 'teacher'],
+          nip: u.nip || '-',
+          subject: u.subject || '-',
+          school_id: u.school_id || null,
+          school_name: sch ? sch.name : 'Belum Ditentukan',
+          is_active: u.is_active !== false,
+          created_at: u.created_at || null
+        }
+      })
+      return sendJson(res, 200, { status: 'success', data: teachersList })
+    }
+
+    // 6. POST /api/v1/admin/users - Tambah User Guru oleh Admin
+    if (pathname === '/api/v1/admin/users' && req.method === 'POST') {
+      if (!isPlatformAdmin(req)) {
+        return sendJson(res, 403, { status: 'error', message: 'Akses ditolak. Khusus Administrator Platform.' })
+      }
+      const body = await parseBody(req)
+      const name = String(body.name || '').trim()
+      const email = String(body.email || '').toLowerCase().trim()
+      const rawPassword = String(body.password || 'password123').trim()
+
+      if (!name || !email) {
+        return sendJson(res, 400, { status: 'error', message: 'Nama lengkap dan email wajib diisi.' })
+      }
+      db.users = db.users || []
+      if (db.users.some(u => u.email && u.email.toLowerCase() === email)) {
+        return sendJson(res, 400, { status: 'error', message: 'Alamat email ini sudah terdaftar.' })
+      }
+
+      const newUserId = `usr-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 4)}`
+      const passwordHash = bcrypt.hashSync(rawPassword, 10)
+      const newUser = {
+        id: newUserId,
+        name,
+        email,
+        username: email.split('@')[0],
+        password: passwordHash,
+        role: body.role || 'teacher',
+        roles: body.roles || [body.role || 'teacher'],
+        permissions: ['teacher.view', 'teacher.grade', 'teacher.manage'],
+        school_id: body.school_id || null,
+        nip: (body.nip || '').trim(),
+        subject: (body.subject || '').trim(),
+        is_active: true,
+        created_at: new Date().toISOString()
+      }
+      db.users.push(newUser)
+      saveDb()
+
+      const { password: _, ...safeUser } = newUser
+      return sendJson(res, 201, { status: 'success', message: 'Akun pengguna berhasil ditambahkan.', data: safeUser })
+    }
+
+    // 7. PUT /api/v1/admin/users/:id/reset-password - Reset Sandi oleh Admin
+    const resetUserMatch = pathname.match(/^\/api\/v1\/admin\/users\/([^/]+)\/reset-password$/)
+    if (resetUserMatch && req.method === 'PUT') {
+      if (!isPlatformAdmin(req)) {
+        return sendJson(res, 403, { status: 'error', message: 'Akses ditolak. Khusus Administrator Platform.' })
+      }
+      const targetUserId = resetUserMatch[1]
+      const body = await parseBody(req)
+      const newPassword = String(body.password || 'password123').trim()
+      db.users = db.users || []
+      const user = db.users.find(u => u.id === targetUserId)
+      if (!user) {
+        return sendJson(res, 404, { status: 'error', message: 'Pengguna tidak ditemukan.' })
+      }
+      user.password = bcrypt.hashSync(newPassword, 10)
+      saveDb()
+      return sendJson(res, 200, { status: 'success', message: `Kata sandi untuk "${user.name}" berhasil direset menjadi "${newPassword}".` })
+    }
+
+    // 8. PUT /api/v1/admin/users/:id/status - Toggle Status Aktif/Suspend
+    const statusUserMatch = pathname.match(/^\/api\/v1\/admin\/users\/([^/]+)\/status$/)
+    if (statusUserMatch && req.method === 'PUT') {
+      if (!isPlatformAdmin(req)) {
+        return sendJson(res, 403, { status: 'error', message: 'Akses ditolak. Khusus Administrator Platform.' })
+      }
+      const targetUserId = statusUserMatch[1]
+      db.users = db.users || []
+      const user = db.users.find(u => u.id === targetUserId)
+      if (!user) {
+        return sendJson(res, 404, { status: 'error', message: 'Pengguna tidak ditemukan.' })
+      }
+      user.is_active = user.is_active === false ? true : false
+      saveDb()
+      return sendJson(res, 200, {
+        status: 'success',
+        message: `Status akun "${user.name}" kini ${user.is_active ? 'AKTIF' : 'DINONAKTIFKAN (SUSPEND)'}.`,
+        is_active: user.is_active
+      })
+    }
+
+    // 9. DELETE /api/v1/admin/users/:id - Hapus User oleh Admin
+    const deleteUserMatch = pathname.match(/^\/api\/v1\/admin\/users\/([^/]+)$/)
+    if (deleteUserMatch && req.method === 'DELETE') {
+      if (!isPlatformAdmin(req)) {
+        return sendJson(res, 403, { status: 'error', message: 'Akses ditolak. Khusus Administrator Platform.' })
+      }
+      const targetUserId = deleteUserMatch[1]
+      db.users = db.users || []
+      const idx = db.users.findIndex(u => u.id === targetUserId)
+      if (idx === -1) {
+        return sendJson(res, 404, { status: 'error', message: 'Pengguna tidak ditemukan.' })
+      }
+      if (db.users[idx].email === 'admin@belajarena.id') {
+        return sendJson(res, 400, { status: 'error', message: 'Akun Superadmin Utama tidak dapat dihapus.' })
+      }
+      const deleted = db.users.splice(idx, 1)[0]
+      saveDb()
+      return sendJson(res, 200, { status: 'success', message: `Akun "${deleted.name}" berhasil dihapus.` })
+    }
+
+    // -------------------------------------------------------------
     // MULTI-TENANT SCHOOLS & ACADEMIC YEARS
     // -------------------------------------------------------------
     // 1. GET /api/v1/schools - Daftar satuan pendidikan
     if (pathname === '/api/v1/schools' && req.method === 'GET') {
       db.schools = db.schools || []
       const user = getAuthUser(req)
-      const isSuperAdmin = Boolean(user && (user.role === 'superadmin' || (Array.isArray(user.roles) && user.roles.includes('superadmin'))))
+      const isWebsiteAdmin = Boolean(user && (user.email === 'admin@belajarena.id' || user.email === 'superadmin@belajarena.id'))
 
       // Jika unauthenticated (misal dari form login): kembalikan hanya nama sekolah publik
       if (!user) {
@@ -1791,7 +2103,7 @@ const server = http.createServer(async (req, res) => {
 
       // Jika BUKAN admin website, hanya kembalikan sekolah yang terdaftar di akun yang login
       const currentSchoolId = getReqSchoolId(req)
-      const allowedSchools = isSuperAdmin
+      const allowedSchools = isWebsiteAdmin
         ? db.schools
         : db.schools.filter(s => s.id === currentSchoolId)
 
@@ -1806,14 +2118,12 @@ const server = http.createServer(async (req, res) => {
           classroom_count: classCount
         }
       })
-      return sendJson(res, 200, { status: 'success', data: listWithStats, is_superadmin: isSuperAdmin })
+      return sendJson(res, 200, { status: 'success', data: listWithStats, is_superadmin: isWebsiteAdmin })
     }
 
-    // 2. POST /api/v1/schools - Tambah satuan pendidikan baru (Khusus Admin Website / Superadmin)
+    // 2. POST /api/v1/schools - Tambah satuan pendidikan baru (Khusus Admin Website)
     if (pathname === '/api/v1/schools' && req.method === 'POST') {
-      const user = getAuthUser(req)
-      const isSuperAdmin = Boolean(user && (user.role === 'superadmin' || (Array.isArray(user.roles) && user.roles.includes('superadmin'))))
-      if (!isSuperAdmin) {
+      if (!isPlatformAdmin(req)) {
         return sendJson(res, 403, { status: 'error', message: 'Hanya Admin Website yang berwenang menambah sekolah dari menu ini.' })
       }
       const body = await parseBody(req)
@@ -1977,11 +2287,12 @@ const server = http.createServer(async (req, res) => {
     }
 
     // -------------------------------------------------------------
-    // SUBJECTS
+    // SUBJECTS (MATA PELAJARAN YANG DIAMPU GURU)
     // -------------------------------------------------------------
     if (pathname === '/api/v1/subjects' && req.method === 'GET') {
       const currentSchoolId = getReqSchoolId(req)
-      let result = (db.subjects || []).filter(s => !s.school_id || s.school_id === currentSchoolId)
+      db.subjects = db.subjects || []
+      let result = db.subjects.filter(s => s.school_id === currentSchoolId)
       const classroomId = query.classroom_id || query.classroomId
       const grade = query.grade || query.grade_level
       if (classroomId) {
@@ -1998,6 +2309,29 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { status: 'success', data: result })
     }
 
+    if (pathname === '/api/v1/subjects' && req.method === 'POST') {
+      const currentSchoolId = getReqSchoolId(req)
+      const body = await parseBody(req)
+      const name = (body.name || '').trim()
+      if (!name) {
+        return sendJson(res, 400, { status: 'error', message: 'Nama mata pelajaran wajib diisi' })
+      }
+      const rawCode = (body.code || name.replace(/[^A-Za-z0-9]/g, '').slice(0, 4) || 'MAPEL').toUpperCase()
+      const newSubject = {
+        id: 'sub-' + Date.now().toString(36),
+        name,
+        code: rawCode,
+        school_id: currentSchoolId,
+        kktp: Number(body.kktp ?? body.kkm ?? 75),
+        kkm: Number(body.kkm ?? body.kktp ?? 75),
+        created_at: new Date().toISOString()
+      }
+      db.subjects = db.subjects || []
+      db.subjects.push(newSubject)
+      saveDb()
+      return sendJson(res, 201, { status: 'success', data: newSubject })
+    }
+
     const subjectItemMatch = pathname.match(/^\/api\/v1\/subjects\/([a-zA-Z0-9_-]+)$/)
     if (subjectItemMatch && req.method === 'PUT') {
       const subjectId = subjectItemMatch[1]
@@ -2009,8 +2343,22 @@ const server = http.createServer(async (req, res) => {
       if (body.kkm !== undefined) sub.kkm = Number(body.kkm)
       if (body.kktp !== undefined) sub.kktp = Number(body.kktp)
       if (body.name) sub.name = body.name
+      if (body.code) sub.code = body.code
       saveDb()
       return sendJson(res, 200, { status: 'success', data: sub })
+    }
+
+    if (subjectItemMatch && req.method === 'DELETE') {
+      const subjectId = subjectItemMatch[1]
+      const currentSchoolId = getReqSchoolId(req)
+      db.subjects = db.subjects || []
+      const idx = db.subjects.findIndex(s => s.id === subjectId && s.school_id === currentSchoolId)
+      if (idx === -1) {
+        return sendJson(res, 404, { status: 'error', message: 'Mata pelajaran tidak ditemukan' })
+      }
+      db.subjects.splice(idx, 1)
+      saveDb()
+      return sendJson(res, 200, { status: 'success', message: 'Mata pelajaran berhasil dihapus' })
     }
 
     // -------------------------------------------------------------

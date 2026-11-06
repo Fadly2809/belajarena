@@ -44,6 +44,36 @@ const router = createRouter({
       meta: { requiresAuth: true, title: 'Portal Siswa SMPN 6 Kendari', layout: 'blank' }
     },
 
+    // Platform Administrator Routes (Khusus Admin Website)
+    {
+      path: '/admin',
+      meta: { requiresAuth: true, roles: ['superadmin'] },
+      children: [
+        {
+          path: '',
+          redirect: '/admin/overview'
+        },
+        {
+          path: 'overview',
+          name: 'admin-overview',
+          component: () => import('@/modules/admin/AdminOverviewPage.vue'),
+          meta: { title: 'Ringkasan Platform' }
+        },
+        {
+          path: 'schools',
+          name: 'admin-schools',
+          component: () => import('@/modules/admin/AdminSchoolsPage.vue'),
+          meta: { title: 'Kelola Satuan Pendidikan' }
+        },
+        {
+          path: 'users',
+          name: 'admin-users',
+          component: () => import('@/modules/admin/AdminUsersPage.vue'),
+          meta: { title: 'Kelola Pengguna & Guru' }
+        }
+      ]
+    },
+
     // School Management
     {
       path: '/school',
@@ -547,12 +577,44 @@ router.beforeEach(async (to, from, next) => {
     authStore.hasRole('student') ||
     !!authStore.user?.nis
 
+  const isPlatformAdmin = authStore.isSuperAdmin()
+
   if (to.meta.requiresGuest && authStore.isAuthenticated) {
     if (isStudent) {
       next({ path: '/student' })
+    } else if (isPlatformAdmin) {
+      next({ path: '/admin/overview' })
     } else {
       next({ path: '/dashboard' })
     }
+    return
+  }
+
+  // Proteksi akun Administrator Platform: hanya kelola data sekolah & user, tidak ada modul personal guru
+  if (authStore.isAuthenticated && isPlatformAdmin) {
+    if (to.path === '/' || to.path === '/dashboard' || to.path === '/academic') {
+      next({ path: '/admin/overview' })
+      return
+    }
+    const personalTeacherRoutes = [
+      '/classrooms',
+      '/attendance',
+      '/assignments',
+      '/curriculum/chapters',
+      '/exams',
+      '/offline-assessment',
+      '/grades/report',
+      '/schedule'
+    ]
+    if (personalTeacherRoutes.some(p => to.path.startsWith(p))) {
+      next({ path: '/admin/overview' })
+      return
+    }
+  }
+
+  // Proteksi pengguna non-admin agar tidak membuka modul admin
+  if (authStore.isAuthenticated && !isPlatformAdmin && to.path.startsWith('/admin')) {
+    next({ path: '/dashboard' })
     return
   }
 
