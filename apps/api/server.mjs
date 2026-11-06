@@ -5,7 +5,7 @@ import os from 'node:os'
 import crypto from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import bcrypt from 'bcryptjs'
-import { callGeminiApi, generateBuiltInResponse } from './ai_engine.mjs'
+import { callGeminiApi, generateBuiltInResponse, callGeminiVision } from './ai_engine.mjs'
 import { initWeeklySchedules, initMeetingLogs, initSubjectGrades } from './data_defaults.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -273,6 +273,14 @@ function loadDb() {
         db.offlineAssessments = []
         dirty = true
       }
+      if (!Array.isArray(db.gradingSessions)) {
+        db.gradingSessions = []
+        dirty = true
+      }
+      if (!Array.isArray(db.gradingSubmissions)) {
+        db.gradingSubmissions = []
+        dirty = true
+      }
       if (!Array.isArray(db.students) || db.students.length === 0) {
         const seedPasswordHash = bcrypt.hashSync('123456', 10)
         db.students = [
@@ -402,6 +410,10 @@ if (!fs.existsSync(SLIDES_STORAGE_DIR)) {
 const AVATARS_STORAGE_DIR = path.join(__dirname, 'storage', 'avatars')
 if (!fs.existsSync(AVATARS_STORAGE_DIR)) {
   fs.mkdirSync(AVATARS_STORAGE_DIR, { recursive: true })
+}
+const GRADING_STORAGE_DIR = path.join(__dirname, 'storage', 'grading-uploads')
+if (!fs.existsSync(GRADING_STORAGE_DIR)) {
+  fs.mkdirSync(GRADING_STORAGE_DIR, { recursive: true })
 }
 
 const WEB_DIST_DIR = path.resolve(__dirname, '..', 'web', 'dist')
@@ -662,6 +674,82 @@ function parseBody(req) {
       if (!exceeded) reject(err)
     })
   })
+}
+
+function parseRawBuffer(req) {
+  return new Promise((resolve, reject) => {
+    let size = 0
+    const chunks = []
+    let exceeded = false
+    req.on('data', chunk => {
+      if (exceeded) return
+      size += chunk.length
+      if (size > MAX_BODY_SIZE) {
+        exceeded = true
+        const err = new Error('Payload Too Large: Ukuran berkas unggahan melebihi batas 100 MB')
+        err.status = 413
+        req.pause()
+        return reject(err)
+      }
+      chunks.push(chunk)
+    })
+    req.on('end', () => {
+      if (exceeded) return
+      resolve(Buffer.concat(chunks))
+    })
+    req.on('error', err => {
+      if (!exceeded) reject(err)
+    })
+  })
+}
+
+function parseMultipartData(buffer, boundary) {
+  const fields = {}
+  const files = []
+  const delimiter = Buffer.from(`--${boundary}`)
+  const closeDelimiter = Buffer.from(`--${boundary}--`)
+
+  let start = buffer.indexOf(delimiter)
+  while (start !== -1) {
+    let nextStart = buffer.indexOf(delimiter, start + delimiter.length)
+    if (nextStart === -1) {
+      if (buffer.indexOf(closeDelimiter, start) !== -1) break
+      nextStart = buffer.length
+    }
+
+    const part = buffer.subarray(start + delimiter.length, nextStart)
+    const headerEnd = part.indexOf(Buffer.from('\r\n\r\n'))
+    if (headerEnd !== -1) {
+      const headerStr = part.subarray(0, headerEnd).toString('utf8')
+      let body = part.subarray(headerEnd + 4)
+      if (body.length >= 2 && body[body.length - 2] === 13 && body[body.length - 1] === 10) {
+        body = body.subarray(0, body.length - 2)
+      }
+
+      const dispMatch = headerStr.match(/content-disposition:\s*form-data;\s*name="([^"]+)"(?:;\s*filename="([^"]+)")?/i)
+      const typeMatch = headerStr.match(/content-type:\s*([^\r\n;]+)/i)
+
+      if (dispMatch) {
+        const fieldName = dispMatch[1]
+        const fileName = dispMatch[2]
+        const mimeType = typeMatch ? typeMatch[1].trim() : 'application/octet-stream'
+
+        if (fileName) {
+          files.push({
+            fieldname: fieldName,
+            originalname: fileName,
+            mimetype: mimeType,
+            buffer: body,
+            size: body.length
+          })
+        } else {
+          fields[fieldName] = body.toString('utf8')
+        }
+      }
+    }
+    start = nextStart
+  }
+  return { fields, files }
 }
 
 function sendJson(res, statusCode, data) {
@@ -8644,6 +8732,8 @@ const server = http.createServer(async (req, res) => {
             userFriendlyHint = 'Batas kuota gratis Google Gemini telah tercapai (Rate Limit). Coba beberapa saat lagi atau gunakan API key lain.'
           } else if (userFriendlyHint.includes('403') || userFriendlyHint.includes('PERMISSION_DENIED')) {
             userFriendlyHint = 'Akses Google Gemini API ditolak (Permission Denied). Pastikan Generative Language API aktif.'
+          } else if (userFriendlyHint.includes('404') || userFriendlyHint.includes('is not found') || userFriendlyHint.includes('not supported')) {
+            userFriendlyHint = 'Model Gemini sedang diperbarui. Server akan otomatis memilih model terbaru pada percakapan berikutnya.'
           } else {
             userFriendlyHint = userFriendlyHint.replace(/[\n\r]+/g, ' ').slice(0, 140)
           }
@@ -9108,6 +9198,1354 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, {
         status: 'success',
         data: { active: false }
+      })
+    }
+
+    // -------------------------------------------------------------
+    // FITUR PERIKSA KERTAS (AI PAPER GRADING ENGINE)
+    // -------------------------------------------------------------
+
+    // Helper: Hitung kemiripan teks antar esai (Jaccard similarity tokenized)
+    function calculateTextSimilarity(textA, textB) {
+      if (!textA || !textB) return 0
+      const wordsA = textA.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length > 2)
+      const wordsB = textB.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length > 2)
+      if (wordsA.length === 0 || wordsB.length === 0) return 0
+      const setA = new Set(wordsA)
+      const setB = new Set(wordsB)
+      let intersection = 0
+      for (const w of setA) {
+        if (setB.has(w)) intersection++
+      }
+      const union = new Set([...setA, ...setB]).size
+      return union === 0 ? 0 : Math.round((intersection / union) * 100) / 100
+    }
+
+    // Helper: Eksekusi AI Grading untuk satu submission
+    async function processGradingSubmission(sessionId, submissionId) {
+      db.gradingSessions = db.gradingSessions || []
+      db.gradingSubmissions = db.gradingSubmissions || []
+
+      const session = db.gradingSessions.find(s => s.id === sessionId)
+      const sub = db.gradingSubmissions.find(s => s.id === submissionId && s.session_id === sessionId)
+
+      if (!session || !sub) return
+
+      sub.status = 'diproses'
+      sub.error_message = null
+      sub.updated_at = new Date().toISOString()
+      saveDb()
+
+      const sessionDir = path.join(GRADING_STORAGE_DIR, session.id)
+
+      try {
+        const apiKey = process.env.GEMINI_API_KEY
+        if (!apiKey) {
+          throw new Error('API Key Google Gemini belum terkonfigurasi di file .env server. Harap atur GEMINI_API_KEY.')
+        }
+
+        if (!sub.files || sub.files.length === 0) {
+          throw new Error('Berkas lembar jawaban belum diunggah untuk siswa ini.')
+        }
+
+        // Siapkan image parts untuk Gemini Vision
+        const imageParts = []
+        for (const file of sub.files) {
+          const filePath = path.join(sessionDir, file.filename)
+          if (fs.existsSync(filePath)) {
+            const fileBuf = fs.readFileSync(filePath)
+            imageParts.push({
+              mimeType: file.mime_type || 'image/jpeg',
+              data: fileBuf.toString('base64')
+            })
+          }
+        }
+
+        if (imageParts.length === 0) {
+          throw new Error('Berkas lembar jawaban fisik tidak ditemukan di penyimpanan server.')
+        }
+
+        // Susun prompt instruksi penilaian berdasarkan rubrik sesi
+        const rubricClean = (session.rubric || []).map(r => ({
+          id: r.id,
+          nomor: r.number || 1,
+          judul: r.title || `Soal ${r.number}`,
+          tipe: r.type || 'uraian', // pilihan_ganda | isian_singkat | uraian | esai
+          kunci_jawaban: r.answer_key || null,
+          skor_maksimum: Number(r.max_score) || 10,
+          deskripsi_rubrik: r.description || '',
+          kriteria: Array.isArray(r.criteria) ? r.criteria.map(c => ({
+            id: c.id,
+            nama: c.name,
+            skor_maksimum: Number(c.max_score) || 4,
+            deskripsi_tingkat: c.levels || []
+          })) : []
+        }))
+
+        const promptText = `
+Anda adalah Asisten Penilai Akademik resmi untuk guru di Belajarena SMP Negeri 6 Kendari.
+Tugas Anda adalah memeriksa lembar jawaban tulisan tangan / cetak siswa pada lampiran gambar/dokumen secara teliti, objektif, dan adil sesuai rubrik penilaian yang diberikan oleh guru.
+
+DATA SISWA:
+- Nama: ${sub.student_name || 'Siswa'}
+- NIS: ${sub.student_nis || '-'}
+- Mata Pelajaran: ${session.subject_name || 'Mata Pelajaran'}
+- Kelas: ${session.classroom_name || 'Kelas'}
+- Judul Penilaian: ${session.title || 'Ujian/Tugas'}
+
+RUBRIK & KUNCI JAWABAN GURU:
+${JSON.stringify(rubricClean, null, 2)}
+
+ATURAN DAN PRINSIP MUTLAK PENILAIAN:
+1. TRANSKRIPSI ASLI: Transkripsikan teks jawaban siswa dari lembar jawaban apa adanya (baca tulisan tangan sebaik dan seteliti mungkin).
+2. PENILAIAN OBJEKTIF:
+   - Untuk 'pilihan_ganda' & 'isian_singkat': Cocokkan dengan 'kunci_jawaban' persis. Jika benar berikan 'skor_maksimum', jika salah berikan 0.
+   - Untuk 'uraian': Cocokkan dengan 'deskripsi_rubrik'. Berikan skor proporsional (0 sampai skor_maksimum).
+   - Untuk 'esai': Nilai SETIAP kriteria yang ada di dalam butir secara terpisah. Skor butir esai = jumlah skor dari kriteria-kriterianya.
+3. KUTIP BUKTI: Untuk setiap butir dan setiap kriteria esai, WAJIB mengutip kalimat/frasa dari lembar jawaban siswa yang menjadi dasar penilaian. Kriteria yang tidak memiliki bukti kutipan dari teks siswa TIDAK BOLEH diberi skor penuh.
+4. JANGAN MENEBAK (TIDAK TERBACA): Bila tulisan atau bagian jawaban siswa kotor, kabur, buram, tercoret tidak beraturan, atau sama sekali TIDAK TERBACA, tandai confidence dengan "tidak_terbaca" dan skor HARUS null (kosong). DILARANG mengarang jawaban atau mengarang skor!
+5. SKOR TIDAK MELEBIHI RUBRIK: Skor usulan per butir atau per kriteria DILARANG melebihi skor_maksimum yang ditetapkan guru.
+6. UMPAN BALIK SINGKAT & MEMBANGUN:
+   - Untuk butir umum: Berikan 1 kalimat umpan balik konstruktif dalam Bahasa Indonesia.
+   - Untuk butir esai: Sebutkan 1 kekuatan utama jawaban + 1 hal paling penting untuk ditingkatkan.
+7. YANG TIDAK DINILAI: Kerapian tulisan tangan, keindahan coretan, atau panjang karangan semata TIDAK dinilai dari foto (kecuali jika rubrik guru eksplisit memuatnya).
+
+FORMAT OUTPUT WAJIB BERUPA JSON TERSTRUKTUR DENGAN SKEMA:
+{
+  "items": [
+    {
+      "item_id": "string (sesuai id di rubrik)",
+      "nomor": 1,
+      "transcription": "Teks jawaban siswa yang terbaca",
+      "score": 10, // angka antara 0 s/d skor_maksimum, ATAU null bila tidak_terbaca
+      "evidence": "Kutipan kalimat dari jawaban siswa yang mendasari skor",
+      "confidence": "tinggi" | "sedang" | "rendah" | "tidak_terbaca",
+      "feedback": "1 kalimat umpan balik dalam Bahasa Indonesia",
+      "criteria": [
+        {
+          "criterion_id": "string (sesuai id kriteria jika ada)",
+          "score": 4, // angka atau null
+          "evidence": "Kutipan kalimat bukti kriteria ini",
+          "feedback": "Kekuatan atau perbaikan kriteria ini"
+        }
+      ]
+    }
+  ]
+}
+`
+
+        const aiResponse = await callGeminiVision(apiKey, imageParts, promptText, { temperature: 0.15 })
+
+        // Validasi dan normalisasi hasil AI
+        const rawItems = Array.isArray(aiResponse.items) ? aiResponse.items : []
+        let totalProposedScoreSum = 0
+        let totalMaxScoreSum = 0
+
+        const validatedItems = session.rubric.map((rubricItem, idx) => {
+          const maxScore = Number(rubricItem.max_score) || 10
+          totalMaxScoreSum += maxScore
+
+          const foundAi = rawItems.find(ai => String(ai.item_id) === String(rubricItem.id) || Number(ai.nomor) === (rubricItem.number || idx + 1))
+
+          if (!foundAi) {
+            return {
+              item_id: rubricItem.id,
+              number: rubricItem.number || idx + 1,
+              title: rubricItem.title || `Soal ${rubricItem.number || idx + 1}`,
+              transcription: '(Jawaban tidak terdeteksi pada lembar)',
+              score: null,
+              max_score: maxScore,
+              evidence: '-',
+              confidence: 'rendah',
+              feedback: 'Periksa manual lembar jawaban.',
+              criteria_scores: []
+            }
+          }
+
+          let confidence = ['tinggi', 'sedang', 'rendah', 'tidak_terbaca'].includes(foundAi.confidence)
+            ? foundAi.confidence
+            : 'sedang'
+
+          let score = foundAi.score !== null && foundAi.score !== undefined ? Number(foundAi.score) : null
+
+          // Validasi mode esai: hitung per kriteria jika ada
+          let validatedCriteria = []
+          if (Array.isArray(rubricItem.criteria) && rubricItem.criteria.length > 0) {
+            let criteriaSum = 0
+            validatedCriteria = rubricItem.criteria.map(crit => {
+              const critMax = Number(crit.max_score) || 4
+              const foundCrit = (foundAi.criteria || []).find(c => String(c.criterion_id) === String(crit.id))
+              let critScore = foundCrit && foundCrit.score !== null && foundCrit.score !== undefined ? Number(foundCrit.score) : null
+              if (critScore !== null) {
+                critScore = Math.max(0, Math.min(critMax, critScore))
+                criteriaSum += critScore
+              }
+              return {
+                criterion_id: crit.id,
+                name: crit.name,
+                score: critScore,
+                max_score: critMax,
+                evidence: foundCrit?.evidence || '-',
+                feedback: foundCrit?.feedback || ''
+              }
+            })
+            // Skor butir esai adalah akumulasi kriteria (kecuali bila tidak terbaca)
+            if (confidence !== 'tidak_terbaca') {
+              score = Math.min(maxScore, criteriaSum)
+            }
+          }
+
+          if (confidence === 'tidak_terbaca' || score === null || isNaN(score)) {
+            score = null
+            confidence = 'tidak_terbaca'
+          } else {
+            // Batasi skor tidak boleh melebihi rubrik
+            score = Math.max(0, Math.min(maxScore, Math.round(score * 10) / 10))
+            totalProposedScoreSum += score
+          }
+
+          return {
+            item_id: rubricItem.id,
+            number: rubricItem.number || idx + 1,
+            title: rubricItem.title || `Soal ${rubricItem.number || idx + 1}`,
+            transcription: (foundAi.transcription || '').trim(),
+            score: score,
+            max_score: maxScore,
+            evidence: (foundAi.evidence || '').trim(),
+            confidence: confidence,
+            feedback: (foundAi.feedback || '').trim(),
+            criteria_scores: validatedCriteria
+          }
+        })
+
+        // Skala total skor ke 0 - 100
+        const totalScaledScore = totalMaxScoreSum > 0
+          ? Math.round((totalProposedScoreSum / totalMaxScoreSum) * 100)
+          : 0
+
+        sub.ai_result = {
+          processed_at: new Date().toISOString(),
+          total_proposed_score: totalScaledScore,
+          items: validatedItems
+        }
+
+        // Catat skor awal AI ke audit trail
+        sub.audit_trail = sub.audit_trail || {}
+        sub.audit_trail.ai_processed_at = new Date().toISOString()
+        sub.audit_trail.ai_original_scores = {}
+        for (const it of validatedItems) {
+          sub.audit_trail.ai_original_scores[it.item_id] = it.score
+        }
+
+        sub.status = 'selesai'
+        sub.error_message = null
+        sub.updated_at = new Date().toISOString()
+
+        // Deteksi Kemiripan (Similarity Check) dengan siswa lain dalam sesi yang sama
+        const essayTextsCurrent = validatedItems
+          .filter(it => it.transcription && it.transcription.length > 20)
+          .map(it => it.transcription)
+          .join(' ')
+
+        if (essayTextsCurrent.length > 30) {
+          const otherCompleted = (db.gradingSubmissions || []).filter(other =>
+            other.session_id === session.id &&
+            other.id !== sub.id &&
+            other.status === 'selesai' &&
+            other.ai_result?.items
+          )
+
+          for (const other of otherCompleted) {
+            const otherText = (other.ai_result.items || [])
+              .filter(it => it.transcription && it.transcription.length > 20)
+              .map(it => it.transcription)
+              .join(' ')
+
+            if (otherText.length > 30) {
+              const sim = calculateTextSimilarity(essayTextsCurrent, otherText)
+              if (sim >= 0.65) {
+                sub.similarity_flag = true
+                sub.similarity_note = `Kemiripan teks tinggi (${Math.round(sim * 100)}%) dengan ${other.student_name}. Periksa manual oleh guru.`
+                other.similarity_flag = true
+                other.similarity_note = `Kemiripan teks tinggi (${Math.round(sim * 100)}%) dengan ${sub.student_name}. Periksa manual oleh guru.`
+              }
+            }
+          }
+        }
+
+        saveDb()
+        console.log(`[AI Grading] Selesai memeriksa lembar siswa ${sub.student_name} (${sub.student_id})`)
+      } catch (err) {
+        console.error(`[AI Grading] Gagal memproses lembar siswa ${sub.student_name}:`, err.message)
+        sub.status = 'gagal_diproses'
+        // Bersihkan pesan error agar ramah dan tidak membocorkan credential
+        let friendlyErr = err.message || 'Terjadi kesalahan sistem saat menghubungi layanan AI Vision.'
+        if (friendlyErr.includes('API_KEY_INVALID') || friendlyErr.includes('API key not valid')) {
+          friendlyErr = 'API Key Google Gemini pada server tidak valid.'
+        } else if (friendlyErr.includes('429') || friendlyErr.includes('RESOURCE_EXHAUSTED')) {
+          friendlyErr = 'Batas kuota Google Gemini API tercapai. Silakan coba beberapa saat lagi.'
+        }
+        sub.error_message = friendlyErr
+        sub.ai_result = null
+        sub.updated_at = new Date().toISOString()
+        saveDb()
+      }
+    }
+
+    // 1. GET /api/v1/grading/sessions - Daftar sesi pemeriksaan kertas
+    if (pathname === '/api/v1/grading/sessions' && req.method === 'GET') {
+      if (!isTeacherRequest(req)) {
+        return sendJson(res, 403, { status: 'error', message: 'Akses ditolak: Hanya guru yang berwenang mengakses sesi penilaian.' })
+      }
+
+      db.gradingSessions = db.gradingSessions || []
+      db.gradingSubmissions = db.gradingSubmissions || []
+
+      let list = [...db.gradingSessions]
+      if (query.classroom_id) {
+        list = list.filter(s => s.classroom_id === query.classroom_id)
+      }
+      if (query.subject_id) {
+        list = list.filter(s => s.subject_id === query.subject_id)
+      }
+      if (query.type) {
+        list = list.filter(s => s.type === query.type)
+      }
+
+      list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+
+      const withStats = list.map(sess => {
+        const subs = db.gradingSubmissions.filter(sub => sub.session_id === sess.id)
+        const totalSubs = subs.length
+        const approvedCount = subs.filter(sub => sub.is_approved).length
+        const completedCount = subs.filter(sub => sub.status === 'selesai' && !sub.is_approved).length
+        const queuedCount = subs.filter(sub => sub.status === 'antre' || sub.status === 'diproses').length
+        const failedCount = subs.filter(sub => sub.status === 'gagal_diproses').length
+
+        const approvedScores = subs.filter(sub => sub.is_approved && sub.final_total_score !== null).map(s => s.final_total_score)
+        const avgScore = approvedScores.length > 0
+          ? Math.round((approvedScores.reduce((a, b) => a + b, 0) / approvedScores.length) * 10) / 10
+          : 0
+
+        return {
+          ...sess,
+          total_submissions: totalSubs,
+          approved_count: approvedCount,
+          completed_count: completedCount,
+          queued_count: queuedCount,
+          failed_count: failedCount,
+          average_score: avgScore
+        }
+      })
+
+      return sendJson(res, 200, { status: 'success', data: withStats })
+    }
+
+    // 2. POST /api/v1/grading/sessions - Buat sesi pemeriksaan kertas baru
+    if (pathname === '/api/v1/grading/sessions' && req.method === 'POST') {
+      if (!isTeacherRequest(req)) {
+        return sendJson(res, 403, { status: 'error', message: 'Akses ditolak: Hanya guru yang berwenang membuat sesi pemeriksaan kertas.' })
+      }
+
+      const body = await parseBody(req)
+      const { title, type, ref_id, classroom_id, subject_id, rubric } = body
+
+      if (!title || !classroom_id) {
+        return sendJson(res, 400, { status: 'error', message: 'Judul sesi dan kelas wajib diisi.' })
+      }
+
+      const classroom = (db.classrooms || []).find(c => c.id === classroom_id) || { id: classroom_id, name: 'Kelas' }
+      const isGrade9 = Number(classroom.grade_level) === 9 || String(classroom.name).includes('IX') || String(classroom.name).includes('9')
+      const targetSubjectId = subject_id || (isGrade9 ? 'sub-inf' : 'sub-kka')
+      const subject = (db.subjects || []).find(s => s.id === targetSubjectId) || {
+        id: targetSubjectId,
+        name: targetSubjectId === 'sub-kka' ? 'KKA (Koding dan Kecerdasan Artifisial)' : 'Informatika'
+      }
+
+      // Validasi rubrik
+      let formattedRubric = []
+      if (Array.isArray(rubric) && rubric.length > 0) {
+        formattedRubric = rubric.map((r, i) => ({
+          id: r.id || `item-${i + 1}-${Math.random().toString(36).substr(2, 4)}`,
+          number: Number(r.number) || (i + 1),
+          title: (r.title || `Soal ${r.number || i + 1}`).trim(),
+          type: r.type || 'uraian', // pilihan_ganda | isian_singkat | uraian | esai
+          answer_key: r.answer_key ? String(r.answer_key).trim() : null,
+          max_score: Number(r.max_score) || 10,
+          description: (r.description || '').trim(),
+          criteria: Array.isArray(r.criteria) ? r.criteria.map((c, ci) => ({
+            id: c.id || `crit-${ci + 1}-${Math.random().toString(36).substr(2, 4)}`,
+            name: (c.name || `Kriteria ${ci + 1}`).trim(),
+            max_score: Number(c.max_score) || 4,
+            levels: Array.isArray(c.levels) ? c.levels : [
+              { score: 4, desc: 'Sangat Baik' },
+              { score: 3, desc: 'Baik' },
+              { score: 2, desc: 'Cukup' },
+              { score: 1, desc: 'Kurang' }
+            ]
+          })) : []
+        }))
+      } else {
+        // Rubrik default sederhana bila belum diisi (guru dapat menyuntingnya di editor rubrik)
+        formattedRubric = [
+          {
+            id: `item-1-${Math.random().toString(36).substr(2, 4)}`,
+            number: 1,
+            title: 'Soal 1',
+            type: 'uraian',
+            answer_key: null,
+            max_score: 10,
+            description: 'Ketepatan dan kelengkapan konsep jawaban siswa.',
+            criteria: []
+          }
+        ]
+      }
+
+      const user = getAuthUser(req)
+      const sessionId = `gs-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 4)}`
+
+      const newSession = {
+        id: sessionId,
+        title: title.trim(),
+        type: type === 'exam' ? 'exam' : 'assignment', // 'assignment' | 'exam'
+        ref_id: ref_id || null,
+        classroom_id: classroom.id,
+        classroom_name: classroom.name,
+        subject_id: subject.id,
+        subject_name: subject.name,
+        created_by: user?.name || 'Guru',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        status: 'active',
+        rubric: formattedRubric
+      }
+
+      // Buat folder storage khusus sesi ini
+      const sessionDir = path.join(GRADING_STORAGE_DIR, sessionId)
+      if (!fs.existsSync(sessionDir)) {
+        fs.mkdirSync(sessionDir, { recursive: true })
+      }
+
+      db.gradingSessions = db.gradingSessions || []
+      db.gradingSessions.unshift(newSession)
+      saveDb()
+
+      return sendJson(res, 201, {
+        status: 'success',
+        message: `Sesi pemeriksaan kertas "${newSession.title}" berhasil dibuat!`,
+        data: newSession
+      })
+    }
+
+    // Matcher rute sesi detail: /api/v1/grading/sessions/:id
+    const gradingSessionDetailMatch = pathname.match(/^\/api\/v1\/grading\/sessions\/([a-zA-Z0-9_-]+)$/)
+    if (gradingSessionDetailMatch) {
+      const sessionId = gradingSessionDetailMatch[1]
+      db.gradingSessions = db.gradingSessions || []
+      db.gradingSubmissions = db.gradingSubmissions || []
+
+      const sessIdx = db.gradingSessions.findIndex(s => s.id === sessionId)
+      if (sessIdx === -1) {
+        return sendJson(res, 404, { status: 'error', message: 'Sesi pemeriksaan kertas tidak ditemukan.' })
+      }
+      const session = db.gradingSessions[sessIdx]
+
+      // GET detail sesi + seluruh submissions kelas
+      if (req.method === 'GET') {
+        if (!isTeacherRequest(req)) {
+          return sendJson(res, 403, { status: 'error', message: 'Akses ditolak: Hanya guru yang berwenang melihat sesi penilaian.' })
+        }
+
+        const classStudents = (db.students || []).filter(s =>
+          s.classroom_id === session.classroom_id || s.classroom_name === session.classroom_name
+        )
+
+        const subs = db.gradingSubmissions.filter(s => s.session_id === sessionId)
+
+        // Gabungkan seluruh siswa di kelas dengan status submission masing-masing
+        const studentSubmissions = classStudents.map(std => {
+          const foundSub = subs.find(s => s.student_id === std.id || s.student_nis === std.nis)
+          if (foundSub) {
+            return {
+              ...foundSub,
+              student_name: std.name,
+              student_nis: std.nis
+            }
+          }
+          return {
+            id: null,
+            session_id: sessionId,
+            student_id: std.id,
+            student_name: std.name,
+            student_nis: std.nis,
+            files: [],
+            status: 'belum_upload',
+            ai_result: null,
+            is_approved: false,
+            final_total_score: null,
+            similarity_flag: false,
+            created_at: null
+          }
+        })
+
+        // Deteksi kewarasan distribusi (skor sangat seragam)
+        const completedScores = subs
+          .filter(s => s.status === 'selesai' && s.ai_result?.total_proposed_score !== null)
+          .map(s => Number(s.ai_result.total_proposed_score))
+
+        let uniformityWarning = false
+        if (completedScores.length >= 5) {
+          const minScore = Math.min(...completedScores)
+          const maxScore = Math.max(...completedScores)
+          if ((maxScore - minScore) <= 2) {
+            uniformityWarning = true
+          }
+        }
+
+        const approvedCount = subs.filter(s => s.is_approved).length
+        const pendingCount = subs.filter(s => s.status === 'selesai' && !s.is_approved).length
+        const queuedCount = subs.filter(s => s.status === 'antre' || s.status === 'diproses').length
+        const failedCount = subs.filter(s => s.status === 'gagal_diproses').length
+
+        return sendJson(res, 200, {
+          status: 'success',
+          data: {
+            session,
+            submissions: studentSubmissions,
+            stats: {
+              total_students: classStudents.length,
+              uploaded_count: subs.length,
+              approved_count: approvedCount,
+              pending_count: pendingCount,
+              queued_count: queuedCount,
+              failed_count: failedCount
+            },
+            uniformity_warning: uniformityWarning
+          }
+        })
+      }
+
+      // PUT update sesi / rubrik
+      if (req.method === 'PUT') {
+        if (!isTeacherRequest(req)) {
+          return sendJson(res, 403, { status: 'error', message: 'Akses ditolak.' })
+        }
+
+        const body = await parseBody(req)
+        const anyApproved = db.gradingSubmissions.some(s => s.session_id === sessionId && s.is_approved)
+        if (anyApproved && body.rubric) {
+          return sendJson(res, 400, {
+            status: 'error',
+            message: 'Rubrik tidak dapat diubah karena sebagian nilai siswa telah disetujui dan masuk ke rekap nilai.'
+          })
+        }
+
+        if (body.title) session.title = body.title.trim()
+        if (body.rubric && Array.isArray(body.rubric)) session.rubric = body.rubric
+        session.updated_at = new Date().toISOString()
+        saveDb()
+
+        return sendJson(res, 200, {
+          status: 'success',
+          message: 'Sesi pemeriksaan kertas berhasil diperbarui.',
+          data: session
+        })
+      }
+
+      // DELETE sesi
+      if (req.method === 'DELETE') {
+        if (!isTeacherRequest(req)) {
+          return sendJson(res, 403, { status: 'error', message: 'Akses ditolak.' })
+        }
+
+        // Hapus berkas di storage
+        const sessionDir = path.join(GRADING_STORAGE_DIR, sessionId)
+        if (fs.existsSync(sessionDir)) {
+          try {
+            fs.rmSync(sessionDir, { recursive: true, force: true })
+          } catch (_) {}
+        }
+
+        db.gradingSessions.splice(sessIdx, 1)
+        db.gradingSubmissions = db.gradingSubmissions.filter(s => s.session_id !== sessionId)
+        saveDb()
+
+        return sendJson(res, 200, {
+          status: 'success',
+          message: 'Sesi pemeriksaan kertas beserta berkasnya berhasil dihapus.'
+        })
+      }
+    }
+
+    // 3. POST /api/v1/grading/sessions/:id/upload - Unggah lembar jawaban (per siswa / massal)
+    const gradingUploadMatch = pathname.match(/^\/api\/v1\/grading\/sessions\/([a-zA-Z0-9_-]+)\/upload$/)
+    if (gradingUploadMatch && req.method === 'POST') {
+      if (!isTeacherRequest(req)) {
+        return sendJson(res, 403, { status: 'error', message: 'Akses ditolak: Hanya guru yang berwenang mengunggah berkas lembar jawaban.' })
+      }
+
+      const sessionId = gradingUploadMatch[1]
+      db.gradingSessions = db.gradingSessions || []
+      db.gradingSubmissions = db.gradingSubmissions || []
+
+      const session = db.gradingSessions.find(s => s.id === sessionId)
+      if (!session) {
+        return sendJson(res, 404, { status: 'error', message: 'Sesi pemeriksaan kertas tidak ditemukan.' })
+      }
+
+      const sessionDir = path.join(GRADING_STORAGE_DIR, session.id)
+      if (!fs.existsSync(sessionDir)) {
+        fs.mkdirSync(sessionDir, { recursive: true })
+      }
+
+      const contentType = req.headers['content-type'] || ''
+      let studentId = ''
+      let uploadedFilesMeta = []
+
+      // Parsing Multipart Form Data
+      if (contentType.includes('multipart/form-data')) {
+        const boundaryMatch = contentType.match(/boundary=([^;]+)/i)
+        if (!boundaryMatch) {
+          return sendJson(res, 400, { status: 'error', message: 'Boundary multipart form data tidak valid.' })
+        }
+        const boundary = boundaryMatch[1].trim()
+        const rawBuffer = await parseRawBuffer(req)
+        const { fields, files } = parseMultipartData(rawBuffer, boundary)
+
+        studentId = fields.student_id || fields.studentId || ''
+
+        if (!files || files.length === 0) {
+          return sendJson(res, 400, { status: 'error', message: 'Tidak ada berkas yang diunggah.' })
+        }
+
+        for (let i = 0; i < files.length; i++) {
+          const f = files[i]
+          if (f.size > 10 * 1024 * 1024) {
+            return sendJson(res, 400, { status: 'error', message: `Berkas "${f.originalname}" melebihi batas 10 MB.` })
+          }
+
+          const ext = path.extname(f.originalname).toLowerCase() || '.jpg'
+          const safeExt = ['.jpg', '.jpeg', '.png', '.webp', '.pdf'].includes(ext) ? ext : '.jpg'
+          const fileHash = crypto.createHash('sha256').update(f.buffer).digest('hex').substring(0, 16)
+          const targetFileName = `${Date.now()}-${i}-${fileHash}${safeExt}`
+          const targetFilePath = path.join(sessionDir, targetFileName)
+
+          // Tulis langsung ke disk — BUKAN ke JSON database!
+          fs.writeFileSync(targetFilePath, f.buffer)
+
+          uploadedFilesMeta.push({
+            filename: targetFileName,
+            original_name: f.originalname,
+            mime_type: f.mimetype,
+            size: f.size,
+            path: `/api/v1/grading/sessions/${session.id}/files/${targetFileName}`
+          })
+        }
+      } else {
+        // Parsing JSON Payload (dengan berkas base64 yang langsung ditulis ke disk lalu dibersihkan dari memori)
+        const body = await parseBody(req)
+        studentId = body.student_id || body.studentId || ''
+        const rawFiles = Array.isArray(body.files) ? body.files : []
+
+        if (rawFiles.length === 0) {
+          return sendJson(res, 400, { status: 'error', message: 'Tidak ada berkas yang diunggah.' })
+        }
+
+        for (let i = 0; i < rawFiles.length; i++) {
+          const f = rawFiles[i]
+          let base64Clean = f.base64 || f.data || ''
+          if (base64Clean.includes(',')) {
+            base64Clean = base64Clean.split(',')[1]
+          }
+          const buf = Buffer.from(base64Clean, 'base64')
+          if (buf.length > 10 * 1024 * 1024) {
+            return sendJson(res, 400, { status: 'error', message: `Berkas "${f.name || 'berkas'}" melebihi batas 10 MB.` })
+          }
+
+          const ext = path.extname(f.name || '').toLowerCase() || '.jpg'
+          const safeExt = ['.jpg', '.jpeg', '.png', '.webp', '.pdf'].includes(ext) ? ext : '.jpg'
+          const fileHash = crypto.createHash('sha256').update(buf).digest('hex').substring(0, 16)
+          const targetFileName = `${Date.now()}-${i}-${fileHash}${safeExt}`
+          const targetFilePath = path.join(sessionDir, targetFileName)
+
+          // Tulis langsung ke disk
+          fs.writeFileSync(targetFilePath, buf)
+
+          uploadedFilesMeta.push({
+            filename: targetFileName,
+            original_name: f.name || targetFileName,
+            mime_type: f.type || 'image/jpeg',
+            size: buf.length,
+            path: `/api/v1/grading/sessions/${session.id}/files/${targetFileName}`
+          })
+        }
+      }
+
+      if (!studentId) {
+        return sendJson(res, 400, { status: 'error', message: 'ID Siswa wajib disertakan.' })
+      }
+
+      const student = (db.students || []).find(s => s.id === studentId || s.nis === studentId)
+      if (!student) {
+        return sendJson(res, 404, { status: 'error', message: 'Data siswa tidak ditemukan di sistem.' })
+      }
+
+      // Cari submission yang ada atau buat baru
+      let subIdx = db.gradingSubmissions.findIndex(s => s.session_id === sessionId && s.student_id === student.id)
+      let submission
+
+      if (subIdx !== -1) {
+        submission = db.gradingSubmissions[subIdx]
+        submission.files = [...(submission.files || []), ...uploadedFilesMeta]
+        submission.status = 'antre'
+        submission.error_message = null
+        submission.updated_at = new Date().toISOString()
+      } else {
+        submission = {
+          id: `gsub-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 4)}`,
+          session_id: sessionId,
+          student_id: student.id,
+          student_name: student.name,
+          student_nis: student.nis,
+          files: uploadedFilesMeta,
+          status: 'antre',
+          error_message: null,
+          ai_result: null,
+          similarity_flag: false,
+          similarity_note: '',
+          audit_trail: {
+            ai_original_scores: {},
+            teacher_final_scores: {},
+            ai_processed_at: null,
+            approved_by: null,
+            approved_at: null,
+            diff_count: 0
+          },
+          approved_scores: null,
+          final_total_score: null,
+          is_approved: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+        db.gradingSubmissions.push(submission)
+      }
+
+      saveDb()
+
+      // Picu AI Grading secara asinkron di latar belakang
+      setImmediate(() => {
+        processGradingSubmission(sessionId, submission.id)
+      })
+
+      return sendJson(res, 201, {
+        status: 'success',
+        message: `Berkas lembar jawaban siswa ${student.name} berhasil diunggah dan masuk antrean AI!`,
+        data: submission
+      })
+    }
+
+    // 4. GET /api/v1/grading/sessions/:id/submissions/:subId - Detail submission lengkap
+    const gradingSubDetailMatch = pathname.match(/^\/api\/v1\/grading\/sessions\/([a-zA-Z0-9_-]+)\/submissions\/([a-zA-Z0-9_-]+)$/)
+    if (gradingSubDetailMatch && req.method === 'GET') {
+      if (!isTeacherRequest(req)) {
+        return sendJson(res, 403, { status: 'error', message: 'Akses ditolak.' })
+      }
+
+      const sessionId = gradingSubDetailMatch[1]
+      const subId = gradingSubDetailMatch[2]
+
+      db.gradingSubmissions = db.gradingSubmissions || []
+      const sub = db.gradingSubmissions.find(s => s.id === subId && s.session_id === sessionId)
+      if (!sub) {
+        return sendJson(res, 404, { status: 'error', message: 'Pengumpulan lembar jawaban tidak ditemukan.' })
+      }
+
+      return sendJson(res, 200, { status: 'success', data: sub })
+    }
+
+    // 5. GET /api/v1/grading/sessions/:id/submissions/:subId/file/:fileIndex - Akses berkas lembar jawaban terotentikasi
+    const gradingServeFileMatch = pathname.match(/^\/api\/v1\/grading\/sessions\/([a-zA-Z0-9_-]+)\/submissions\/([a-zA-Z0-9_-]+)\/file\/([0-9]+)$/)
+    if (gradingServeFileMatch && req.method === 'GET') {
+      // Keamanan Ketat: Hanya guru yang terotentikasi yang boleh melihat lembar jawaban siswa
+      if (!isTeacherRequest(req)) {
+        return sendJson(res, 403, { status: 'error', message: 'Akses ditolak: Hanya guru yang berwenang melihat lembar jawaban siswa.' })
+      }
+
+      const sessionId = gradingServeFileMatch[1]
+      const subId = gradingServeFileMatch[2]
+      const fileIdx = parseInt(gradingServeFileMatch[3], 10)
+
+      db.gradingSubmissions = db.gradingSubmissions || []
+      const sub = db.gradingSubmissions.find(s => s.id === subId && s.session_id === sessionId)
+      if (!sub || !sub.files || !sub.files[fileIdx]) {
+        return sendJson(res, 404, { status: 'error', message: 'Berkas tidak ditemukan.' })
+      }
+
+      const targetFile = sub.files[fileIdx]
+      const filePath = path.join(GRADING_STORAGE_DIR, sessionId, targetFile.filename)
+
+      if (!fs.existsSync(filePath)) {
+        return sendJson(res, 404, { status: 'error', message: 'Berkas fisik tidak ditemukan di penyimpanan server.' })
+      }
+
+      const ext = path.extname(targetFile.filename).toLowerCase()
+      const mimeTypes = {
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.webp': 'image/webp',
+        '.pdf': 'application/pdf'
+      }
+      const contentType = mimeTypes[ext] || 'application/octet-stream'
+
+      try {
+        const fileBuf = fs.readFileSync(filePath)
+        res.writeHead(200, {
+          'Content-Type': contentType,
+          'Content-Length': fileBuf.length,
+          'Cache-Control': 'private, no-cache, no-store, must-revalidate'
+        })
+        return res.end(fileBuf)
+      } catch (err) {
+        return sendJson(res, 500, { status: 'error', message: 'Gagal membaca berkas lembar jawaban.' })
+      }
+    }
+
+    // 6. POST /api/v1/grading/sessions/:id/submissions/:subId/process - Proses ulang AI satu siswa
+    const gradingProcessSingleMatch = pathname.match(/^\/api\/v1\/grading\/sessions\/([a-zA-Z0-9_-]+)\/submissions\/([a-zA-Z0-9_-]+)\/process$/)
+    if (gradingProcessSingleMatch && req.method === 'POST') {
+      if (!isTeacherRequest(req)) {
+        return sendJson(res, 403, { status: 'error', message: 'Akses ditolak.' })
+      }
+
+      const sessionId = gradingProcessSingleMatch[1]
+      const subId = gradingProcessSingleMatch[2]
+
+      db.gradingSubmissions = db.gradingSubmissions || []
+      const sub = db.gradingSubmissions.find(s => s.id === subId && s.session_id === sessionId)
+      if (!sub) {
+        return sendJson(res, 404, { status: 'error', message: 'Pengumpulan tidak ditemukan.' })
+      }
+
+      sub.status = 'antre'
+      sub.error_message = null
+      sub.updated_at = new Date().toISOString()
+      saveDb()
+
+      setImmediate(() => {
+        processGradingSubmission(sessionId, subId)
+      })
+
+      return sendJson(res, 200, {
+        status: 'success',
+        message: `Pemrosesan AI untuk siswa ${sub.student_name} telah dimulai ulang.`
+      })
+    }
+
+    // 7. POST /api/v1/grading/sessions/:id/process-all - Proses antrean semua siswa yang belum selesai
+    const gradingProcessAllMatch = pathname.match(/^\/api\/v1\/grading\/sessions\/([a-zA-Z0-9_-]+)\/process-all$/)
+    if (gradingProcessAllMatch && req.method === 'POST') {
+      if (!isTeacherRequest(req)) {
+        return sendJson(res, 403, { status: 'error', message: 'Akses ditolak.' })
+      }
+
+      const sessionId = gradingProcessAllMatch[1]
+      db.gradingSubmissions = db.gradingSubmissions || []
+
+      const targetSubs = db.gradingSubmissions.filter(s =>
+        s.session_id === sessionId &&
+        (s.status === 'antre' || s.status === 'gagal_diproses') &&
+        s.files && s.files.length > 0
+      )
+
+      if (targetSubs.length === 0) {
+        return sendJson(res, 200, { status: 'success', message: 'Tidak ada pengumpulan yang perlu diproses.' })
+      }
+
+      // Jalankan pemrosesan secara berurutan agar tidak membebani rate limit
+      setImmediate(async () => {
+        for (const s of targetSubs) {
+          await processGradingSubmission(sessionId, s.id)
+        }
+      })
+
+      return sendJson(res, 200, {
+        status: 'success',
+        message: `${targetSubs.length} lembar jawaban siswa dimasukkan ke antrean pemrosesan AI.`
+      })
+    }
+
+    // 8. PUT /api/v1/grading/sessions/:id/submissions/:subId/scores - Guru mengedit skor per butir & umpan balik
+    const gradingEditScoresMatch = pathname.match(/^\/api\/v1\/grading\/sessions\/([a-zA-Z0-9_-]+)\/submissions\/([a-zA-Z0-9_-]+)\/scores$/)
+    if (gradingEditScoresMatch && req.method === 'PUT') {
+      if (!isTeacherRequest(req)) {
+        return sendJson(res, 403, { status: 'error', message: 'Akses ditolak.' })
+      }
+
+      const sessionId = gradingEditScoresMatch[1]
+      const subId = gradingEditScoresMatch[2]
+
+      db.gradingSessions = db.gradingSessions || []
+      db.gradingSubmissions = db.gradingSubmissions || []
+
+      const session = db.gradingSessions.find(s => s.id === sessionId)
+      const sub = db.gradingSubmissions.find(s => s.id === subId && s.session_id === sessionId)
+
+      if (!session || !sub) {
+        return sendJson(res, 404, { status: 'error', message: 'Sesi atau pengumpulan siswa tidak ditemukan.' })
+      }
+
+      const body = await parseBody(req)
+      const editedItems = Array.isArray(body.items) ? body.items : []
+
+      // Jika ai_result belum ada (misal AI gagal atau guru mengisi skor manual penuh), inisialisasi dari rubrik sesi
+      if (!sub.ai_result || !Array.isArray(sub.ai_result.items)) {
+        sub.ai_result = {
+          processed_at: new Date().toISOString(),
+          total_proposed_score: 0,
+          items: (session.rubric || []).map((r, i) => ({
+            item_id: r.id,
+            number: r.number || (i + 1),
+            title: r.title || `Soal ${r.number || i + 1}`,
+            transcription: '(Diisi manual oleh guru)',
+            score: null,
+            max_score: Number(r.max_score) || 10,
+            evidence: '-',
+            confidence: 'sedang',
+            feedback: '',
+            criteria_scores: []
+          }))
+        }
+      }
+
+      let totalScoreSum = 0
+      let totalMaxScoreSum = 0
+
+      // Update butir-butir dengan skor edit guru
+      for (const item of sub.ai_result.items) {
+        totalMaxScoreSum += (Number(item.max_score) || 10)
+        const foundEdit = editedItems.find(e => String(e.item_id) === String(item.item_id))
+        if (foundEdit) {
+          if (foundEdit.score !== undefined && foundEdit.score !== null) {
+            const numScore = Number(foundEdit.score)
+            if (!isNaN(numScore)) {
+              // Validasi server: skor 0 s/d max_score
+              item.score = Math.max(0, Math.min(item.max_score, Math.round(numScore * 10) / 10))
+              // Jika sebelumnya tidak terbaca tapi guru mengisi nilai, perbarui confidence
+              if (item.confidence === 'tidak_terbaca') {
+                item.confidence = 'tinggi'
+              }
+            }
+          }
+          if (foundEdit.feedback !== undefined) {
+            item.feedback = String(foundEdit.feedback).trim()
+          }
+          // Edit kriteria esai jika disertakan
+          if (Array.isArray(foundEdit.criteria_scores)) {
+            item.criteria_scores = foundEdit.criteria_scores
+          }
+        }
+
+        if (item.score !== null && !isNaN(item.score)) {
+          totalScoreSum += item.score
+        }
+      }
+
+      const newScaledScore = totalMaxScoreSum > 0
+        ? Math.round((totalScoreSum / totalMaxScoreSum) * 100)
+        : 0
+
+      sub.ai_result.total_proposed_score = newScaledScore
+      sub.updated_at = new Date().toISOString()
+
+      // Rekam jejak audit edit skor
+      sub.audit_trail = sub.audit_trail || {}
+      sub.audit_trail.teacher_final_scores = {}
+      for (const it of sub.ai_result.items) {
+        sub.audit_trail.teacher_final_scores[it.item_id] = it.score
+      }
+
+      saveDb()
+
+      return sendJson(res, 200, {
+        status: 'success',
+        message: 'Skor dan umpan balik berhasil diperbarui oleh guru.',
+        data: sub
+      })
+    }
+
+    // 9. POST /api/v1/grading/sessions/:id/submissions/:subId/approve - Guru MENYETUJUI nilai siswa & menerbitkan ke rekap
+    const gradingApproveMatch = pathname.match(/^\/api\/v1\/grading\/sessions\/([a-zA-Z0-9_-]+)\/submissions\/([a-zA-Z0-9_-]+)\/approve$/)
+    if (gradingApproveMatch && req.method === 'POST') {
+      if (!isTeacherRequest(req)) {
+        return sendJson(res, 403, { status: 'error', message: 'Akses ditolak: Hanya guru yang berwenang menyetujui nilai.' })
+      }
+
+      const sessionId = gradingApproveMatch[1]
+      const subId = gradingApproveMatch[2]
+
+      db.gradingSessions = db.gradingSessions || []
+      db.gradingSubmissions = db.gradingSubmissions || []
+
+      const session = db.gradingSessions.find(s => s.id === sessionId)
+      const sub = db.gradingSubmissions.find(s => s.id === subId && s.session_id === sessionId)
+
+      if (!session || !sub) {
+        return sendJson(res, 404, { status: 'error', message: 'Sesi atau pengumpulan siswa tidak ditemukan.' })
+      }
+
+      if (!sub.ai_result || !Array.isArray(sub.ai_result.items)) {
+        sub.ai_result = {
+          processed_at: new Date().toISOString(),
+          total_proposed_score: 0,
+          items: (session.rubric || []).map((r, i) => ({
+            item_id: r.id,
+            number: r.number || (i + 1),
+            title: r.title || `Soal ${r.number || i + 1}`,
+            transcription: '(Diisi manual oleh guru)',
+            score: null,
+            max_score: Number(r.max_score) || 10,
+            evidence: '-',
+            confidence: 'sedang',
+            feedback: '',
+            criteria_scores: []
+          }))
+        }
+      }
+
+      // VALIDASI MUTLAK: Tidak boleh ada butir bertanda "tidak_terbaca" yang skornya masih null!
+      const unreadableNullItems = sub.ai_result.items.filter(it => it.confidence === 'tidak_terbaca' && (it.score === null || it.score === undefined))
+      if (unreadableNullItems.length > 0) {
+        return sendJson(res, 400, {
+          status: 'error',
+          message: `Terdapat ${unreadableNullItems.length} butir soal yang ditandai "tidak_terbaca". Guru wajib memeriksa lembar jawaban dan mengisi skor manual sebelum menyetujui.`
+        })
+      }
+
+      // Hitung total skor final (skala 0 - 100)
+      let totalScoreSum = 0
+      let totalMaxScoreSum = 0
+      const finalApprovedScoresMap = {}
+
+      for (const it of sub.ai_result.items) {
+        totalMaxScoreSum += (Number(it.max_score) || 10)
+        const sc = it.score !== null && !isNaN(it.score) ? Number(it.score) : 0
+        totalScoreSum += sc
+        finalApprovedScoresMap[it.item_id] = sc
+      }
+
+      const finalTotalScaled = totalMaxScoreSum > 0
+        ? Math.min(100, Math.max(0, Math.round((totalScoreSum / totalMaxScoreSum) * 100)))
+        : 0
+
+      const authUser = getAuthUser(req)
+
+      // Catat jejak audit lengkap
+      let diffCount = 0
+      const orig = sub.audit_trail?.ai_original_scores || {}
+      for (const k of Object.keys(finalApprovedScoresMap)) {
+        if (orig[k] !== undefined && orig[k] !== finalApprovedScoresMap[k]) {
+          diffCount++
+        }
+      }
+
+      sub.approved_scores = finalApprovedScoresMap
+      sub.final_total_score = finalTotalScaled
+      sub.is_approved = true
+      sub.audit_trail = {
+        ...sub.audit_trail,
+        teacher_final_scores: finalApprovedScoresMap,
+        approved_by: authUser?.name || 'Guru Pengampu',
+        approved_at: new Date().toISOString(),
+        diff_count: diffCount
+      }
+      sub.updated_at = new Date().toISOString()
+
+      // PENERBITAN NILAI: Tulis ke jalur resmi yang sudah ada!
+      const feedbackSummary = sub.ai_result.items
+        .filter(it => it.feedback)
+        .map(it => `[${it.title || 'Soal'}]: ${it.feedback}`)
+        .join('; ')
+
+      if (session.type === 'assignment') {
+        // Tulis ke db.assignmentSubmissions
+        db.assignmentSubmissions = db.assignmentSubmissions || []
+        let existingSub = db.assignmentSubmissions.find(s =>
+          (s.assignment_id === session.ref_id || s.assignmentId === session.ref_id) &&
+          (s.student_id === sub.student_id || s.studentId === sub.student_id)
+        )
+
+        if (existingSub) {
+          existingSub.score = finalTotalScaled
+          existingSub.feedback = feedbackSummary
+          existingSub.status = 'graded'
+          existingSub.source = 'ai_kertas_disetujui_guru'
+          existingSub.grading_session_id = session.id
+          existingSub.graded_at = new Date().toISOString()
+        } else {
+          db.assignmentSubmissions.push({
+            id: `sub-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 4)}`,
+            assignment_id: session.ref_id || `asg-paper-${session.id}`,
+            student_id: sub.student_id,
+            student_name: sub.student_name,
+            student_nis: sub.student_nis,
+            score: finalTotalScaled,
+            feedback: feedbackSummary,
+            status: 'graded',
+            source: 'ai_kertas_disetujui_guru',
+            grading_session_id: session.id,
+            submitted_at: new Date().toISOString(),
+            graded_at: new Date().toISOString()
+          })
+        }
+      } else {
+        // Tulis ke db.offlineAssessments (Ulangan Harian / Sumatif TP)
+        db.offlineAssessments = db.offlineAssessments || []
+        let offlineAssess = db.offlineAssessments.find(a =>
+          a.grading_session_id === session.id ||
+          (session.ref_id && a.id === session.ref_id)
+        )
+
+        if (offlineAssess) {
+          offlineAssess.scores = offlineAssess.scores || []
+          const existingScoreIdx = offlineAssess.scores.findIndex(s => s.student_id === sub.student_id)
+          const scoreRecord = {
+            student_id: sub.student_id,
+            student_name: sub.student_name,
+            score: finalTotalScaled,
+            feedback: feedbackSummary,
+            source: 'ai_kertas_disetujui_guru',
+            approved_at: new Date().toISOString()
+          }
+          if (existingScoreIdx !== -1) {
+            offlineAssess.scores[existingScoreIdx] = scoreRecord
+          } else {
+            offlineAssess.scores.push(scoreRecord)
+          }
+          offlineAssess.updated_at = new Date().toISOString()
+        } else {
+          db.offlineAssessments.push({
+            id: `off-paper-${session.id}`,
+            grading_session_id: session.id,
+            title: session.title,
+            type: 'ulangan_tp',
+            category: 'Sumatif TP (Lingkup Materi)',
+            classroom_id: session.classroom_id,
+            classroom_name: session.classroom_name,
+            subject_id: session.subject_id,
+            subject_name: session.subject_name,
+            assessment_date: new Date().toISOString().split('T')[0],
+            max_score: 100,
+            description: `Penilaian Ulangan Kertas disetujui guru (Sesi ID: ${session.id})`,
+            scores: [
+              {
+                student_id: sub.student_id,
+                student_name: sub.student_name,
+                score: finalTotalScaled,
+                feedback: feedbackSummary,
+                source: 'ai_kertas_disetujui_guru',
+                approved_at: new Date().toISOString()
+              }
+            ],
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+        }
+      }
+
+      // Hitung ulang rekap nilai kelas secara otomatis menggunakan fungsi resmi yang sudah ada
+      autoComputeGradesForClass(session.classroom_id, session.subject_id)
+      saveDb()
+
+      return sendJson(res, 200, {
+        status: 'success',
+        message: `Nilai siswa ${sub.student_name} (${finalTotalScaled}) berhasil disetujui dan diterbitkan ke Rekap Nilai Siswa!`,
+        data: sub
+      })
+    }
+
+    // 10. POST /api/v1/grading/sessions/:id/approve-bulk - Guru menyetujui massal siswa yang berkategori "confidence tinggi" saja
+    const gradingApproveBulkMatch = pathname.match(/^\/api\/v1\/grading\/sessions\/([a-zA-Z0-9_-]+)\/approve-bulk$/)
+    if (gradingApproveBulkMatch && req.method === 'POST') {
+      if (!isTeacherRequest(req)) {
+        return sendJson(res, 403, { status: 'error', message: 'Akses ditolak.' })
+      }
+
+      const sessionId = gradingApproveBulkMatch[1]
+      db.gradingSessions = db.gradingSessions || []
+      db.gradingSubmissions = db.gradingSubmissions || []
+
+      const session = db.gradingSessions.find(s => s.id === sessionId)
+      if (!session) {
+        return sendJson(res, 404, { status: 'error', message: 'Sesi tidak ditemukan.' })
+      }
+
+      const pendingSubs = db.gradingSubmissions.filter(s =>
+        s.session_id === sessionId &&
+        s.status === 'selesai' &&
+        !s.is_approved &&
+        s.ai_result?.items
+      )
+
+      let approvedCount = 0
+      let skippedCount = 0
+      const skippedDetails = []
+
+      const authUser = getAuthUser(req)
+
+      for (const sub of pendingSubs) {
+        const items = sub.ai_result.items || []
+
+        // ATURAN MUTLAK PERSETUJUAN MASSAL:
+        // HANYA setujui bila SEMUA butir ber-confidence 'tinggi'
+        // Jika ada butir 'sedang', 'rendah', atau 'tidak_terbaca', LEWATI!
+        const hasLowOrUnreadable = items.some(it =>
+          it.confidence === 'rendah' ||
+          it.confidence === 'tidak_terbaca' ||
+          it.confidence === 'sedang' ||
+          it.score === null
+        )
+
+        if (hasLowOrUnreadable) {
+          skippedCount++
+          skippedDetails.push({
+            student_name: sub.student_name,
+            reason: 'Memiliki butir dengan tingkat keyakinan sedang/rendah/tidak terbaca. Wajib diperiksa satu per satu.'
+          })
+          continue
+        }
+
+        // Lolos syarat persetujuan massal
+        let totalScoreSum = 0
+        let totalMaxScoreSum = 0
+        const finalApprovedScoresMap = {}
+
+        for (const it of items) {
+          totalMaxScoreSum += (Number(it.max_score) || 10)
+          const sc = Number(it.score) || 0
+          totalScoreSum += sc
+          finalApprovedScoresMap[it.item_id] = sc
+        }
+
+        const finalTotalScaled = totalMaxScoreSum > 0
+          ? Math.min(100, Math.max(0, Math.round((totalScoreSum / totalMaxScoreSum) * 100)))
+          : 0
+
+        sub.approved_scores = finalApprovedScoresMap
+        sub.final_total_score = finalTotalScaled
+        sub.is_approved = true
+        sub.audit_trail = {
+          ...sub.audit_trail,
+          teacher_final_scores: finalApprovedScoresMap,
+          approved_by: authUser?.name || 'Guru Pengampu (Persetujuan Massal)',
+          approved_at: new Date().toISOString(),
+          diff_count: 0
+        }
+        sub.updated_at = new Date().toISOString()
+
+        const feedbackSummary = items
+          .filter(it => it.feedback)
+          .map(it => `[${it.title || 'Soal'}]: ${it.feedback}`)
+          .join('; ')
+
+        if (session.type === 'assignment') {
+          db.assignmentSubmissions = db.assignmentSubmissions || []
+          let existingSub = db.assignmentSubmissions.find(s =>
+            (s.assignment_id === session.ref_id || s.assignmentId === session.ref_id) &&
+            (s.student_id === sub.student_id || s.studentId === sub.student_id)
+          )
+
+          if (existingSub) {
+            existingSub.score = finalTotalScaled
+            existingSub.feedback = feedbackSummary
+            existingSub.status = 'graded'
+            existingSub.source = 'ai_kertas_disetujui_guru'
+            existingSub.grading_session_id = session.id
+            existingSub.graded_at = new Date().toISOString()
+          } else {
+            db.assignmentSubmissions.push({
+              id: `sub-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 4)}`,
+              assignment_id: session.ref_id || `asg-paper-${session.id}`,
+              student_id: sub.student_id,
+              student_name: sub.student_name,
+              student_nis: sub.student_nis,
+              score: finalTotalScaled,
+              feedback: feedbackSummary,
+              status: 'graded',
+              source: 'ai_kertas_disetujui_guru',
+              grading_session_id: session.id,
+              submitted_at: new Date().toISOString(),
+              graded_at: new Date().toISOString()
+            })
+          }
+        } else {
+          db.offlineAssessments = db.offlineAssessments || []
+          let offlineAssess = db.offlineAssessments.find(a =>
+            a.grading_session_id === session.id ||
+            (session.ref_id && a.id === session.ref_id)
+          )
+
+          if (offlineAssess) {
+            offlineAssess.scores = offlineAssess.scores || []
+            const existingScoreIdx = offlineAssess.scores.findIndex(s => s.student_id === sub.student_id)
+            const scoreRecord = {
+              student_id: sub.student_id,
+              student_name: sub.student_name,
+              score: finalTotalScaled,
+              feedback: feedbackSummary,
+              source: 'ai_kertas_disetujui_guru',
+              approved_at: new Date().toISOString()
+            }
+            if (existingScoreIdx !== -1) {
+              offlineAssess.scores[existingScoreIdx] = scoreRecord
+            } else {
+              offlineAssess.scores.push(scoreRecord)
+            }
+            offlineAssess.updated_at = new Date().toISOString()
+          } else {
+            db.offlineAssessments.push({
+              id: `off-paper-${session.id}`,
+              grading_session_id: session.id,
+              title: session.title,
+              type: 'ulangan_tp',
+              category: 'Sumatif TP (Lingkup Materi)',
+              classroom_id: session.classroom_id,
+              classroom_name: session.classroom_name,
+              subject_id: session.subject_id,
+              subject_name: session.subject_name,
+              assessment_date: new Date().toISOString().split('T')[0],
+              max_score: 100,
+              description: `Penilaian Ulangan Kertas disetujui guru (Sesi ID: ${session.id})`,
+              scores: [
+                {
+                  student_id: sub.student_id,
+                  student_name: sub.student_name,
+                  score: finalTotalScaled,
+                  feedback: feedbackSummary,
+                  source: 'ai_kertas_disetujui_guru',
+                  approved_at: new Date().toISOString()
+                }
+              ],
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+          }
+        }
+
+        approvedCount++
+      }
+
+      autoComputeGradesForClass(session.classroom_id, session.subject_id)
+      saveDb()
+
+      return sendJson(res, 200, {
+        status: 'success',
+        message: `Persetujuan massal selesai: ${approvedCount} siswa dengan tingkat keyakinan tinggi disetujui, ${skippedCount} siswa dilewati untuk ditinjau manual.`,
+        data: {
+          approved_count: approvedCount,
+          skipped_count: skippedCount,
+          skipped_details: skippedDetails
+        }
       })
     }
 

@@ -18,6 +18,12 @@
       </div>
 
       <div class="flex items-center gap-2">
+        <router-link
+          :to="`/paper-grading?type=exam&refId=${$route.params.id}&title=${encodeURIComponent('Penilaian Kertas Asesmen')}`"
+          class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition"
+        >
+          <span>📝</span> Periksa Kertas (AI)
+        </router-link>
         <button @click="saveScores" class="btn btn-primary text-xs px-4 py-2 font-bold shadow-sm">
           💾 Simpan Nilai ke Ledger
         </button>

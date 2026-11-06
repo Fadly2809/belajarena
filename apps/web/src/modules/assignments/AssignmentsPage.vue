@@ -234,6 +234,13 @@
             Telah Dinilai: <strong class="text-surface-800">{{ item.gradedCount }}/{{ item.submittedCount }}</strong>
           </span>
           <div class="flex items-center gap-1.5">
+            <router-link
+              :to="`/paper-grading?type=assignment&refId=${item.id}&classroomId=${item.classroom_id || ''}&title=${encodeURIComponent(item.title)}`"
+              class="px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition flex items-center gap-1 shadow-xs"
+              title="Periksa lembar jawaban fisik kertas tugas ini menggunakan AI"
+            >
+              <span>📝</span> Periksa Kertas
+            </router-link>
             <button
               v-if="item.gradedCount > 0"
               @click="openImportModal(item)"

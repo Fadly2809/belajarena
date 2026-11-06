@@ -44,6 +44,12 @@
         </div>
 
         <div class="flex items-center gap-2">
+          <router-link
+            :to="`/paper-grading?type=assignment&refId=${assignment.id}&classroomId=${assignment.classroom_id || ''}&title=${encodeURIComponent(assignment.title || 'Tugas')}`"
+            class="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-sm"
+          >
+            <span>📝</span> Periksa Kertas (AI)
+          </router-link>
           <button
             @click="openImportModal"
             class="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-sm"

@@ -136,6 +136,13 @@
 
         <div class="pt-4 mt-4 border-t border-surface-100 flex items-center justify-between gap-2">
           <router-link
+            :to="`/paper-grading?type=exam&refId=${item.id}&title=${encodeURIComponent(item.title || 'Ulangan')}`"
+            class="px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1 shadow-sm transition"
+            title="Koreksi lembar fisik kertas ulangan ini dengan AI"
+          >
+            <span>📝</span> Kertas
+          </router-link>
+          <router-link
             :to="`/assessments/${item.id}`"
             class="btn btn-secondary text-xs px-3 py-1.5 flex-1 text-center"
           >

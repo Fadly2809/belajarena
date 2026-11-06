@@ -400,6 +400,26 @@ const router = createRouter({
       ]
     },
 
+    // Periksa Kertas (AI Paper Grading)
+    {
+      path: '/paper-grading',
+      meta: { requiresAuth: true },
+      children: [
+        {
+          path: '',
+          name: 'paper-grading-sessions',
+          component: () => import('@/modules/paper-grading/PaperGradingSessionsPage.vue'),
+          meta: { title: 'Periksa Kertas (AI)' }
+        },
+        {
+          path: ':id',
+          name: 'paper-grading-detail',
+          component: () => import('@/modules/paper-grading/PaperGradingDetailPage.vue'),
+          meta: { title: 'Tinjau Lembar Jawaban Kertas' }
+        }
+      ]
+    },
+
     // Reports
     {
       path: '/reports',

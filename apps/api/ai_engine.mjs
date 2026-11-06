@@ -260,6 +260,12 @@ ${BELAJARENA_KNOWLEDGE_BASE}`
         } catch (_) {}
 
         lastError = new Error(`Gemini ${model} (${response.status}): ${parsedMessage}`)
+        // Jika 404 (model tidak ada), reset cache supaya sesi berikutnya ambil ulang daftar model
+        if (response.status === 404) {
+          cachedModelsList = null
+          // Lanjut ke model berikutnya
+          continue
+        }
         // Jika 400 (bad request/invalid key) atau 403 (permission) atau 429 (quota), jangan coba model lain karena pasti sama
         if (response.status === 400 || response.status === 403 || response.status === 429) {
           throw lastError
@@ -651,4 +657,138 @@ Bagaimana saya bisa membantu Bapak hari ini?
 > 💡 *Silakan beritahu saya kebutuhan Bapak secara santai layaknya berbicara dengan asisten pribadi!*`
 }
 
-export { callGeminiApi, generateBuiltInResponse }
+// Query Google Gemini Vision API untuk Pemeriksaan Lembar Jawaban Kertas
+async function callGeminiVision(apiKey, imageParts = [], promptText = '', options = {}) {
+  if (!apiKey) {
+    throw new Error('API Key Google Gemini belum dikonfigurasi di server.')
+  }
+
+  if (!imageParts || imageParts.length === 0) {
+    throw new Error('Tidak ada berkas lembar jawaban yang disertakan.')
+  }
+
+  // Model vision Google Gemini (prioritas 1.5-flash / 2.0-flash / 1.5-pro)
+  const candidateModels = [
+    'gemini-1.5-flash',
+    'gemini-1.5-flash-latest',
+    'gemini-2.0-flash',
+    'gemini-1.5-pro'
+  ]
+
+  // Siapkan parts: gambar-gambar diikuti teks prompt instruksi penilaian
+  const parts = []
+  for (const img of imageParts) {
+    if (img.inlineData) {
+      parts.push({
+        inlineData: {
+          mimeType: img.inlineData.mimeType || 'image/jpeg',
+          data: img.inlineData.data
+        }
+      })
+    } else if (img.mimeType && img.data) {
+      parts.push({
+        inlineData: {
+          mimeType: img.mimeType,
+          data: img.data
+        }
+      })
+    }
+  }
+
+  parts.push({
+    text: promptText
+  })
+
+  const payload = {
+    contents: [
+      {
+        role: 'user',
+        parts: parts
+      }
+    ],
+    generationConfig: {
+      temperature: options.temperature !== undefined ? options.temperature : 0.15,
+      topP: 0.95,
+      maxOutputTokens: options.maxOutputTokens || 4096,
+      responseMimeType: 'application/json'
+    }
+  }
+
+  let lastError = null
+
+  // Coba model kandidat secara berurutan
+  for (const model of candidateModels) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
+    
+    // Maksimal 1x retry jika JSON parse error
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 60000) // 60 detik timeout
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: controller.signal
+        })
+        clearTimeout(timeoutId)
+
+        if (response.ok) {
+          const data = await response.json()
+          const candidate = data.candidates?.[0]
+          const rawText = candidate?.content?.parts?.[0]?.text
+          if (!rawText) {
+            throw new Error(`Respons model ${model} kosong.`)
+          }
+
+          // Bersihkan markdown code fences jika model menyertakan ```json ... ```
+          let cleaned = rawText.trim()
+          if (cleaned.startsWith('```json')) {
+            cleaned = cleaned.replace(/^```json\s*/, '').replace(/```\s*$/, '').trim()
+          } else if (cleaned.startsWith('```')) {
+            cleaned = cleaned.replace(/^```\s*/, '').replace(/```\s*$/, '').trim()
+          }
+
+          try {
+            const parsedJson = JSON.parse(cleaned)
+            console.log(`[Gemini Vision] Berhasil memproses lembar jawaban menggunakan model: ${model}`)
+            return parsedJson
+          } catch (jsonErr) {
+            console.warn(`[Gemini Vision] Percobaan ${attempt + 1}: Gagal parse JSON dari model ${model}:`, jsonErr.message)
+            if (attempt === 0) continue // Retry 1 kali
+            throw new Error(`Format JSON dari AI tidak valid: ${jsonErr.message}`)
+          }
+        } else {
+          const errText = await response.text()
+          console.warn(`[Gemini Vision] Model ${model} HTTP ${response.status}:`, errText.slice(0, 200))
+          let parsedMessage = errText
+          try {
+            const p = JSON.parse(errText)
+            if (p.error?.message) parsedMessage = p.error.message
+          } catch (_) {}
+
+          lastError = new Error(`Gemini ${model} (${response.status}): ${parsedMessage}`)
+          // Jika permission/invalid key/quota, stop
+          if (response.status === 400 || response.status === 403 || response.status === 429) {
+            throw lastError
+          }
+          break // Pindah ke model berikutnya jika 404 atau server error
+        }
+      } catch (err) {
+        lastError = err
+        if (err.name === 'AbortError') {
+          lastError = new Error(`Permintaan ke Gemini API (${model}) timeout setelah 60 detik.`)
+        }
+        if (lastError.message && (lastError.message.includes('400') || lastError.message.includes('403') || lastError.message.includes('429') || lastError.message.includes('API_KEY_INVALID'))) {
+          throw lastError
+        }
+        break // Pindah ke model kandidat berikutnya
+      }
+    }
+  }
+
+  throw lastError || new Error('Gagal memproses lembar jawaban menggunakan Google Gemini Vision.')
+}
+
+export { callGeminiApi, generateBuiltInResponse, callGeminiVision }
