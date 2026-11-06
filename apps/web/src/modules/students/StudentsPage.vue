@@ -43,7 +43,7 @@
           </div>
           <div class="mt-3">
             <div class="text-3xl font-black text-white tracking-tight leading-none">{{ stats.total }}</div>
-            <p class="text-[11px] text-slate-300 font-medium mt-1">Terdata di SMPN 6 Kendari</p>
+            <p class="text-[11px] text-slate-300 font-medium mt-1">Terdata di {{ schoolName }}</p>
           </div>
         </div>
         <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-300/90 group-hover:text-white transition">
@@ -83,7 +83,7 @@
           </div>
           <div class="mt-3">
             <div class="text-3xl font-black text-white tracking-tight leading-none">{{ classrooms.length || stats.classrooms }}</div>
-            <p class="text-[11px] text-slate-300 font-medium mt-1">Kelas 7, 8, dan 9</p>
+            <p class="text-[11px] text-slate-300 font-medium mt-1">{{ classrooms.length ? classrooms.length + ' Rombel Terdaftar' : 'Semua rombongan belajar' }}</p>
           </div>
         </div>
         <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-300/90 group-hover:text-white transition">
@@ -791,7 +791,11 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
+
+const authStore = useAuthStore()
+const schoolName = computed(() => authStore.currentSchool?.name || 'Satuan Pendidikan')
 
 interface Student {
   id: string

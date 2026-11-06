@@ -25,8 +25,28 @@
           <p class="text-slate-500 text-xs mt-1">Pilih jenis akun untuk melanjutkan</p>
         </div>
 
+        <!-- New School Registration Banner -->
+        <div class="mb-5 p-3 rounded-2xl bg-gradient-to-r from-blue-50 via-indigo-50 to-sky-50 border border-blue-200/80 text-xs flex items-center justify-between gap-3 shadow-xs">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center text-sm shadow-xs flex-shrink-0">
+              🏛️
+            </div>
+            <div>
+              <p class="font-bold text-blue-950 text-xs">Ingin mengelola sekolah baru?</p>
+              <p class="text-[10px] text-blue-700">Daftarkan sekolah Anda mandiri dengan database dan akun siswa terisolasi.</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            @click="openRegisterModal"
+            class="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] transition shadow-xs whitespace-nowrap flex-shrink-0 active:scale-95"
+          >
+            Daftar Sekolah
+          </button>
+        </div>
+
         <!-- 2 Account Types Selector -->
-        <div class="grid grid-cols-2 gap-2 p-1.5 bg-slate-100 rounded-2xl mb-6">
+        <div class="grid grid-cols-2 gap-2 p-1.5 bg-slate-100 rounded-2xl mb-5">
           <button
             type="button"
             @click="selectAccountType('teacher')"
@@ -36,7 +56,7 @@
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'"
           >
             <span>👨‍🏫</span>
-            <span>Akun Guru</span>
+            <span>Akun Guru / Admin</span>
           </button>
           <button
             type="button"
@@ -58,15 +78,15 @@
           <div v-if="accountType === 'teacher'" class="flex items-start gap-2">
             <span class="text-sm">🔑</span>
             <div>
-              <p class="font-bold">Akun Guru (Pak Fadly)</p>
-              <p class="text-[11px] text-blue-700 mt-0.5">Memiliki akses penuh Guru Informatika & KKA sekaligus seluruh kendali administratif sekolah.</p>
+              <p class="font-bold">Akun Guru & Tenaga Pendidik</p>
+              <p class="text-[11px] text-blue-700 mt-0.5">Masuk dengan Email / NIP yang didaftarkan untuk mengelola kelas, materi, dan asesmen.</p>
             </div>
           </div>
           <div v-else class="flex items-start gap-2">
             <span class="text-sm">📚</span>
             <div>
               <p class="font-bold">Akun Siswa</p>
-              <p class="text-[11px] text-emerald-700 mt-0.5">Masuk dengan NIS (contoh: <b>10527</b>) dan sandi (NIS Anda atau <b>password</b>).</p>
+              <p class="text-[11px] text-emerald-700 mt-0.5">Masuk dengan NIS / NISN dan kata sandi yang telah diberikan oleh pihak sekolah.</p>
             </div>
           </div>
         </div>
@@ -80,10 +100,25 @@
         </div>
 
         <form @submit.prevent="handleLogin" class="space-y-4">
+          <!-- Dropdown Pilihan Satuan Pendidikan (Jika Akun Siswa & Sekolah > 1) -->
+          <div v-if="accountType === 'student' && availableSchools.length > 1">
+            <label for="schoolSelect" class="label text-xs font-semibold">Pilih Asal Sekolah</label>
+            <select
+              id="schoolSelect"
+              v-model="studentSchoolId"
+              class="input text-xs font-semibold bg-white"
+            >
+              <option value="">-- Semua / Deteksi Otomatis --</option>
+              <option v-for="sch in availableSchools" :key="sch.id" :value="sch.id">
+                {{ sch.name }} ({{ sch.city || 'Indonesia' }})
+              </option>
+            </select>
+          </div>
+
           <!-- Identifier (NIP / Email / NISN) -->
           <div>
             <label for="email" class="label text-xs font-semibold">
-              {{ accountType === 'teacher' ? 'NIP atau Email Guru' : 'NIS / NISN atau Email Siswa' }}
+              {{ accountType === 'teacher' ? 'NIP atau Email Guru / Admin' : 'NIS / NISN Siswa' }}
             </label>
             <input
               id="email"
@@ -148,30 +183,17 @@
             :disabled="loading"
           >
             <svg v-if="loading" class="spinner w-4 h-4" viewBox="0 0 24 24"></svg>
-            <span>{{ loading ? 'Memverifikasi...' : (accountType === 'teacher' ? 'Masuk sebagai Guru' : 'Masuk sebagai Siswa') }}</span>
+            <span>{{ loading ? 'Memverifikasi...' : (accountType === 'teacher' ? 'Masuk sebagai Guru / Admin' : 'Masuk sebagai Siswa') }}</span>
           </button>
 
-          <!-- Quick Fill for Pak Fadly -->
+          <!-- Quick Fill Demo Options -->
           <div v-if="accountType === 'teacher'" class="pt-2 flex flex-col gap-2">
             <button
               type="button"
               @click="quickFillTeacher"
               class="w-full text-center py-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 text-[11px] font-semibold text-slate-700 transition"
             >
-              ⚡ Klik untuk isi akun Guru Default (Pak Fadly)
-            </button>
-            <div class="relative flex py-1 items-center">
-              <div class="flex-grow border-t border-slate-200"></div>
-              <span class="flex-shrink mx-2 text-[10px] text-slate-400 font-bold uppercase tracking-wider">atau</span>
-              <div class="flex-grow border-t border-slate-200"></div>
-            </div>
-            <button
-              type="button"
-              @click="openRegisterModal"
-              class="w-full text-center py-2 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-[11px] font-bold text-blue-800 transition flex items-center justify-center gap-1.5"
-            >
-              <span>🏛️</span>
-              <span>Daftarkan Satuan Pendidikan Baru</span>
+              ⚡ Klik untuk coba Akun Guru Demo
             </button>
           </div>
 
@@ -182,7 +204,7 @@
               @click="quickFillStudent"
               class="w-full text-center py-2 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200/80 text-[11px] font-semibold text-amber-900 transition"
             >
-              ⚡ Klik untuk isi akun Siswa (NIS: 10527 - Abizar)
+              ⚡ Klik untuk coba Akun Siswa Demo (NIS: 10527)
             </button>
           </div>
         </form>
@@ -232,9 +254,30 @@
               v-model="regForm.school_name"
               type="text"
               required
-              class="input text-xs"
-              placeholder="Contoh: SMP Negeri 1 Surabaya / SMA Prestasi"
+              class="input text-xs font-semibold"
+              placeholder="Contoh: SMA Negeri 1 Bandung / SMP Cendekia Mandiri"
             />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Jenjang Pendidikan <span class="text-red-500">*</span></label>
+              <select v-model="regForm.level" class="input text-xs font-semibold bg-white">
+                <option value="smp">SMP / MTs (Kelas 7, 8, 9)</option>
+                <option value="sma">SMA / MA (Kelas 10, 11, 12)</option>
+                <option value="smk">SMK (Kelas 10, 11, 12)</option>
+                <option value="sd">SD / MI (Kelas 1 s.d. 6)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Kode Singkat (Opsional)</label>
+              <input
+                v-model="regForm.code"
+                type="text"
+                class="input text-xs font-mono uppercase"
+                placeholder="Contoh: SMAN1"
+              />
+            </div>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
@@ -253,7 +296,7 @@
                 v-model="regForm.city"
                 type="text"
                 class="input text-xs"
-                placeholder="Contoh: Surabaya"
+                placeholder="Contoh: Bandung"
               />
             </div>
           </div>
@@ -265,7 +308,7 @@
                 v-model="regForm.province"
                 type="text"
                 class="input text-xs"
-                placeholder="Contoh: Jawa Timur"
+                placeholder="Contoh: Jawa Barat"
               />
             </div>
             <div>
@@ -274,7 +317,7 @@
                 v-model="regForm.phone"
                 type="text"
                 class="input text-xs"
-                placeholder="031-xxxxxxx"
+                placeholder="022-xxxxxxx"
               />
             </div>
           </div>
@@ -284,15 +327,26 @@
               <span>👤</span> <span>Akun Pengelola / Guru Pertama</span>
             </h4>
             <div class="space-y-3">
-              <div>
-                <label class="block font-semibold text-slate-700 mb-1">Nama Lengkap Pengelola / Guru <span class="text-red-500">*</span></label>
-                <input
-                  v-model="regForm.admin_name"
-                  type="text"
-                  required
-                  class="input text-xs"
-                  placeholder="Contoh: Dr. Budi Santoso, M.Pd."
-                />
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block font-semibold text-slate-700 mb-1">Nama Guru / Admin <span class="text-red-500">*</span></label>
+                  <input
+                    v-model="regForm.admin_name"
+                    type="text"
+                    required
+                    class="input text-xs"
+                    placeholder="Contoh: Dr. Budi Santoso, M.Pd."
+                  />
+                </div>
+                <div>
+                  <label class="block font-semibold text-slate-700 mb-1">NIP (Opsional)</label>
+                  <input
+                    v-model="regForm.admin_nip"
+                    type="text"
+                    class="input text-xs font-mono"
+                    placeholder="19890101xxxxxxxx"
+                  />
+                </div>
               </div>
               <div>
                 <label class="block font-semibold text-slate-700 mb-1">Email Pengelola (Untuk Login) <span class="text-red-500">*</span></label>
@@ -305,7 +359,7 @@
                 />
               </div>
               <div>
-                <label class="block font-semibold text-slate-700 mb-1">Kata Sandi <span class="text-red-500">*</span></label>
+                <label class="block font-semibold text-slate-700 mb-1">Kata Sandi Akun <span class="text-red-500">*</span></label>
                 <input
                   v-model="regForm.password"
                   type="password"
@@ -329,10 +383,10 @@
             <button
               type="submit"
               :disabled="registerLoading"
-              class="flex-1 py-2.5 rounded-xl bg-[#0c2b3d] hover:bg-[#164255] text-white font-bold transition flex items-center justify-center gap-2"
+              class="flex-1 py-2.5 rounded-xl bg-[#0c2b3d] hover:bg-[#164255] text-white font-bold transition flex items-center justify-center gap-2 shadow-md"
             >
               <svg v-if="registerLoading" class="spinner w-4 h-4" viewBox="0 0 24 24"></svg>
-              <span>{{ registerLoading ? 'Mendaftarkan...' : 'Daftarkan & Masuk' }}</span>
+              <span>{{ registerLoading ? 'Mendaftarkan...' : 'Daftarkan & Mulai Kelola' }}</span>
             </button>
           </div>
         </form>
@@ -345,6 +399,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import api from '@/services/api'
 
 const router = useRouter()
 const route = useRoute()
@@ -356,6 +411,8 @@ const accountType = ref<'teacher' | 'student'>('teacher')
 const loading = ref(false)
 const showPassword = ref(false)
 const errorMessage = ref('')
+const availableSchools = ref<any[]>([])
+const studentSchoolId = ref('')
 
 // Register New School Modal State
 const showRegisterModal = ref(false)
@@ -363,14 +420,31 @@ const registerLoading = ref(false)
 const registerError = ref('')
 const regForm = reactive({
   school_name: '',
+  level: 'smp',
+  code: '',
   npsn: '',
   city: '',
   province: '',
   phone: '',
   admin_name: '',
+  admin_nip: '',
   email: '',
   password: ''
 })
+
+async function fetchSchools() {
+  try {
+    const res = await api.get('/schools')
+    if (res.data?.data) {
+      availableSchools.value = res.data.data
+      if (availableSchools.value.length > 0 && !studentSchoolId.value) {
+        studentSchoolId.value = availableSchools.value[0].id
+      }
+    }
+  } catch (err) {
+    console.warn('Could not load schools list for login page:', err)
+  }
+}
 
 function openRegisterModal() {
   registerError.value = ''
@@ -387,6 +461,8 @@ async function handleRegisterSchool() {
 
   const res = await authStore.registerSchool({
     school_name: regForm.school_name,
+    level: regForm.level,
+    code: regForm.code,
     npsn: regForm.npsn,
     city: regForm.city,
     province: regForm.province,
@@ -406,6 +482,7 @@ async function handleRegisterSchool() {
 }
 
 onMounted(() => {
+  fetchSchools()
   if (!authStore.currentSchool) {
     authStore.fetchActiveSchool()
   }
@@ -474,10 +551,16 @@ async function handleLogin() {
   loading.value = true
   errorMessage.value = ''
 
-  const result = await authStore.login({
+  const credentials: { email: string; password: string; school_id?: string } = {
     email: form.email,
     password: form.password,
-  })
+  }
+
+  if (accountType.value === 'student' && studentSchoolId.value) {
+    credentials.school_id = studentSchoolId.value
+  }
+
+  const result = await authStore.login(credentials)
 
   loading.value = false
 

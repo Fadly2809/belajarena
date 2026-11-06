@@ -291,7 +291,7 @@
           <div class="p-3.5 rounded-xl bg-white border border-surface-200">
             <span class="text-[10px] text-surface-400 font-bold uppercase tracking-wider block">Portal Siswa</span>
             <p class="font-mono text-[11px] text-primary-600 truncate mt-1">
-              http://localhost:5173/login
+              {{ windowOrigin }}/login
             </p>
           </div>
         </div>
@@ -407,16 +407,19 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 const loading = ref(true)
 const errorMsg = ref('')
 const student = ref<any>(null)
 const classrooms = ref<any[]>([])
 const showDeleteModal = ref(false)
 const deleting = ref(false)
+const windowOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173'
 
 // Manajemen Akun Siswa
 const showResetPassModal = ref(false)
@@ -438,7 +441,8 @@ function copyCredentials() {
   if (!student.value) return
   const u = student.value.username || student.value.nis
   const p = student.value.password || student.value.nis || 'password'
-  const text = `Portal Siswa SMPN 6 Kendari\nNama: ${student.value.name}\nNIS / Username: ${u}\nKata Sandi: ${p}\nLogin di: ${window.location.origin}/login`
+  const schoolTitle = authStore.currentSchool?.name ? ` ${authStore.currentSchool.name}` : ''
+  const text = `Portal Siswa${schoolTitle}\nNama: ${student.value.name}\nNIS / Username: ${u}\nKata Sandi: ${p}\nLogin di: ${window.location.origin}/login`
   navigator.clipboard.writeText(text).then(() => {
     alert('Kredensial akun siswa berhasil disalin ke clipboard! 📋')
   }).catch(() => {

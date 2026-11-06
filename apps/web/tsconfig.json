@@ -1,46 +1,7 @@
 {
-  "extends": "./tsconfig.app.json",
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@modules/*": [
-        "./src/modules/*"
-      ],
-      "@components/*": [
-        "./src/components/*"
-      ],
-      "@stores/*": [
-        "./src/stores/*"
-      ],
-      "@composables/*": [
-        "./src/composables/*"
-      ],
-      "@services/*": [
-        "./src/services/*"
-      ],
-      "@types/*": [
-        "./src/types/*"
-      ],
-      "@utils/*": [
-        "./src/utils/*"
-      ]
-    }
-  },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.d.ts",
-    "src/**/*.tsx",
-    "src/**/*.vue"
-  ],
+  "files": [],
   "references": [
-    {
-      "path": "./tsconfig.node.json"
-    },
-    {
-      "path": "./tsconfig.app.json"
-    }
+    { "path": "./tsconfig.node.json" },
+    { "path": "./tsconfig.app.json" }
   ]
 }

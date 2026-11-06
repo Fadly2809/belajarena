@@ -213,6 +213,135 @@
       </div>
     </div>
 
+    <!-- AKUN GURU & PENDIDIK TERDAFTAR -->
+    <div class="card space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-2 border-b border-surface-100">
+        <div>
+          <h2 class="font-bold text-surface-900 text-sm flex items-center gap-2">
+            <span>👨‍🏫</span> Akun Pendidik & Pengelola ({{ school.name }})
+          </h2>
+          <p class="text-[11px] text-slate-500 mt-0.5">
+            Daftarkan akun rekan guru agar dapat masuk, mengampu kelas, dan mengelola materi serta ulangan untuk sekolah ini.
+          </p>
+        </div>
+        <button
+          @click="showAddTeacherModal = true"
+          class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 self-start sm:self-auto"
+        >
+          <span>➕</span> <span>Tambah Akun Guru</span>
+        </button>
+      </div>
+
+      <div v-if="loadingTeachers" class="py-6 text-center text-xs text-slate-400">
+        Memuat daftar guru...
+      </div>
+      <div v-else-if="teachersList.length === 0" class="py-6 text-center text-xs text-slate-500">
+        Belum ada guru tambahan yang terdaftar.
+      </div>
+      <div v-else class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead>
+            <tr class="border-b border-slate-100 text-slate-400 uppercase text-[10px] font-bold">
+              <th class="py-2.5 px-3">Nama Lengkap & NIP</th>
+              <th class="py-2.5 px-3">Email Login</th>
+              <th class="py-2.5 px-3">Mata Pelajaran</th>
+              <th class="py-2.5 px-3 text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr v-for="t in teachersList" :key="t.id" class="hover:bg-slate-50/60 transition">
+              <td class="py-3 px-3">
+                <span class="font-bold text-slate-900 block">{{ t.name }}</span>
+                <span class="text-[10px] text-slate-400 font-mono">{{ t.nip ? 'NIP: ' + t.nip : 'Non-NIP' }}</span>
+              </td>
+              <td class="py-3 px-3 font-mono text-slate-700">{{ t.email }}</td>
+              <td class="py-3 px-3">
+                <span class="px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 font-semibold text-[11px]">
+                  {{ t.subject || 'Semua Mapel' }}
+                </span>
+              </td>
+              <td class="py-3 px-3 text-right">
+                <button
+                  v-if="t.id !== authStore.user?.id"
+                  @click="handleDeleteTeacher(t)"
+                  class="px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 font-bold text-[11px] transition"
+                  title="Hapus akun guru"
+                >
+                  Hapus
+                </button>
+                <span v-else class="text-[10px] text-slate-400 font-semibold italic">Akun Anda</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MODAL TAMBAH GURU BARU -->
+    <div
+      v-if="showAddTeacherModal"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      @click.self="showAddTeacherModal = false"
+    >
+      <div class="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-md w-full p-6 sm:p-7 relative max-h-[90vh] overflow-y-auto">
+        <div class="flex items-start justify-between pb-3 border-b border-slate-100 mb-4">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">👨‍🏫</span>
+            <div>
+              <h3 class="text-base font-bold text-slate-900">Tambah Akun Guru Baru</h3>
+              <p class="text-xs text-slate-500 mt-0.5">Untuk {{ school.name }}</p>
+            </div>
+          </div>
+          <button @click="showAddTeacherModal = false" class="text-slate-400 hover:text-slate-600 text-sm">✕</button>
+        </div>
+
+        <form @submit.prevent="handleAddTeacher" class="space-y-3 text-xs">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Nama Lengkap Guru <span class="text-red-500">*</span></label>
+            <input v-model="newTeacherForm.name" type="text" required class="input text-xs" placeholder="Contoh: Siti Rahmawati, S.Pd." />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">NIP (Opsional)</label>
+              <input v-model="newTeacherForm.nip" type="text" class="input text-xs font-mono" placeholder="1990xxxxxxxx" />
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Mata Pelajaran</label>
+              <input v-model="newTeacherForm.subject" type="text" class="input text-xs" placeholder="Misal: Matematika" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Email Guru (Untuk Login) <span class="text-red-500">*</span></label>
+            <input v-model="newTeacherForm.email" type="email" required class="input text-xs" placeholder="siti.rahma@sekolah.sch.id" />
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Kata Sandi Awal <span class="text-red-500">*</span></label>
+            <input v-model="newTeacherForm.password" type="password" required minlength="6" class="input text-xs" placeholder="Minimal 6 karakter" />
+          </div>
+
+          <div class="pt-3 flex gap-2">
+            <button
+              type="button"
+              @click="showAddTeacherModal = false"
+              class="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              :disabled="isAddingTeacher"
+              class="flex-1 py-2.5 rounded-xl bg-[#0c2b3d] hover:bg-[#164255] text-white font-bold transition flex items-center justify-center gap-2"
+            >
+              <span>{{ isAddingTeacher ? 'Menyimpan...' : 'Daftarkan Guru' }}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- MODAL TAMBAH SEKOLAH BARU -->
     <div
       v-if="showAddModal"
@@ -297,6 +426,19 @@ const isSaving = ref(false)
 const isAdding = ref(false)
 const showAddModal = ref(false)
 const successMsg = ref('')
+
+// Teacher Management State
+const teachersList = ref<any[]>([])
+const loadingTeachers = ref(false)
+const showAddTeacherModal = ref(false)
+const isAddingTeacher = ref(false)
+const newTeacherForm = ref({
+  name: '',
+  nip: '',
+  subject: '',
+  email: '',
+  password: 'password123'
+})
 
 const schoolList = ref<SchoolInfo[]>([])
 const currentActiveId = computed(() => authStore.currentSchool?.id || 'sch-smpn6kendari')
@@ -399,10 +541,60 @@ async function handleAddSchool() {
   }
 }
 
+async function fetchTeachersList() {
+  loadingTeachers.value = true
+  try {
+    const res = await api.get('/teachers')
+    if (res.data?.data) {
+      teachersList.value = res.data.data
+    }
+  } catch (err) {
+    console.warn('Failed to load teachers list:', err)
+  } finally {
+    loadingTeachers.value = false
+  }
+}
+
+async function handleAddTeacher() {
+  if (!newTeacherForm.value.name.trim() || !newTeacherForm.value.email.trim()) return
+  isAddingTeacher.value = true
+  try {
+    const res = await api.post('/teachers', newTeacherForm.value)
+    if (res.data?.data) {
+      successMsg.value = `Akun guru "${newTeacherForm.value.name}" berhasil didaftarkan!`
+      showAddTeacherModal.value = false
+      newTeacherForm.value = {
+        name: '',
+        nip: '',
+        subject: '',
+        email: '',
+        password: 'password123'
+      }
+      await fetchTeachersList()
+    }
+  } catch (err: any) {
+    alert('Gagal menambah akun guru: ' + (err.response?.data?.message || err.message))
+  } finally {
+    isAddingTeacher.value = false
+  }
+}
+
+async function handleDeleteTeacher(teacher: any) {
+  if (!confirm(`Hapus akun guru "${teacher.name}"? Guru ini tidak akan bisa login lagi.`)) return
+  try {
+    await api.delete(`/teachers/${teacher.id}`)
+    successMsg.value = `Akun guru "${teacher.name}" berhasil dihapus.`
+    await fetchTeachersList()
+  } catch (err: any) {
+    alert('Gagal menghapus guru: ' + (err.response?.data?.message || err.message))
+  }
+}
+
 onMounted(async () => {
   await Promise.all([
     fetchSchoolsList(),
-    loadActiveSchool()
+    loadActiveSchool(),
+    fetchTeachersList()
   ])
 })
 

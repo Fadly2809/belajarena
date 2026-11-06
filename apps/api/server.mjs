@@ -803,7 +803,7 @@ function sendJson(res, statusCode, data) {
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, X-Student-Id'
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, X-Student-Id, X-School-Id'
   })
   res.end(JSON.stringify(data))
 }
@@ -851,11 +851,11 @@ function getAuthUser(req) {
     return {
       id: student.id,
       name: student.name,
-      email: student.email || `${student.nis || student.nisn || 'siswa'}@smpn6kendari.sch.id`,
+      email: student.email || `${student.nis || student.nisn || 'siswa'}@siswa.belajar.id`,
       role: 'student',
       roles: ['student'],
       permissions: ['student.view', 'student.exam', 'student.assignment', 'student.attendance'],
-      school_id: student.school_id || 'sch-smpn6kendari',
+      school_id: student.school_id || (db.schools && db.schools[0] ? db.schools[0].id : 'sch-default'),
       classroom_id: student.classroom_id,
       classroom_name: student.classroom_name,
       nis: student.nis,
@@ -887,7 +887,7 @@ function getReqSchoolId(req) {
   }
 
   const firstSchool = (db.schools && db.schools.length > 0) ? db.schools[0] : null
-  return firstSchool ? firstSchool.id : 'sch-smpn6kendari'
+  return firstSchool ? firstSchool.id : 'sch-default'
 }
 
 function getReqSchool(req) {
@@ -915,7 +915,7 @@ const server = http.createServer(async (req, res) => {
       'Access-Control-Allow-Origin': getAllowedOrigin(req),
       'Access-Control-Allow-Credentials': 'true',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, X-Student-Id'
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, X-Student-Id, X-School-Id'
     })
     res.end()
     return
@@ -1164,12 +1164,34 @@ const server = http.createServer(async (req, res) => {
       }
 
       // 2. Cek Akun Siswa (Berdasarkan Username, NIS, NISN, atau Email Siswa)
-      const studentUser = (db.students || []).find(s => 
+      const targetSchoolId = body.school_id || body.schoolId || req.headers['x-school-id']
+      let candidateStudents = (db.students || []).filter(s => 
         (s.username && s.username.toLowerCase() === term) ||
         (s.email && s.email.toLowerCase() === term) ||
         (s.nis && s.nis.toLowerCase() === term) ||
         (s.nisn && s.nisn.toLowerCase() === term)
       )
+
+      if (targetSchoolId) {
+        const bySchool = candidateStudents.filter(s => s.school_id === targetSchoolId)
+        if (bySchool.length > 0) {
+          candidateStudents = bySchool
+        }
+      }
+
+      if (candidateStudents.length > 1) {
+        const candidateSchools = candidateStudents.map(s => {
+          const sch = (db.schools || []).find(sc => sc.id === s.school_id)
+          return { id: s.school_id, name: sch?.name || 'Satuan Pendidikan' }
+        })
+        return sendJson(res, 409, {
+          status: 'ambiguous_school',
+          message: 'Nomor NIS ini terdaftar di beberapa sekolah. Silakan pilih asal sekolah Anda.',
+          data: { schools: candidateSchools }
+        })
+      }
+
+      const studentUser = candidateStudents[0]
 
       if (studentUser) {
         if (studentUser.is_active === false || studentUser.status === 'inactive') {
@@ -1273,9 +1295,15 @@ const server = http.createServer(async (req, res) => {
       }
 
       const schoolId = `sch-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 4)}`
+      const level = (body.level || body.school_level || 'smp').toLowerCase()
+      const rawCode = (body.code || body.school_code || schoolName.replace(/[^A-Za-z0-9]/g, '').slice(0, 6) || 'SCH').toUpperCase()
+      const schoolCode = rawCode.length >= 3 ? rawCode : `${rawCode}${Math.floor(100 + Math.random() * 900)}`
+
       const newSchool = {
         id: schoolId,
+        code: schoolCode,
         name: schoolName,
+        level: level,
         npsn: npsn,
         city: city,
         province: province,
@@ -1304,27 +1332,46 @@ const server = http.createServer(async (req, res) => {
         password: passwordHash,
         role: 'teacher',
         roles: ['teacher', 'admin'],
-        permissions: ['teacher.view', 'teacher.grade', 'teacher.manage', 'school.manage'],
+        permissions: ['teacher.view', 'teacher.grade', 'teacher.manage', 'school.manage', 'students.manage', 'teachers.manage'],
         school_id: schoolId,
         nip: (body.admin_nip || '').trim(),
         created_at: new Date().toISOString()
       }
       db.users.push(newUser)
 
-      // Inisialisasi rombel kelas awal untuk sekolah baru ini
+      // Inisialisasi rombel kelas awal untuk sekolah baru sesuai jenjangnya
       db.classrooms = db.classrooms || []
-      const defaultClasses = [
-        { id: `cls-${schoolId}-7a`, name: 'VII A', grade_level: 7, school_id: schoolId, capacity: 32, student_count: 0 },
-        { id: `cls-${schoolId}-8a`, name: 'VIII A', grade_level: 8, school_id: schoolId, capacity: 32, student_count: 0 },
-        { id: `cls-${schoolId}-9a`, name: 'IX A', grade_level: 9, school_id: schoolId, capacity: 32, student_count: 0 }
-      ]
+      let defaultClasses = []
+      if (level === 'sd') {
+        defaultClasses = [
+          { id: `cls-${schoolId}-1a`, name: 'Kelas 1 A', grade_level: 1, school_id: schoolId, capacity: 32, student_count: 0 },
+          { id: `cls-${schoolId}-2a`, name: 'Kelas 2 A', grade_level: 2, school_id: schoolId, capacity: 32, student_count: 0 },
+          { id: `cls-${schoolId}-3a`, name: 'Kelas 3 A', grade_level: 3, school_id: schoolId, capacity: 32, student_count: 0 },
+          { id: `cls-${schoolId}-4a`, name: 'Kelas 4 A', grade_level: 4, school_id: schoolId, capacity: 32, student_count: 0 },
+          { id: `cls-${schoolId}-5a`, name: 'Kelas 5 A', grade_level: 5, school_id: schoolId, capacity: 32, student_count: 0 },
+          { id: `cls-${schoolId}-6a`, name: 'Kelas 6 A', grade_level: 6, school_id: schoolId, capacity: 32, student_count: 0 }
+        ]
+      } else if (level === 'sma' || level === 'smk') {
+        defaultClasses = [
+          { id: `cls-${schoolId}-10a`, name: 'X A', grade_level: 10, school_id: schoolId, capacity: 36, student_count: 0 },
+          { id: `cls-${schoolId}-11a`, name: 'XI A', grade_level: 11, school_id: schoolId, capacity: 36, student_count: 0 },
+          { id: `cls-${schoolId}-12a`, name: 'XII A', grade_level: 12, school_id: schoolId, capacity: 36, student_count: 0 }
+        ]
+      } else {
+        defaultClasses = [
+          { id: `cls-${schoolId}-7a`, name: 'VII A', grade_level: 7, school_id: schoolId, capacity: 32, student_count: 0 },
+          { id: `cls-${schoolId}-8a`, name: 'VIII A', grade_level: 8, school_id: schoolId, capacity: 32, student_count: 0 },
+          { id: `cls-${schoolId}-9a`, name: 'IX A', grade_level: 9, school_id: schoolId, capacity: 32, student_count: 0 }
+        ]
+      }
       db.classrooms.push(...defaultClasses)
 
       // Inisialisasi mata pelajaran awal
       db.subjects = db.subjects || []
       const defaultSubjects = [
         { id: `sub-${schoolId}-inf`, name: 'Informatika', code: 'INF', school_id: schoolId, kktp: 75 },
-        { id: `sub-${schoolId}-kka`, name: 'Koding & Kecerdasan Artifisial (KKA)', code: 'KKA', school_id: schoolId, kktp: 75 }
+        { id: `sub-${schoolId}-kka`, name: 'Koding & Kecerdasan Artifisial (KKA)', code: 'KKA', school_id: schoolId, kktp: 75 },
+        { id: `sub-${schoolId}-umum`, name: 'Mata Pelajaran Umum', code: 'UMUM', school_id: schoolId, kktp: 75 }
       ]
       db.subjects.push(...defaultSubjects)
 
@@ -1862,6 +1909,78 @@ const server = http.createServer(async (req, res) => {
       Object.assign(db.school, body)
       saveDb()
       return sendJson(res, 200, { status: 'success', data: db.school })
+    }
+
+    // -------------------------------------------------------------
+    // 5. MANAJEMEN GURU / PENDIDIK PER SEKOLAH (MULTI-TENANT)
+    // -------------------------------------------------------------
+    if (pathname === '/api/v1/teachers' && req.method === 'GET') {
+      const currentSchoolId = getReqSchoolId(req)
+      const schoolTeachers = (db.users || [])
+        .filter(u => (!u.school_id || u.school_id === currentSchoolId) && u.role !== 'student')
+        .map(u => {
+          const { password: _, ...safe } = u
+          return safe
+        })
+      return sendJson(res, 200, { status: 'success', data: schoolTeachers })
+    }
+
+    if (pathname === '/api/v1/teachers' && req.method === 'POST') {
+      if (!isTeacherRequest(req)) {
+        return sendJson(res, 403, { status: 'error', message: 'Hanya admin/guru yang berwenang menambah akun guru.' })
+      }
+      const currentSchoolId = getReqSchoolId(req)
+      const body = await parseBody(req)
+      const name = (body.name || '').trim()
+      const email = (body.email || '').trim().toLowerCase()
+      const rawPassword = (body.password || 'password123').trim()
+
+      if (!name || !email) {
+        return sendJson(res, 400, { status: 'error', message: 'Nama dan email guru wajib diisi.' })
+      }
+
+      db.users = db.users || []
+      const existing = db.users.find(u => u.email && u.email.toLowerCase() === email)
+      if (existing) {
+        return sendJson(res, 400, { status: 'error', message: 'Email sudah terdaftar untuk akun lain.' })
+      }
+
+      const newTeacher = {
+        id: `usr-t-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`,
+        name,
+        email,
+        username: email.split('@')[0],
+        password: bcrypt.hashSync(rawPassword, 10),
+        role: 'teacher',
+        roles: ['teacher'],
+        permissions: ['teacher.view', 'teacher.grade', 'teacher.manage'],
+        school_id: currentSchoolId,
+        nip: (body.nip || '').trim(),
+        subject: (body.subject || body.mapel || 'Semua Mapel').trim(),
+        phone: (body.phone || '').trim(),
+        created_at: new Date().toISOString()
+      }
+
+      db.users.push(newTeacher)
+      saveDb()
+      const { password: _, ...safe } = newTeacher
+      return sendJson(res, 201, { status: 'success', message: 'Akun guru baru berhasil ditambahkan.', data: safe })
+    }
+
+    const teacherDeleteMatch = pathname.match(/^\/api\/v1\/teachers\/([a-zA-Z0-9_-]+)$/)
+    if (teacherDeleteMatch && req.method === 'DELETE') {
+      if (!isTeacherRequest(req)) {
+        return sendJson(res, 403, { status: 'error', message: 'Akses ditolak.' })
+      }
+      const currentSchoolId = getReqSchoolId(req)
+      const teacherId = teacherDeleteMatch[1]
+      const idx = (db.users || []).findIndex(u => u.id === teacherId && (!u.school_id || u.school_id === currentSchoolId))
+      if (idx === -1) {
+        return sendJson(res, 404, { status: 'error', message: 'Data guru tidak ditemukan.' })
+      }
+      db.users.splice(idx, 1)
+      saveDb()
+      return sendJson(res, 200, { status: 'success', message: 'Akun guru berhasil dihapus.' })
     }
 
     if (pathname === '/api/v1/academic-years' && req.method === 'GET') {

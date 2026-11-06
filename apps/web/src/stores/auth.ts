@@ -103,7 +103,7 @@ export const useAuthStore = defineStore('auth', () => {
     return hasRole('superadmin')
   }
 
-  async function login(credentials: { email: string; password: string }) {
+  async function login(credentials: { email: string; password: string; school_id?: string }) {
     loading.value = true
     try {
       const response = await api.post('/auth/login', credentials)
@@ -184,6 +184,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function registerSchool(data: {
     school_name: string
+    level?: string
+    code?: string
     npsn?: string
     city?: string
     province?: string
