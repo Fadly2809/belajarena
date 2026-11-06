@@ -15,7 +15,7 @@
           alt="Belajarena Logo"
           class="h-16 w-auto max-w-[260px] object-contain drop-shadow-xl hover:scale-105 transition-transform"
         />
-        <p class="text-slate-300 text-xs font-semibold mt-2 tracking-wide uppercase">{{ schoolName }}</p>
+        <p class="text-slate-300 text-xs font-medium mt-2 tracking-wide">Platform Pembelajaran & Asesmen Digital Guru</p>
       </div>
 
       <!-- Login Card -->
@@ -120,21 +120,6 @@
         </div>
 
         <form @submit.prevent="handleLogin" class="space-y-4">
-          <!-- Dropdown Pilihan Satuan Pendidikan (Jika Akun Siswa & Sekolah > 1) -->
-          <div v-if="accountType === 'student' && availableSchools.length > 1">
-            <label for="schoolSelect" class="label text-xs font-semibold">Pilih Asal Sekolah</label>
-            <select
-              id="schoolSelect"
-              v-model="studentSchoolId"
-              class="input text-xs font-semibold bg-white"
-            >
-              <option value="">-- Semua / Deteksi Otomatis --</option>
-              <option v-for="sch in availableSchools" :key="sch.id" :value="sch.id">
-                {{ sch.name }} ({{ sch.city || 'Indonesia' }})
-              </option>
-            </select>
-          </div>
-
           <!-- Identifier (NIP / Email / NISN) -->
           <div>
             <label for="email" class="label text-xs font-semibold">
@@ -241,8 +226,8 @@
 
       <!-- Footer Note -->
       <p class="text-center text-primary-200 text-xs mt-6">
-        © 2026 Belajarena · {{ schoolName }}<br/>
-        <span class="text-[10px] text-primary-300">Platform Pembelajaran & Manajemen Sekolah Terpadu</span>
+        © 2026 Belajarena<br/>
+        <span class="text-[10px] text-primary-300">Platform Pembelajaran Digital & Ruang Mengajar Guru</span>
       </p>
     </div>
 
@@ -392,7 +377,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive } from 'vue'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
@@ -401,14 +386,10 @@ const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 
-const schoolName = computed(() => authStore.currentSchool?.name || 'Belajarena LMS')
-
 const accountType = ref<'teacher' | 'student' | 'admin'>('teacher')
 const loading = ref(false)
 const showPassword = ref(false)
 const errorMessage = ref('')
-const availableSchools = ref<any[]>([])
-const studentSchoolId = ref('')
 
 // Register Teacher Modal State
 const showRegisterModal = ref(false)
@@ -424,20 +405,6 @@ const regTeacherForm = reactive({
   email: '',
   password: ''
 })
-
-async function fetchSchools() {
-  try {
-    const res = await api.get('/schools')
-    if (res.data?.data) {
-      availableSchools.value = res.data.data
-      if (availableSchools.value.length > 0 && !studentSchoolId.value) {
-        studentSchoolId.value = availableSchools.value[0].id
-      }
-    }
-  } catch (err) {
-    console.warn('Could not load schools list for login page:', err)
-  }
-}
 
 function openRegisterModal() {
   registerError.value = ''
@@ -471,13 +438,6 @@ async function handleRegisterTeacherSubmit() {
     registerError.value = res.message || 'Gagal mendaftarkan akun guru.'
   }
 }
-
-onMounted(() => {
-  fetchSchools()
-  if (!authStore.currentSchool) {
-    authStore.fetchActiveSchool()
-  }
-})
 
 const form = reactive({
   email: 'muhammadarsandi89@guru.smp.belajar.id',
@@ -553,13 +513,9 @@ async function handleLogin() {
   loading.value = true
   errorMessage.value = ''
 
-  const credentials: { email: string; password: string; school_id?: string } = {
+  const credentials: { email: string; password: string } = {
     email: form.email,
     password: form.password,
-  }
-
-  if (accountType.value === 'student' && studentSchoolId.value) {
-    credentials.school_id = studentSchoolId.value
   }
 
   const result = await authStore.login(credentials)
