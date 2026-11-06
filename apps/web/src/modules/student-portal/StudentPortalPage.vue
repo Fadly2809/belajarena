@@ -347,7 +347,7 @@
             <div class="flex items-center justify-between pb-2 border-b border-surface-100">
               <div>
                 <h3 class="font-bold text-surface-900 text-xs">Capaian Nilai Rapor Semester</h3>
-                <p class="text-[10px] text-surface-400">Kurikulum Merdeka &bull; SMPN 6 Kendari</p>
+                <p class="text-[10px] text-surface-400">Kurikulum Merdeka &bull; {{ schoolName }}</p>
               </div>
               <div class="text-right">
                 <span class="text-xs font-black text-primary-700">Rata-rata: {{ hasReportGrades ? reportSummary.average_score : '-' }}</span>

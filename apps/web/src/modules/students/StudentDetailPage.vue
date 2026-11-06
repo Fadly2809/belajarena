@@ -195,7 +195,7 @@
               <tr>
                 <td class="py-2.5 text-surface-500">Guru Mata Pelajaran</td>
                 <td class="py-2.5 font-medium text-surface-900">
-                  Muhammad Fadly Akbar Arsandi, S.Pd. (Informatika & KKA)
+                  {{ teacherSubjectWithTeacher }}
                 </td>
               </tr>
             </tbody>
@@ -535,10 +535,16 @@ async function loadStudent() {
   }
 }
 
+const teacherSubjectWithTeacher = computed(() => {
+  const name = authStore.user?.name || 'Guru Pengampu'
+  const subj = authStore.user?.subject || 'Mata Pelajaran'
+  return `${name} (${subj})`
+})
+
 const homeroomTeacherName = computed(() => {
   if (!student.value) return '—'
   const matchedClass = classrooms.value.find(c => c.id === student.value.classroom_id || c.name === student.value.classroom_name)
-  return matchedClass?.homeroom_teacher_name || 'Muhammad Fadly Akbar Arsandi, S.Pd.'
+  return matchedClass?.homeroom_teacher_name || authStore.user?.name || 'Guru Pembina'
 })
 
 function getStudentClassName(s: any): string {

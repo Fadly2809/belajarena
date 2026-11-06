@@ -44,7 +44,10 @@
       "school_id": "sch-mw4vgshw-qu8q",
       "nip": "",
       "created_at": "2026-11-06T11:09:21.376Z",
-      "subject": "Matematika"
+      "subject": "Matematika",
+      "subjects": [
+        "Matematika"
+      ]
     },
     {
       "id": "usr-admin-website",

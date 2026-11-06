@@ -244,12 +244,12 @@
                 v-model="form.homeroom_teacher_name"
                 type="text"
                 class="input"
-                placeholder="Contoh: Muhammad Fadly Akbar Arsandi, S.Pd."
+                placeholder="Contoh: Nama Wali Kelas, S.Pd."
                 list="teachersList"
               />
               <datalist id="teachersList">
-                <option value="Muhammad Fadly Akbar Arsandi, S.Pd." />
-                <option value="Siti Rahmawati, M.Pd." />
+                <option :value="authStore.user?.name" />
+                <option value="Dra. Siti Rahmawati, M.Pd." />
                 <option value="Drs. Hendro Wibowo" />
                 <option value="Nurul Hidayati, S.Si." />
               </datalist>

@@ -161,7 +161,7 @@
           </div>
           <div class="mt-3">
             <div class="text-3xl font-black text-white tracking-tight leading-none">{{ stats.subjects }}</div>
-            <p class="text-[11px] text-slate-300 font-medium mt-1">Informatika & KKA</p>
+            <p class="text-[11px] text-slate-300 font-medium mt-1">{{ teacherSubject }}</p>
           </div>
         </div>
         <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-300/90 group-hover:text-white transition">
@@ -171,7 +171,7 @@
       </div>
     </div>
 
-    <!-- Kategori Tingkat Kelas (Fase D SMPN 6 Kendari) -->
+    <!-- Kategori Tingkat Kelas (Fase D) -->
     <div class="card p-3.5 bg-gradient-to-r from-slate-50 via-white to-blue-50/40 border border-slate-200/80 shadow-xs">
       <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         <div class="flex items-center gap-2.5">
@@ -202,9 +202,21 @@
             class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs"
             :class="filter.grade === '7' ? 'bg-blue-600 text-white shadow-blue-500/20' : 'bg-white hover:bg-blue-50/60 text-blue-900 border border-blue-200'"
           >
-            <span>📘 Kelas 7 (KKA)</span>
+            <span>📘 Kelas 7</span>
             <span class="px-1.5 py-0.5 rounded-full text-[10px]" :class="filter.grade === '7' ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-700'">
               {{ stats.grade_7 || 0 }}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            @click="setGradeFilter('8')"
+            class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs"
+            :class="filter.grade === '8' ? 'bg-emerald-600 text-white shadow-emerald-500/20' : 'bg-white hover:bg-emerald-50/60 text-emerald-900 border border-emerald-200'"
+          >
+            <span>📗 Kelas 8</span>
+            <span class="px-1.5 py-0.5 rounded-full text-[10px]" :class="filter.grade === '8' ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-700'">
+              {{ stats.grade_8 || 0 }}
             </span>
           </button>
 
@@ -214,7 +226,7 @@
             class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs"
             :class="filter.grade === '9' ? 'bg-rose-600 text-white shadow-rose-500/20' : 'bg-white hover:bg-rose-50/60 text-rose-900 border border-rose-200'"
           >
-            <span>📕 Kelas 9 (Informatika)</span>
+            <span>📕 Kelas 9</span>
             <span class="px-1.5 py-0.5 rounded-full text-[10px]" :class="filter.grade === '9' ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-700'">
               {{ stats.grade_9 || 0 }}
             </span>
@@ -987,6 +999,7 @@ import api from '@/services/api'
 
 const authStore = useAuthStore()
 const schoolName = computed(() => authStore.currentSchool?.name || 'Satuan Pendidikan')
+const teacherSubject = computed(() => authStore.user?.subject || 'Mata Pelajaran')
 import {
   extractTextFromImage,
   extractTextFromDocx,

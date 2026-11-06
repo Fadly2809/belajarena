@@ -349,8 +349,8 @@ Agar paket soal yang saya buatkan benar-benar tepat sasaran dan sesuai dengan tu
 
     // KASUS B: Sudah ada topik spesifik (atau jawaban dari klarifikasi)
     // -> GENERATE SOAL SPESIFIK SESUAI TOPIK YANG DIMINTA!
-    let detectedTopic = 'Informatika & KKA'
-    let subjectName = 'Informatika'
+    let detectedTopic = teacherSubject || 'Mata Pelajaran'
+    let subjectName = teacherSubject || 'Mata Pelajaran'
     let sampleQuestions = []
 
     if (text.includes('jaringan') || text.includes('internet')) {
@@ -647,7 +647,7 @@ Buka menu [Absensi Siswa →](/attendance):
 - **Rekap Nilai Ulangan ([Buka Rekap CBT →](/reports/exam-events))**: Analisis butir soal CBT dan daya pembeda.
 - **Rekap Nilai Siswa / Ledger ([Buka Ledger Nilai →](/grades))**: Nilai akhir komprehensif (CBT + Tugas + Proyek Koding + Absensi) siap ekspor ke Excel.
 
-> 🎯 **Standar KKTP**: Informatika & KKA Fase D minimal **75 - 78**.`
+> 🎯 **Standar KKTP**: ${teacherSubject} Fase D minimal **75**.`
   }
 
   // -------------------------------------------------------------

@@ -100,7 +100,7 @@
           </div>
           <div class="mt-3">
             <div class="text-3xl font-black text-white tracking-tight leading-none">{{ classrooms.length }} Kelas</div>
-            <p class="text-[11px] text-slate-300 font-medium mt-1">Informatika & KKA SMPN 6</p>
+            <p class="text-[11px] text-slate-300 font-medium mt-1">{{ teacherSubject }} · {{ currentSchoolName }}</p>
           </div>
         </div>
         <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-300/90 group-hover:text-white transition">
@@ -508,6 +508,8 @@ import { useAuthStore } from '@/stores/auth'
 import { useClassrooms } from '@/composables/useClassrooms'
 
 const authStore = useAuthStore()
+const teacherSubject = computed(() => authStore.user?.subject || 'Mata Pelajaran')
+const currentSchoolName = computed(() => authStore.currentSchool?.name || authStore.user?.school_name || 'Satuan Pendidikan')
 const {
   classrooms,
   fetchClassrooms,

@@ -231,8 +231,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
 import api from '@/services/api';
 
+const authStore = useAuthStore();
 const route = useRoute();
 const maskStudentNames = ref(false);
 const loading = ref(true);
@@ -242,7 +244,7 @@ const session = ref({
   id: (route.params.id as string) || '',
   code: '',
   title: 'Memuat laporan sesi...',
-  teacherName: 'Muhammad Fadly Akbar Arsandi, S.Pd.',
+  teacherName: authStore.user?.name || 'Pendidik',
   className: '',
   startTime: '',
   endTime: '',
@@ -276,7 +278,7 @@ onMounted(async () => {
         id: data.session_id || sessionId,
         code: data.code || 'PRS-' + sessionId.substring(0, 6).toUpperCase(),
         title: data.title || 'Sesi Presentasi Interaktif',
-        teacherName: data.teacher || 'Muhammad Fadly Akbar Arsandi, S.Pd.',
+        teacherName: data.teacher || authStore.user?.name || 'Pendidik',
         className: data.classroom || 'IX A',
         startTime: data.start_time || '08:00 WIB',
         endTime: data.end_time || 'Selesai',

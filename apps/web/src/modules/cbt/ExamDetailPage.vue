@@ -225,7 +225,7 @@ const questionsList = ref<any[]>([])
 const creatorName = computed(() => {
   if (exam.value?.created_by_name) return exam.value.created_by_name
   if (exam.value?.teacher_name) return exam.value.teacher_name
-  return authStore.user?.name || 'Muhammad Fadly Akbar Arsandi, S.Pd.'
+  return authStore.user?.name || 'Pendidik'
 })
 
 function formatStatus(status: string) {

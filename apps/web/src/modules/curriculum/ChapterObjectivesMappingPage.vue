@@ -774,7 +774,9 @@ import { ref, computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import api from '@/services/api'
 import { useClassrooms } from '@/composables/useClassrooms'
+import { useAuthStore } from '@/stores/auth'
 
+const authStore = useAuthStore()
 const {
   classrooms,
   fetchClassrooms,
@@ -830,12 +832,13 @@ const showSyncConfirmModal = ref(false)
 
 // Computed labels
 const selectedSubjectName = computed(() => {
-  return selectedSubjectId.value === 'sub-kka' ? 'KKA (Koding & AI)' : 'Informatika'
+  const found = availableSubjects.value.find(s => s.id === selectedSubjectId.value)
+  return found?.name || authStore.user?.subject || 'Mata Pelajaran'
 })
 
 const selectedClassLabel = computed(() => {
   const c = classrooms.value.find(cl => cl.id === selectedClassId.value)
-  return c ? formatClassLabel(c) : 'VII A'
+  return c ? formatClassLabel(c) : 'Pilih Kelas'
 })
 
 // Filtered matrix for pre-flight monitor

@@ -294,7 +294,7 @@
 
       <!-- Printable Official Header (Only in Print) -->
       <div class="hidden print:block text-center border-b-2 border-slate-900 pb-4 mb-6">
-        <h2 class="text-base font-black uppercase tracking-wider text-slate-900">SMP NEGERI 6 KENDARI</h2>
+        <h2 class="text-base font-black uppercase tracking-wider text-slate-900">{{ schoolInfo.name }}</h2>
         <h3 class="text-sm font-bold text-slate-800">LEMBAR PERINGKAT & LIVE RANKING KELAS</h3>
         <p class="text-xs text-slate-600 mt-0.5">
           Mata Pelajaran: {{ currentSubjectName }} &bull; Rombel: {{ currentClassName }} &bull; Tahun Ajaran 2024/2025

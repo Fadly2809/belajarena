@@ -7,6 +7,8 @@ export interface SchoolInfo {
   id: string
   name: string
   npsn?: string
+  institution?: string
+  department?: string
   address?: string
   email?: string
   phone?: string
@@ -31,6 +33,7 @@ export interface User {
   avatar_path?: string
   avatar_url?: string
   school_id: string
+  school_name?: string
   roles: string[]
   permissions: string[]
   role?: string
@@ -257,9 +260,14 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await api.get('/auth/me')
       if (response.data?.data) {
-        user.value = response.data.data
-        localStorage.setItem('auth_user', JSON.stringify(response.data.data))
-        return response.data.data
+        const userData = response.data.data
+        user.value = userData
+        localStorage.setItem('auth_user', JSON.stringify(userData))
+        if (userData.school) {
+          currentSchool.value = userData.school
+          localStorage.setItem('auth_school', JSON.stringify(userData.school))
+        }
+        return userData
       }
       return null
     } catch (error: any) {

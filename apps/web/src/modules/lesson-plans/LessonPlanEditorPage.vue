@@ -37,9 +37,9 @@
     <!-- PREVIEW DOKUMEN MODUL AJAR (KEMENDIKBUD FORMAT) -->
     <div v-if="showPreview" class="card p-8 bg-white border-2 border-primary-200 shadow-xl max-w-4xl mx-auto space-y-6">
       <div class="text-center pb-4 border-b-2 border-surface-900 space-y-1">
-        <h3 class="text-xs uppercase font-extrabold tracking-widest text-surface-500">Pemerintah Kota Kendari &bull; Dinas Pendidikan</h3>
-        <h2 class="text-lg font-black text-surface-900">SMP NEGERI 6 KENDARI</h2>
-        <p class="text-xs text-surface-500">Jalan R.A. Kartini No. 1, Kota Kendari &bull; NPSN: 40403892</p>
+        <h3 class="text-xs uppercase font-extrabold tracking-widest text-surface-500">{{ schoolInfo.institution || 'Pemerintah Kota Kendari' }} &bull; {{ schoolInfo.department || 'Dinas Pendidikan' }}</h3>
+        <h2 class="text-lg font-black text-surface-900">{{ schoolInfo.name || 'Satuan Pendidikan' }}</h2>
+        <p class="text-xs text-surface-500">{{ schoolInfo.address || 'Alamat Satuan Pendidikan' }} &bull; NPSN: {{ schoolInfo.npsn || '-' }}</p>
         <h1 class="text-base font-bold text-surface-800 pt-3 uppercase tracking-wide">
           MODUL AJAR KURIKULUM MERDEKA (FASE D)
         </h1>
@@ -301,6 +301,13 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
+const schoolInfo = computed(() => authStore.currentSchool || {
+  name: 'Satuan Pendidikan',
+  institution: 'Pemerintah Kota Kendari',
+  department: 'Dinas Pendidikan dan Kebudayaan',
+  address: 'Alamat Satuan Pendidikan',
+  npsn: '-'
+})
 const router = useRouter()
 const currentTab = ref('info')
 const showPreview = ref(false)
@@ -325,14 +332,14 @@ const availableSubjects = computed(() => {
   if (authStore.user?.subject) {
     return [authStore.user.subject]
   }
-  return form.value.grade === '7' ? ['Informatika & KKA'] : ['Informatika']
+  return ['Mata Pelajaran']
 })
 
 function onGradeChange() {
   if (authStore.user?.subject) {
     form.value.subject = authStore.user.subject
   } else {
-    form.value.subject = form.value.grade === '7' ? 'Informatika & KKA' : 'Informatika'
+    form.value.subject = 'Mata Pelajaran'
   }
 }
 

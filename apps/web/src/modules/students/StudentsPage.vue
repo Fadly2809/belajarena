@@ -647,7 +647,7 @@
                       AGD
                     </div>
                     <div>
-                      <h4 class="font-black text-xs text-slate-900 leading-tight">SMP NEGERI 6 KENDARI</h4>
+                      <h4 class="font-black text-xs text-slate-900 leading-tight">{{ schoolName }}</h4>
                       <p class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">KARTU LOGIN AKUN PESERTA DIDIK</p>
                     </div>
                   </div>

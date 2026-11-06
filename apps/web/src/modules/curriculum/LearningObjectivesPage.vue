@@ -32,8 +32,9 @@
         <div>
           <label class="block text-[10px] uppercase font-bold text-surface-500 mb-1">Tingkat Kelas</label>
           <select v-model="selectedGrade" class="input text-xs py-1.5 font-bold" @change="onGradeChange">
-            <option value="7">Kelas VII (KKA)</option>
-            <option value="9">Kelas IX (Informatika)</option>
+            <option value="7">Kelas VII</option>
+            <option value="8">Kelas VIII</option>
+            <option value="9">Kelas IX</option>
           </select>
         </div>
         <div>
@@ -46,10 +47,7 @@
           <label class="block text-[10px] uppercase font-bold text-surface-500 mb-1">Elemen CP</label>
           <select v-model="selectedElement" class="input text-xs py-1.5">
             <option value="all">Semua Elemen</option>
-            <option value="BK">Berpikir Komputasional (BK)</option>
-            <option value="SK">Sistem Komputer (SK)</option>
-            <option value="TIK">Teknologi Informasi (TIK)</option>
-            <option value="AP">Algoritma & Pemrograman (AP)</option>
+            <option v-for="el in availableElements" :key="el" :value="el">{{ el }}</option>
           </select>
         </div>
       </div>
@@ -199,13 +197,33 @@ const selectedSubject = ref(authStore.user?.subject || 'Mata Pelajaran')
 const selectedElement = ref('all')
 const showCreateModal = ref(false)
 
+const availableElements = computed(() => {
+  const subj = (authStore.user?.subject || '').toLowerCase()
+  if (subj.includes('matematika')) {
+    return ['Bilangan', 'Aljabar', 'Pengukuran', 'Geometri', 'Analisis Data & Peluang']
+  }
+  if (subj.includes('ipa')) {
+    return ['Pemahaman IPA', 'Keterampilan Proses', 'Makhluk Hidup & Lingkungan', 'Zat dan Perubahannya', 'Energi']
+  }
+  if (subj.includes('indonesia')) {
+    return ['Menyimak', 'Membaca & Memirsa', 'Berbicara & Mempresentasikan', 'Menulis']
+  }
+  if (subj.includes('informatika') || subj.includes('kka')) {
+    return [
+      'Berpikir Komputasional (BK)',
+      'Sistem Komputer (SK)',
+      'Teknologi Informasi (TIK)',
+      'Jaringan Komputer (JKI)',
+      'Analisis Data (AD)',
+      'Algoritma & Pemrograman (AP)'
+    ]
+  }
+  return ['Capaian 1', 'Capaian 2', 'Capaian 3', 'Praktik & Portofolio']
+})
+
 function onGradeChange() {
   if (authStore.user?.subject) {
     selectedSubject.value = authStore.user.subject
-  } else if (selectedGrade.value === '7') {
-    selectedSubject.value = 'Informatika & KKA'
-  } else {
-    selectedSubject.value = 'Informatika'
   }
 }
 

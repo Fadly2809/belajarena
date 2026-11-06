@@ -22,7 +22,7 @@
                 </span>
               </div>
               <p class="text-[11px] text-blue-150 leading-tight mt-0.5">
-                Informatika & KKA · {{ currentSchoolName }}
+                {{ teacherSubject }} · {{ currentSchoolName }}
               </p>
             </div>
           </div>
@@ -144,7 +144,7 @@
               >
                 <span class="flex items-center gap-1">
                   <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                  {{ msg.source === 'gemini' ? 'Gemini 1.5 Flash' : 'Pedagogical Engine SMPN 6 Kendari' }}
+                  {{ msg.source === 'gemini' ? 'Gemini 1.5 Flash' : `Pedagogical Engine ${currentSchoolName}` }}
                 </span>
                 <button
                   @click="copyContent(msg.content, msg.id)"

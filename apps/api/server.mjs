@@ -1385,7 +1385,15 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 401, { status: 'error', message: 'Unauthenticated' })
       }
       const { password: _, ...safeUser } = user
-      return sendJson(res, 200, { status: 'success', data: safeUser })
+      const userSchool = (db.schools || []).find(s => s.id === user.school_id) || db.school || { id: user.school_id || 'sch-default', name: 'Satuan Pendidikan' }
+      return sendJson(res, 200, {
+        status: 'success',
+        data: {
+          ...safeUser,
+          school: userSchool,
+          school_name: userSchool.name
+        }
+      })
     }
 
     if (pathname === '/api/v1/auth/logout' && req.method === 'POST') {
@@ -1676,6 +1684,8 @@ const server = http.createServer(async (req, res) => {
 
       // Dynamic pending tasks / assignments from db.assignments and db.assignmentSubmissions
       const assignments = schoolAssignments
+      const authUser = getAuthUser(req)
+      const defaultSubj = authUser?.subject || 'Mata Pelajaran'
       const taskList = assignments.slice(0, 10).map(a => {
         const isKka = (a.subject || '').includes('KKA')
         const classStudents = schoolStudents.filter(s => s.classroom_id === a.classroom_id || s.classroom_name === a.classroom)
@@ -1691,7 +1701,7 @@ const server = http.createServer(async (req, res) => {
         return {
           id: a.id,
           title: a.title,
-          subject: a.subject || (a.classroom_id?.includes('7') ? 'KKA (Koding dan Kecerdasan Artifisial)' : 'Informatika'),
+          subject: a.subject || defaultSubj,
           classroom: a.classroom || a.classroom_name || 'Kelas',
           dueDate: a.deadline || a.due_date || '2026-11-02',
           submittedCount,
@@ -1700,42 +1710,74 @@ const server = http.createServer(async (req, res) => {
           gradedCount,
           avgScore: taskAvgScore,
           submitted: `${submittedCount}/${total}`,
-          icon: isKka ? '🤖' : '💻',
+          icon: isKka ? '🤖' : '📝',
           color: isKka ? '#8B5CF6' : '#3B82F6',
           bgColor: isKka ? '#F5F3FF' : '#EFF6FF'
         }
       })
       const pendingTasksCount = assignments.length
 
-      // Dynamic element progress for Kurikulum Merdeka (Fase D)
-      // Computes mastery rate based on student grades in subjectGrades & assignment submissions
-      const kkaGrades = schoolSubjectGrades.filter(g => g.subject_id === 'sub-kka' && Number(g.final_score) > 0)
-      const infGrades = schoolSubjectGrades.filter(g => g.subject_id === 'sub-inf' && Number(g.final_score) > 0)
+      // Dynamic element progress for Kurikulum Merdeka (Fase D) based on teacher's subject
+      const teacherSubjLower = (authUser?.subject || '').toLowerCase()
+      let elementProgress = []
 
-      const kkaSubs = (db.assignmentSubmissions || []).filter(sub => {
-        const asg = schoolAssignments.find(a => a.id === sub.assignment_id)
-        return asg && ((asg.subject || '').includes('KKA') || (asg.tp_id || '').includes('kka')) && sub.score !== null && sub.score !== undefined
-      })
-      const kkaAvg = kkaSubs.length > 0
-        ? Math.round((kkaSubs.reduce((sum, s) => sum + Number(s.score), 0) / kkaSubs.length) * 10) / 10
-        : (kkaGrades.length > 0 ? Math.round((kkaGrades.reduce((sum, g) => sum + Number(g.final_score), 0) / kkaGrades.length) * 10) / 10 : 0)
-
-      const infAvg = infGrades.length > 0
-        ? Math.round((infGrades.reduce((sum, g) => sum + Number(g.final_score), 0) / infGrades.length) * 10) / 10
-        : 0
-
-      const elementProgress = [
-        { id: 'bk', name: 'Berpikir Komputasional', icon: '🧠', pct: infAvg > 0 ? Math.round(infAvg) : 0, color: 'bg-[#f59e0b]' },
-        { id: 'ap', name: 'Algoritma & Pemrograman', icon: '💻', pct: 0, color: 'bg-[#fbbf24]' },
-        { id: 'ad', name: 'Analisis Data', icon: '📊', pct: 0, color: 'bg-[#0c2b3d]' },
-        { id: 'jki', name: 'Jaringan Komputer & Internet', icon: '🌐', pct: 0, color: 'bg-[#f59e0b]' },
-        { id: 'kka', name: 'Koding & Kecerdasan Artifisial', icon: '🤖', pct: kkaAvg > 0 ? Math.round(kkaAvg) : 0, color: 'bg-[#0c2b3d]' }
-      ]
+      if (teacherSubjLower.includes('matematika')) {
+        elementProgress = [
+          { id: 'bil', name: 'Bilangan', icon: '🔢', pct: 0, color: 'bg-[#f59e0b]' },
+          { id: 'alj', name: 'Aljabar', icon: '📐', pct: 0, color: 'bg-[#fbbf24]' },
+          { id: 'peng', name: 'Pengukuran', icon: '📏', pct: 0, color: 'bg-[#0c2b3d]' },
+          { id: 'geo', name: 'Geometri', icon: '🔷', pct: 0, color: 'bg-[#f59e0b]' },
+          { id: 'adp', name: 'Analisis Data & Peluang', icon: '📊', pct: 0, color: 'bg-[#0c2b3d]' }
+        ]
+      } else if (teacherSubjLower.includes('ipa')) {
+        elementProgress = [
+          { id: 'pem', name: 'Pemahaman IPA', icon: '🔬', pct: 0, color: 'bg-[#f59e0b]' },
+          { id: 'keter', name: 'Keterampilan Proses', icon: '🧪', pct: 0, color: 'bg-[#fbbf24]' },
+          { id: 'makh', name: 'Makhluk Hidup & Lingkungan', icon: '🌱', pct: 0, color: 'bg-[#0c2b3d]' },
+          { id: 'zat', name: 'Zat dan Perubahannya', icon: '⚗️', pct: 0, color: 'bg-[#f59e0b]' },
+          { id: 'energi', name: 'Energi dan Perubahannya', icon: '⚡', pct: 0, color: 'bg-[#0c2b3d]' }
+        ]
+      } else if (teacherSubjLower.includes('indonesia')) {
+        elementProgress = [
+          { id: 'simak', name: 'Menyimak', icon: '👂', pct: 0, color: 'bg-[#f59e0b]' },
+          { id: 'baca', name: 'Membaca & Memirsa', icon: '📖', pct: 0, color: 'bg-[#fbbf24]' },
+          { id: 'bicara', name: 'Berbicara & Mempresentasikan', icon: '🗣️', pct: 0, color: 'bg-[#0c2b3d]' },
+          { id: 'tulis', name: 'Menulis', icon: '✍️', pct: 0, color: 'bg-[#f59e0b]' }
+        ]
+      } else if (teacherSubjLower.includes('informatika') || teacherSubjLower.includes('kka')) {
+        const kkaGrades = schoolSubjectGrades.filter(g => g.subject_id === 'sub-kka' && Number(g.final_score) > 0)
+        const infGrades = schoolSubjectGrades.filter(g => g.subject_id === 'sub-inf' && Number(g.final_score) > 0)
+        const kkaSubs = (db.assignmentSubmissions || []).filter(sub => {
+          const asg = schoolAssignments.find(a => a.id === sub.assignment_id)
+          return asg && ((asg.subject || '').includes('KKA') || (asg.tp_id || '').includes('kka')) && sub.score !== null && sub.score !== undefined
+        })
+        const kkaAvg = kkaSubs.length > 0
+          ? Math.round((kkaSubs.reduce((sum, s) => sum + Number(s.score), 0) / kkaSubs.length) * 10) / 10
+          : (kkaGrades.length > 0 ? Math.round((kkaGrades.reduce((sum, g) => sum + Number(g.final_score), 0) / kkaGrades.length) * 10) / 10 : 0)
+        const infAvg = infGrades.length > 0
+          ? Math.round((infGrades.reduce((sum, g) => sum + Number(g.final_score), 0) / infGrades.length) * 10) / 10
+          : 0
+        elementProgress = [
+          { id: 'bk', name: 'Berpikir Komputasional', icon: '🧠', pct: infAvg > 0 ? Math.round(infAvg) : 0, color: 'bg-[#f59e0b]' },
+          { id: 'ap', name: 'Algoritma & Pemrograman', icon: '💻', pct: 0, color: 'bg-[#fbbf24]' },
+          { id: 'ad', name: 'Analisis Data', icon: '📊', pct: 0, color: 'bg-[#0c2b3d]' },
+          { id: 'jki', name: 'Jaringan Komputer & Internet', icon: '🌐', pct: 0, color: 'bg-[#f59e0b]' },
+          { id: 'kka', name: 'Koding & Kecerdasan Artifisial', icon: '🤖', pct: kkaAvg > 0 ? Math.round(kkaAvg) : 0, color: 'bg-[#0c2b3d]' }
+        ]
+      } else {
+        elementProgress = [
+          { id: 'el-1', name: 'Pemahaman Konsep', icon: '📚', pct: 0, color: 'bg-[#f59e0b]' },
+          { id: 'el-2', name: 'Penerapan & Praktik', icon: '🛠️', pct: 0, color: 'bg-[#fbbf24]' },
+          { id: 'el-3', name: 'Penalaran & Analisis', icon: '🔍', pct: 0, color: 'bg-[#0c2b3d]' },
+          { id: 'el-4', name: 'Refleksi & Portofolio', icon: '💡', pct: 0, color: 'bg-[#f59e0b]' }
+        ]
+      }
 
       // Dynamic schedule today from weeklySchedules
       const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
       const todayDay = dayNames[new Date().getDay()]
       const weeklySchedules = schoolWeeklySchedules
+      const teacherFallbackSubj = authUser?.subject || 'Mata Pelajaran'
       const todaySchedule = weeklySchedules
         .filter(s => s.day === todayDay)
         .map(s => ({
@@ -1743,12 +1785,12 @@ const server = http.createServer(async (req, res) => {
           timeStart: s.time_start || s.start_time || '',
           timeEnd: s.time_end || s.end_time || '',
           time: `${s.time_start || s.start_time || ''} - ${s.time_end || s.end_time || ''}`,
-          subject: s.subject_name || s.subject || 'Informatika',
+          subject: s.subject_name || s.subject || teacherFallbackSubj,
           classroom: s.classroom_name || s.classroom || '',
-          room: s.room || 'Lab Komputer 1',
+          room: s.room || 'Ruang Kelas',
           topic: s.description || 'Pertemuan Kelas',
           color: s.color || '#3B82F6',
-          icon: (s.subject_name || '').includes('KKA') ? '🤖' : '💻'
+          icon: (s.subject_name || '').includes('KKA') ? '🤖' : '📘'
         }))
 
       // Next upcoming schedule if today has no classes
@@ -1759,12 +1801,12 @@ const server = http.createServer(async (req, res) => {
             timeStart: s.time_start || s.start_time || '',
             timeEnd: s.time_end || s.end_time || '',
             time: `${s.time_start || s.start_time || ''} - ${s.time_end || s.end_time || ''}`,
-            subject: s.subject_name || s.subject || 'Informatika',
+            subject: s.subject_name || s.subject || teacherFallbackSubj,
             classroom: s.classroom_name || s.classroom || '',
-            room: s.room || 'Lab Komputer 1',
+            room: s.room || 'Ruang Kelas',
             topic: s.description || 'Pertemuan Kelas',
             color: s.color || '#3B82F6',
-            icon: (s.subject_name || '').includes('KKA') ? '🤖' : '💻'
+            icon: (s.subject_name || '').includes('KKA') ? '🤖' : '📘'
           }))
         : []
 
@@ -3565,7 +3607,8 @@ const server = http.createServer(async (req, res) => {
       }
       exam.kktp = exam.kktp ?? exam.kkm ?? 70
       exam.kkm = exam.kktp
-      exam.created_by_name = exam.created_by_name || exam.teacher_name || 'Muhammad Fadly Akbar Arsandi, S.Pd.'
+      const authUser = getAuthUser(req)
+      exam.created_by_name = exam.created_by_name || exam.teacher_name || authUser?.name || 'Pendidik'
       exam.teacher_name = exam.created_by_name
 
       return sendJson(res, 200, { status: 'success', data: exam })
@@ -3596,17 +3639,18 @@ const server = http.createServer(async (req, res) => {
 
       if (!targetExam) {
         // Fallback jika belum ada exam sama sekali
+        const authUser = getAuthUser(req)
         targetExam = {
           id: targetId,
-          title: 'Sumatif Tengah Semester: Informatika & Logika Komputasi',
-          subject_name: 'Informatika',
-          classroom_name: 'VII A',
+          title: 'Asesmen Sumatif Pembelajaran',
+          subject_name: authUser?.subject || 'Mata Pelajaran',
+          classroom_name: 'Kelas',
           duration_minutes: 60,
-          kktp: 70,
-          kkm: 70,
-          created_by_name: 'Muhammad Fadly Akbar Arsandi, S.Pd.',
-          teacher_name: 'Muhammad Fadly Akbar Arsandi, S.Pd.',
-          questions: db.questions
+          kktp: 75,
+          kkm: 75,
+          created_by_name: authUser?.name || 'Pendidik',
+          teacher_name: authUser?.name || 'Pendidik',
+          questions: db.questions || []
         }
       }
 
@@ -5003,7 +5047,7 @@ const server = http.createServer(async (req, res) => {
         session_id: session.id,
         code: session.accessCode || ('PRS-' + session.id.substring(0, 6).toUpperCase()),
         title: session.title,
-        teacher: 'Muhammad Fadly Akbar Arsandi, S.Pd.',
+        teacher: session.teacher || session.teacher_name || authUser?.name || 'Pendidik',
         classroom: targetClassroom,
         start_time: startTimeFormatted,
         end_time: endTimeFormatted,
@@ -8806,6 +8850,9 @@ const server = http.createServer(async (req, res) => {
       const passed = mapped.filter(g => (Number(g.final_score) || 0) >= kktp).length
       const passRate = total > 0 ? Math.round((passed / total) * 100) : 0
 
+      const school = getReqSchool(req)
+      const teacher = authUser || (db.users || []).find(u => u.school_id === currentSchoolId && u.role === 'teacher')
+
       return sendJson(res, 200, {
         status: 'success',
         data: {
@@ -8818,11 +8865,11 @@ const server = http.createServer(async (req, res) => {
             lowest_score: lowest,
             passed_students: passed,
             pass_rate: passRate,
-            teacher_name: 'Muhammad Fadly Akbar Arsandi, S.Pd.',
-            teacher_nip: '199509282020121003',
-            school_name: 'SMP Negeri 6 Kendari',
-            principal_name: 'La Ode Muhamad Hidayat, S.Pd., M.Pd.',
-            principal_nip: '197205141998021002'
+            teacher_name: teacher?.name || 'Pendidik',
+            teacher_nip: teacher?.nip || '-',
+            school_name: school?.name || 'Satuan Pendidikan',
+            principal_name: school?.principal_name || school?.principalName || 'Kepala Sekolah',
+            principal_nip: school?.principal_nip || school?.principalNip || '-'
           }
         }
       })
@@ -9883,7 +9930,7 @@ const server = http.createServer(async (req, res) => {
             created_at: pres?.created_at || session.created_at,
             last_attended_at: session.ended_at || session.created_at,
             session_id: session.id,
-            teacher_name: pres?.teacher_name || session.teacher || session.teacher_name || 'Muhammad Fadly Akbar Arsandi, S.Pd.',
+            teacher_name: pres?.teacher_name || session.teacher || session.teacher_name || 'Pendidik',
             classroom: session.classroom || student.classroom_name
           })
         }

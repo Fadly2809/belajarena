@@ -8,10 +8,10 @@
         </RouterLink>
         <div>
           <h2 class="font-extrabold text-slate-900 text-sm leading-tight flex items-center gap-2">
-            <span>📊</span> Rekapitulasi Nilai Siswa (Informatika & KKA)
+            <span>📊</span> Rekapitulasi Nilai Siswa ({{ selectedSubjectName }})
           </h2>
           <span class="text-[11px] text-slate-500 font-medium">
-            {{ stats.school_name || currentSchoolName }} &bull; {{ stats.teacher_name }} (NIP: {{ stats.teacher_nip }})
+            {{ stats.school_name || currentSchoolName }} &bull; {{ stats.teacher_name || teacherName }} (NIP: {{ stats.teacher_nip || teacherNip }})
           </span>
         </div>
       </div>
@@ -385,13 +385,13 @@
       <!-- Kop Dokumen Resmi Dinas & Sekolah -->
       <div class="text-center pb-4 border-b-2 border-slate-900 space-y-1">
         <p class="text-xs uppercase font-extrabold tracking-widest text-slate-600">
-          PEMERINTAH KOTA KENDARI &bull; DINAS PENDIDIKAN DAN KEBUDAYAAN
+          {{ schoolInfo.institution || 'PEMERINTAH KOTA KENDARI' }} &bull; {{ schoolInfo.department || 'DINAS PENDIDIKAN DAN KEBUDAYAAN' }}
         </p>
         <h1 class="text-xl sm:text-2xl font-black text-slate-900 tracking-wide">
-          SMP NEGERI 6 KENDARI
+          {{ stats.school_name || currentSchoolName }}
         </h1>
         <p class="text-xs text-slate-600">
-          Jalan R.A. Kartini No. 1, Kota Kendari, Sulawesi Tenggara 93121 &bull; Telp: (0401) 3121234 &bull; NPSN: 40403892
+          {{ schoolInfo.address || 'Alamat Satuan Pendidikan' }} &bull; Telp: {{ schoolInfo.phone || '-' }} &bull; NPSN: {{ schoolInfo.npsn || '-' }}
         </p>
         <div class="pt-3">
           <h2 class="text-sm sm:text-base font-black uppercase tracking-wider text-slate-900 underline">
@@ -430,12 +430,12 @@
             <tr>
               <td class="w-36 py-1 font-semibold text-slate-600">Guru Pengampu</td>
               <td class="w-4 py-1">:</td>
-              <td class="py-1 font-bold">Muhammad Fadly Akbar Arsandi, S.Pd.</td>
+              <td class="py-1 font-bold">{{ stats.teacher_name || teacherName }}</td>
             </tr>
             <tr>
               <td class="py-1 font-semibold text-slate-600">NIP Guru</td>
               <td class="py-1">:</td>
-              <td class="py-1 font-mono font-medium">199509282020121003</td>
+              <td class="py-1 font-mono font-medium">{{ stats.teacher_nip || teacherNip || '-' }}</td>
             </tr>
             <tr>
               <td class="py-1 font-semibold text-slate-600">KKTP Minimal</td>
@@ -1235,6 +1235,10 @@ import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
 const currentSchoolName = computed(() => authStore.currentSchool?.name || 'Satuan Pendidikan')
+const teacherName = computed(() => authStore.user?.name || 'Guru Pengampu')
+const teacherNip = computed(() => (authStore.user as any)?.nip || '-')
+const schoolInfo = computed(() => authStore.currentSchool || { name: currentSchoolName.value, principal_name: 'Kepala Sekolah', principal_nip: '-', city: 'Kendari', institution: 'Pemerintah Kota Kendari', department: 'Dinas Pendidikan dan Kebudayaan', address: 'Alamat Satuan Pendidikan', phone: '-', npsn: '-' })
+const selectedSubjectName = computed(() => getSubjectName(selectedSubjectId.value))
 
 const {
   classrooms,
@@ -1349,11 +1353,11 @@ const stats = ref<any>({
   lowest_score: 0,
   passed_students: 0,
   pass_rate: 0,
-  teacher_name: 'Muhammad Fadly Akbar Arsandi, S.Pd.',
-  teacher_nip: '199509282020121003',
-  school_name: 'SMP Negeri 6 Kendari',
-  principal_name: 'H. Abdul Rahman, S.Pd., M.Pd.',
-  principal_nip: '197003151996031002'
+  teacher_name: '',
+  teacher_nip: '',
+  school_name: '',
+  principal_name: '',
+  principal_nip: ''
 })
 
 const showEditModal = ref(false)

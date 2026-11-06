@@ -41,7 +41,7 @@ const router = createRouter({
       path: '/student',
       name: 'student-portal',
       component: () => import('@/modules/student-portal/StudentPortalPage.vue'),
-      meta: { requiresAuth: true, title: 'Portal Siswa SMPN 6 Kendari', layout: 'blank' }
+      meta: { requiresAuth: true, title: 'Portal Siswa Belajarena', layout: 'blank' }
     },
 
     // Platform Administrator Routes (Khusus Admin Website)

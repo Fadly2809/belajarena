@@ -28,7 +28,7 @@ export function renderMarkdown(markdown: string): string {
           <span class="flex items-center gap-1.5 font-bold tracking-wider uppercase text-blue-400">
             <span class="w-2 h-2 rounded-full bg-blue-500"></span>${cleanLang}
           </span>
-          <span class="text-[10px] text-slate-400">SMPN 6 Kendari</span>
+          <span class="text-[10px] text-slate-400">Belajarena</span>
         </div>
         <pre class="p-3.5 overflow-x-auto text-[11px] leading-relaxed"><code>${escapedCode}</code></pre>
       </div>

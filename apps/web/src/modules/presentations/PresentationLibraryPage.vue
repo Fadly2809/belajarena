@@ -725,7 +725,7 @@
           </div>
           <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-300/90 group-hover:text-white transition">
             <span>Mirroring Proyektor</span>
-            <span class="font-bold">SMPN 6</span>
+            <span class="font-bold">{{ currentSchoolName }}</span>
           </div>
         </div>
 

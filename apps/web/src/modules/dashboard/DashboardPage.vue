@@ -279,7 +279,7 @@
       <div class="lg:col-span-5 bg-white rounded-[24px] shadow-card border border-slate-200/60 p-6 flex flex-col justify-between">
         <div>
           <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
-            <h2 class="text-base font-bold text-slate-900 tracking-tight">Capaian Elemen Informatika & KKA</h2>
+            <h2 class="text-base font-bold text-slate-900 tracking-tight">Capaian Pembelajaran {{ teacherSubject }}</h2>
             <span class="text-[11px] font-bold text-slate-400">Kurikulum Merdeka</span>
           </div>
 
@@ -331,7 +331,7 @@
           <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
             <div>
               <h2 class="text-base font-bold text-slate-900 tracking-tight">Stocks Graph · Capaian Belajar Siswa</h2>
-              <p class="text-[11px] text-slate-400 mt-0.5">Tren ketuntasan kompetensi per bulan (Fase D SMPN 6 Kendari)</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">Tren ketuntasan kompetensi per bulan (Fase D {{ currentSchoolName }})</p>
             </div>
             <div class="flex items-center gap-2">
               <span class="inline-flex items-center gap-1.5 text-xs text-slate-500 font-semibold">
@@ -577,11 +577,11 @@
             </div>
             <div>
               <h3 class="text-xs font-bold tracking-wide">AI Assistant Guru</h3>
-              <p class="text-[10px] text-slate-400">Informatika & KKA (Fase D)</p>
+              <p class="text-[10px] text-slate-400">{{ teacherSubject }} (Fase D)</p>
             </div>
           </div>
           <p class="text-xs text-slate-300 leading-relaxed">
-            "Siswa kelas VII A menunjukkan ketertarikan tinggi pada modul Scratch dan nalar komputasional. Rekomendasi berikutnya: praktik percabangan logika."
+            "Siswa menunjukkan antusiasme belajar yang positif. Rekomendasi berikutnya: lakukan asesmen formatif pemahaman capaian materi {{ teacherSubject }}."
           </p>
         </div>
         <div class="mt-4 pt-3 border-t border-white/10">
@@ -650,13 +650,52 @@ const recentActivities = ref<any[]>([])
 const chartPoints = ref<any[]>([])
 const chartRange = ref('6')
 
-const categoryProgress = ref([
-  { id: 'bk', name: 'Berpikir Komputasional', icon: '🧠', pct: 0, color: 'bg-[#f59e0b]' },
-  { id: 'ap', name: 'Algoritma & Pemrograman', icon: '💻', pct: 0, color: 'bg-[#fbbf24]' },
-  { id: 'ad', name: 'Analisis Data', icon: '📊', pct: 0, color: 'bg-[#0c2b3d]' },
-  { id: 'jki', name: 'Jaringan Komputer & Internet', icon: '🌐', pct: 0, color: 'bg-[#f59e0b]' },
-  { id: 'kka', name: 'Koding & Kecerdasan Artifisial', icon: '🤖', pct: 0, color: 'bg-[#0c2b3d]' },
-])
+function getDefaultElements(subj: string) {
+  const s = (subj || '').toLowerCase()
+  if (s.includes('matematika')) {
+    return [
+      { id: 'bil', name: 'Bilangan', icon: '🔢', pct: 0, color: 'bg-[#f59e0b]' },
+      { id: 'alj', name: 'Aljabar', icon: '📐', pct: 0, color: 'bg-[#fbbf24]' },
+      { id: 'peng', name: 'Pengukuran', icon: '📏', pct: 0, color: 'bg-[#0c2b3d]' },
+      { id: 'geo', name: 'Geometri', icon: '🔷', pct: 0, color: 'bg-[#f59e0b]' },
+      { id: 'adp', name: 'Analisis Data & Peluang', icon: '📊', pct: 0, color: 'bg-[#0c2b3d]' }
+    ]
+  }
+  if (s.includes('ipa')) {
+    return [
+      { id: 'pem', name: 'Pemahaman IPA', icon: '🔬', pct: 0, color: 'bg-[#f59e0b]' },
+      { id: 'keter', name: 'Keterampilan Proses', icon: '🧪', pct: 0, color: 'bg-[#fbbf24]' },
+      { id: 'makh', name: 'Makhluk Hidup & Lingkungan', icon: '🌱', pct: 0, color: 'bg-[#0c2b3d]' },
+      { id: 'zat', name: 'Zat dan Perubahannya', icon: '⚗️', pct: 0, color: 'bg-[#f59e0b]' },
+      { id: 'energi', name: 'Energi dan Perubahannya', icon: '⚡', pct: 0, color: 'bg-[#0c2b3d]' }
+    ]
+  }
+  if (s.includes('indonesia')) {
+    return [
+      { id: 'simak', name: 'Menyimak', icon: '👂', pct: 0, color: 'bg-[#f59e0b]' },
+      { id: 'baca', name: 'Membaca & Memirsa', icon: '📖', pct: 0, color: 'bg-[#fbbf24]' },
+      { id: 'bicara', name: 'Berbicara & Mempresentasikan', icon: '🗣️', pct: 0, color: 'bg-[#0c2b3d]' },
+      { id: 'tulis', name: 'Menulis', icon: '✍️', pct: 0, color: 'bg-[#f59e0b]' }
+    ]
+  }
+  if (s.includes('informatika') || s.includes('kka')) {
+    return [
+      { id: 'bk', name: 'Berpikir Komputasional', icon: '🧠', pct: 0, color: 'bg-[#f59e0b]' },
+      { id: 'ap', name: 'Algoritma & Pemrograman', icon: '💻', pct: 0, color: 'bg-[#fbbf24]' },
+      { id: 'ad', name: 'Analisis Data', icon: '📊', pct: 0, color: 'bg-[#0c2b3d]' },
+      { id: 'jki', name: 'Jaringan Komputer & Internet', icon: '🌐', pct: 0, color: 'bg-[#f59e0b]' },
+      { id: 'kka', name: 'Koding & Kecerdasan Artifisial', icon: '🤖', pct: 0, color: 'bg-[#0c2b3d]' }
+    ]
+  }
+  return [
+    { id: 'el-1', name: 'Pemahaman Konsep', icon: '📚', pct: 0, color: 'bg-[#f59e0b]' },
+    { id: 'el-2', name: 'Penerapan & Praktik', icon: '🛠️', pct: 0, color: 'bg-[#fbbf24]' },
+    { id: 'el-3', name: 'Penalaran & Analisis', icon: '🔍', pct: 0, color: 'bg-[#0c2b3d]' },
+    { id: 'el-4', name: 'Refleksi & Portofolio', icon: '💡', pct: 0, color: 'bg-[#f59e0b]' }
+  ]
+}
+
+const categoryProgress = ref(getDefaultElements(teacherSubject.value))
 
 const tuntasElementsCount = computed(() => {
   return categoryProgress.value.filter(c => c.pct >= 75).length
@@ -671,7 +710,7 @@ const observationsList = computed(() => {
       return {
         id: t.id,
         title: t.title,
-        subtitle: `${t.classroom} · ${t.subject || 'Informatika'}`,
+        subtitle: `${t.classroom} · ${t.subject || teacherSubject.value}`,
         pct: Math.min(100, Math.max(0, pct)),
         badge: `${submittedCount}/${totalStudents} Terkumpul`,
         stars: 5
@@ -695,29 +734,29 @@ const chartAreaPath = computed(() => {
   return `${chartLinePath.value} L ${last.x} 140 L ${first.x} 140 Z`
 })
 
-const aiRecommendations = [
+const aiRecommendations = computed(() => [
   {
-    subject: 'KKA (Fase D)',
-    advice: 'Rancang asesmen formatif prompt engineering dan computational thinking untuk kelas binaan Anda',
+    subject: `${teacherSubject.value} (Fase D)`,
+    advice: `Rancang asesmen formatif dan rubrik capaian pembelajaran untuk kelas binaan Anda di ${currentSchoolName.value}`,
     priority: 'Rekomendasi',
-    icon: '🤖',
+    icon: '🎯',
     badgeClass: 'bg-amber-100 text-amber-700'
   },
   {
-    subject: 'Informatika (Fase D)',
-    advice: 'Siapkan rubrik asesmen elemen Algoritma & Pemrograman serta lembar kerja praktikum lab',
+    subject: 'Kurikulum Merdeka',
+    advice: `Siapkan pemetaan Tujuan Pembelajaran (TP) dan aktivitas pembelajaran kontekstual`,
     priority: 'Modul Siap',
-    icon: '💻',
+    icon: '📘',
     badgeClass: 'bg-blue-100 text-blue-700'
   },
   {
-    subject: 'SMPN 6 Kendari',
-    advice: 'Atur jadwal mingguan dan input rekapan nilai formatif semester ganjil',
+    subject: currentSchoolName.value,
+    advice: 'Atur jadwal mengajar mingguan dan buat rombel kelas di Manajemen Kelas',
     priority: 'Agenda',
     icon: '🏫',
     badgeClass: 'bg-emerald-100 text-emerald-700'
   }
-]
+])
 
 async function loadDashboardData() {
   try {

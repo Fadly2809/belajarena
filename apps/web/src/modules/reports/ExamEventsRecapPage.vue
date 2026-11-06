@@ -516,10 +516,10 @@
     <!-- ============================================================== -->
     <div v-if="printingSession" class="hidden print:block p-8 bg-white text-black space-y-6">
       <div class="border-b-2 border-black pb-4 text-center">
-        <h2 class="text-base font-bold uppercase tracking-wider">PEMERINTAH KOTA KENDARI</h2>
-        <h2 class="text-sm font-bold uppercase">DINAS PENDIDIKAN DAN KEBUDAYAAN</h2>
-        <h1 class="text-lg font-black uppercase tracking-wide">SMP NEGERI 6 KENDARI</h1>
-        <p class="text-[10px] mt-0.5">Alamat: Jl. Bunggasi No. 100, Poasia, Kota Kendari, Sulawesi Tenggara</p>
+        <h2 class="text-base font-bold uppercase tracking-wider">{{ schoolInfo.institution || 'PEMERINTAH KOTA KENDARI' }}</h2>
+        <h2 class="text-sm font-bold uppercase">{{ schoolInfo.department || 'DINAS PENDIDIKAN DAN KEBUDAYAAN' }}</h2>
+        <h1 class="text-lg font-black uppercase tracking-wide">{{ schoolInfo.name || 'SATUAN PENDIDIKAN' }}</h1>
+        <p class="text-[10px] mt-0.5">Alamat: {{ schoolInfo.address || 'Alamat Satuan Pendidikan' }}</p>
       </div>
 
       <div class="text-center space-y-1">
@@ -600,7 +600,15 @@ import {
 } from '@/composables/useClassrooms'
 
 const authStore = useAuthStore()
-const schoolInfo = computed(() => authStore.currentSchool || { name: 'Satuan Pendidikan', principal_name: 'Kepala Sekolah', principal_nip: '-', city: 'Kendari' })
+const schoolInfo = computed(() => authStore.currentSchool || {
+  name: 'Satuan Pendidikan',
+  institution: 'PEMERINTAH KOTA KENDARI',
+  department: 'DINAS PENDIDIKAN DAN KEBUDAYAAN',
+  address: 'Alamat Satuan Pendidikan',
+  principal_name: 'Kepala Sekolah',
+  principal_nip: '-',
+  city: 'Kendari'
+})
 const teacherName = computed(() => authStore.user?.name || 'Guru Mata Pelajaran')
 const teacherNip = computed(() => (authStore.user as any)?.nip || '-')
 

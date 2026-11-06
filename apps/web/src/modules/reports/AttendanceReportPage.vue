@@ -31,13 +31,13 @@
       <!-- Kop Surat -->
       <div class="text-center pb-4 border-b-2 border-surface-900 space-y-1">
         <p class="text-xs uppercase font-extrabold tracking-widest text-surface-600">
-          PEMERINTAH KOTA KENDARI &bull; DINAS PENDIDIKAN DAN KEBUDAYAAN
+          {{ schoolInfo.institution || 'PEMERINTAH KOTA KENDARI' }} &bull; {{ schoolInfo.department || 'DINAS PENDIDIKAN DAN KEBUDAYAAN' }}
         </p>
         <h1 class="text-xl sm:text-2xl font-black text-surface-900 tracking-wide">
-          SMP NEGERI 6 KENDARI
+          {{ schoolInfo.name || 'SATUAN PENDIDIKAN' }}
         </h1>
         <p class="text-xs text-surface-600">
-          Jalan R.A. Kartini No. 1, Kota Kendari &bull; NPSN: 40403892 &bull; Akreditasi: A
+          {{ schoolInfo.address || 'Alamat Satuan Pendidikan' }} &bull; NPSN: {{ schoolInfo.npsn || '-' }} &bull; Akreditasi: {{ schoolInfo.accreditation || 'A' }}
         </p>
         <div class="pt-2">
           <h2 class="text-sm font-black uppercase tracking-wider text-surface-900 underline">
@@ -49,8 +49,8 @@
       <!-- Info Identitas Kelas -->
       <div class="flex justify-between text-xs text-surface-800 pb-2">
         <div>
-          <p><strong>Kelas / Rombel:</strong> VII-A (Fase D)</p>
-          <p><strong>Guru Pengampu:</strong> Muhammad Fadly Akbar Arsandi, S.Pd.</p>
+          <p><strong>Kelas / Rombel:</strong> Semua Rombel (Fase D)</p>
+          <p><strong>Guru Pengampu:</strong> {{ teacherName }}</p>
         </div>
         <div class="text-right">
           <p><strong>Tahun Pelajaran:</strong> 2024/2025</p>
@@ -121,7 +121,18 @@ import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
 
 const authStore = useAuthStore()
-const schoolInfo = computed(() => authStore.currentSchool || { name: 'Satuan Pendidikan', principal_name: 'Kepala Sekolah', principal_nip: '-', city: 'Kendari', academic_year: '2026/2027' })
+const schoolInfo = computed(() => authStore.currentSchool || {
+  name: 'Satuan Pendidikan',
+  institution: 'PEMERINTAH KOTA KENDARI',
+  department: 'DINAS PENDIDIKAN DAN KEBUDAYAAN',
+  address: 'Alamat Satuan Pendidikan',
+  npsn: '-',
+  accreditation: 'A',
+  principal_name: 'Kepala Sekolah',
+  principal_nip: '-',
+  city: 'Kendari',
+  academic_year: '2026/2027'
+})
 const teacherName = computed(() => authStore.user?.name || 'Guru Pengampu')
 const teacherNip = computed(() => (authStore.user as any)?.nip || '-')
 const printDate = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
