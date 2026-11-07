@@ -390,56 +390,24 @@
         </template>
       </nav>
 
-      <!-- Bottom Mini Calendar Widget (Reference Dashboard Style) -->
+      <!-- Bottom Action / Logout -->
       <div class="p-3 border-t border-white/10 bg-[#082231]/80 flex-shrink-0">
-        <div v-if="sidebarOpen" class="bg-white rounded-2xl p-3 shadow-md text-slate-800">
-          <div class="flex items-center justify-between pb-1.5 border-b border-slate-100">
-            <span class="text-xs font-bold text-slate-900">{{ calHeaderDay }}</span>
-            <span class="text-xs text-slate-400">📅</span>
-          </div>
-          <div class="flex items-center justify-between mt-2 mb-1.5 px-0.5">
-            <span class="text-[11px] font-bold text-slate-700">{{ calMonthName }}</span>
-            <div class="flex items-center gap-1">
-              <button @click="prevCalMonth" class="w-5 h-5 rounded hover:bg-slate-100 text-slate-500 text-xs font-bold flex items-center justify-center">‹</button>
-              <button @click="nextCalMonth" class="w-5 h-5 rounded hover:bg-slate-100 text-slate-500 text-xs font-bold flex items-center justify-center">›</button>
-            </div>
-          </div>
-          <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1">
-            <span>M</span><span>S</span><span>S</span><span>R</span><span>K</span><span>J</span><span>S</span>
-          </div>
-          <div class="grid grid-cols-7 gap-1 text-center text-[10px]">
-            <div
-              v-for="(cell, i) in calDaysMatrix"
-              :key="i"
-              class="h-5 flex items-center justify-center rounded-full font-medium"
-              :class="{
-                'bg-[#0c2b3d] text-white font-bold': cell.isToday,
-                'text-slate-700 hover:bg-slate-100': cell.day && !cell.isToday,
-                'invisible': !cell.day
-              }"
-            >
-              {{ cell.day }}
-            </div>
-          </div>
-          <button
-            @click="handleLogout"
-            class="w-full mt-2.5 pt-2 border-t border-slate-100 text-slate-500 hover:text-red-600 text-[11px] font-bold flex items-center justify-center gap-1.5 transition"
-          >
-            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-            </svg>
-            <span>Keluar Akun</span>
-          </button>
-        </div>
+        <button
+          v-if="sidebarOpen"
+          @click="handleLogout"
+          class="w-full py-2.5 px-3 rounded-xl bg-white/5 hover:bg-rose-500/20 border border-white/10 hover:border-rose-500/30 text-slate-300 hover:text-rose-300 text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+          </svg>
+          <span>Keluar Akun</span>
+        </button>
 
-        <div v-else class="flex flex-col items-center gap-2">
-          <div class="w-9 h-9 rounded-xl bg-white/10 text-white flex items-center justify-center text-xs font-bold" title="Hari ini">
-            {{ new Date().getDate() }}
-          </div>
+        <div v-else class="flex flex-col items-center">
           <button
             @click="handleLogout"
-            class="p-2 text-white/50 hover:text-red-400 hover:bg-white/10 rounded-xl transition"
-            title="Keluar"
+            class="p-2.5 text-white/60 hover:text-rose-400 hover:bg-white/10 rounded-xl transition cursor-pointer"
+            title="Keluar Akun"
           >
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
@@ -768,47 +736,6 @@ const userStatusText = computed(() => {
 const userEmailOrNip = computed(() => {
   return authStore.user?.email || `NIP: ${userNip.value}`
 })
-
-// Mini-Calendar State (Dashboard Reference Style)
-const calDate = ref(new Date())
-const calMonthName = computed(() => {
-  const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
-  return `${months[calDate.value.getMonth()]} ${calDate.value.getFullYear()}`
-})
-const calHeaderDay = computed(() => {
-  const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
-  const now = new Date()
-  return `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]}`
-})
-const calDaysMatrix = computed(() => {
-  const y = calDate.value.getFullYear()
-  const m = calDate.value.getMonth()
-  const firstDay = new Date(y, m, 1).getDay()
-  const daysInMonth = new Date(y, m + 1, 0).getDate()
-  
-  const cells: { day: number | null; isToday: boolean }[] = []
-  for (let i = 0; i < firstDay; i++) {
-    cells.push({ day: null, isToday: false })
-  }
-  const today = new Date()
-  for (let d = 1; d <= daysInMonth; d++) {
-    const isToday = today.getFullYear() === y && today.getMonth() === m && today.getDate() === d
-    cells.push({ day: d, isToday })
-  }
-  return cells
-})
-
-function prevCalMonth() {
-  const d = new Date(calDate.value)
-  d.setMonth(d.getMonth() - 1)
-  calDate.value = d
-}
-function nextCalMonth() {
-  const d = new Date(calDate.value)
-  d.setMonth(d.getMonth() + 1)
-  calDate.value = d
-}
 
 // Notification Pop-up State
 const showNotifications = ref(false)
