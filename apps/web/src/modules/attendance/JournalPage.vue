@@ -201,49 +201,7 @@ function onNewJournalClassChange() {
   newJournal.value.subject = getSubjectNameForClass(newJournal.value.classroom)
 }
 
-const defaultSmp6Journals = [
-  {
-    id: 'j-01',
-    date: '2024-10-24',
-    time: '08:20 - 09:40',
-    classroom: 'VII A',
-    subject: 'Informatika & KKA',
-    meetingNumber: 12,
-    topic: 'Praktik Pemrograman Visual: Percabangan Kondisional IF-ELSE',
-    activities: 'Siswa mempraktikkan pembuatan kuis tebak angka menggunakan blok Scratch di Lab Komputer 1.',
-    presentCount: 28,
-    totalStudents: 28,
-    notes: 'Aktivitas lab koding berjalan lancar dan seluruh siswa antusias.'
-  },
-  {
-    id: 'j-02',
-    date: '2024-10-21',
-    time: '07:00 - 08:20',
-    classroom: 'VII B',
-    subject: 'Informatika & KKA',
-    meetingNumber: 11,
-    topic: 'Logika Algoritma & Prompt Engineering Dasar AI',
-    activities: 'Menyusun perintah prompt AI terstruktur dan memahami etika kecerdasan buatan.',
-    presentCount: 28,
-    totalStudents: 28,
-    notes: 'Diskusi interaktif berjalan produktif.'
-  },
-  {
-    id: 'j-03',
-    date: '2024-10-18',
-    time: '10:10 - 11:30',
-    classroom: 'IX A',
-    subject: 'Informatika',
-    meetingNumber: 10,
-    topic: 'Analisis Data & Jaringan Komputer',
-    activities: 'Latihan pengolahan data spreadsheet dan pemahaman topologi jaringan.',
-    presentCount: 27,
-    totalStudents: 27,
-    notes: 'Seluruh peserta didik tuntas menyelesaikan tugas lab.'
-  }
-]
-
-const journals = ref<any[]>(authStore.currentSchool?.id === 'sch-smpn6kendari' ? defaultSmp6Journals : [])
+const journals = ref<any[]>([])
 
 function normalizeClass(nameOrId: string) {
   return (nameOrId || '').replace(/[\s-]/g, '').toLowerCase()

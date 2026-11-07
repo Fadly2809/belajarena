@@ -32,6 +32,7 @@ const subjectsLoading = ref(false)
 const subjectsLoaded = ref(false)
 
 let lastCachedSchoolId: string | null = null
+let lastCachedUserId: string | null = null
 
 export function resetClassroomsCache() {
   classrooms.value = []
@@ -41,6 +42,7 @@ export function resetClassroomsCache() {
   subjectsLoading.value = false
   subjectsLoaded.value = false
   lastCachedSchoolId = null
+  lastCachedUserId = null
 }
 
 /**
@@ -66,24 +68,32 @@ export function getClassGradeLevel(classIdOrNameOrObj: any): number {
  * Mengambil daftar mata pelajaran yang aktif untuk guru dan kelas terpilih
  */
 export function getAvailableSubjectsForClass(classIdOrNameOrObj?: any): TeachingSubject[] {
-  if (subjects.value.length > 0) {
-    return subjects.value
-  }
   try {
     const authStore = useAuthStore()
     const userSubs: string[] = Array.isArray((authStore.user as any)?.subjects) && (authStore.user as any).subjects.length > 0
       ? (authStore.user as any).subjects
       : (authStore.user?.subject ? authStore.user.subject.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean) : [])
 
-    if (userSubs.length > 0) {
-      return userSubs.map((subName, idx) => ({
-        id: `sub-user-${idx + 1}`,
-        code: subName.replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase() || 'MAPEL',
-        name: subName,
-        kkm: 75,
-        kktp: 75
-      }))
+    // Jika guru belum menentukan mapel di profil/akunnya, harus kosong
+    if (userSubs.length === 0) {
+      return []
     }
+
+    if (subjects.value.length > 0) {
+      const userSubsLower = userSubs.map(s => s.toLowerCase())
+      const matched = subjects.value.filter(s => userSubsLower.includes(s.name.trim().toLowerCase()))
+      if (matched.length > 0) {
+        return matched
+      }
+    }
+
+    return userSubs.map((subName, idx) => ({
+      id: `sub-user-${idx + 1}`,
+      code: subName.replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase() || 'MAPEL',
+      name: subName,
+      kkm: 75,
+      kktp: 75
+    }))
   } catch {}
 
   return []
@@ -126,11 +136,16 @@ export async function fetchSubjects(force = false): Promise<TeachingSubject[]> {
   try {
     const authStore = useAuthStore()
     const currentSchoolId = authStore.user?.school_id || null
-    if (lastCachedSchoolId !== null && lastCachedSchoolId !== currentSchoolId) {
+    const currentUserId = authStore.user?.id || null
+    if (
+      (lastCachedSchoolId !== null && lastCachedSchoolId !== currentSchoolId) ||
+      (lastCachedUserId !== null && lastCachedUserId !== currentUserId)
+    ) {
       resetClassroomsCache()
       force = true
     }
     lastCachedSchoolId = currentSchoolId
+    lastCachedUserId = currentUserId
   } catch {}
 
   if (subjectsLoaded.value && !force && subjects.value.length > 0) {
@@ -139,7 +154,7 @@ export async function fetchSubjects(force = false): Promise<TeachingSubject[]> {
   subjectsLoading.value = true
   try {
     const res = await api.get('/subjects')
-    if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+    if (res.data?.data && Array.isArray(res.data.data)) {
       subjects.value = res.data.data
       subjectsLoaded.value = true
       return subjects.value
@@ -179,11 +194,16 @@ export function useClassrooms() {
     try {
       const authStore = useAuthStore()
       const currentSchoolId = authStore.user?.school_id || null
-      if (lastCachedSchoolId !== null && lastCachedSchoolId !== currentSchoolId) {
+      const currentUserId = authStore.user?.id || null
+      if (
+        (lastCachedSchoolId !== null && lastCachedSchoolId !== currentSchoolId) ||
+        (lastCachedUserId !== null && lastCachedUserId !== currentUserId)
+      ) {
         resetClassroomsCache()
         force = true
       }
       lastCachedSchoolId = currentSchoolId
+      lastCachedUserId = currentUserId
     } catch {}
 
     if (classroomsLoaded.value && !force && classrooms.value.length > 0) {
