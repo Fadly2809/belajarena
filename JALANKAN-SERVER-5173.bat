@@ -10,6 +10,10 @@ echo.
 cd /d "%~dp0"
 
 echo 🧹 Menyiapkan backend dan frontend...
+if not exist "apps\web\node_modules" (
+    echo 📦 Dependensi frontend belum terpasang. Menginstall otomatis (npm install)...
+    cd apps\web && call npm install && cd ..\..
+)
 start "Belajarena Backend API (Port 8000)" cmd /k "node apps/api/server.mjs"
 timeout /t 2 /nobreak >nul
 

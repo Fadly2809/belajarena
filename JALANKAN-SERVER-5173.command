@@ -44,6 +44,12 @@ lsof -ti:8000 2>/dev/null | xargs kill -9 2>/dev/null
 lsof -ti:5173 2>/dev/null | xargs kill -9 2>/dev/null
 sleep 1
 
+# Pastikan dependensi frontend sudah terinstall jika pertama kali diekstrak
+if [ ! -d "apps/web/node_modules" ]; then
+    echo "📦 Dependensi frontend belum terpasang. Menginstall otomatis (npm install)..."
+    (cd apps/web && npm install)
+fi
+
 # 1. Jalankan Backend API Server (Port 8000)
 echo "🚀 [1/2] Menjalankan Backend API Server (Port 8000)..."
 node apps/api/server.mjs &
