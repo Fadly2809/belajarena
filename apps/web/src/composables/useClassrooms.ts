@@ -45,6 +45,19 @@ export function resetClassroomsCache() {
   lastCachedUserId = null
 }
 
+function deduplicateSubjects(list: TeachingSubject[]): TeachingSubject[] {
+  const result: TeachingSubject[] = []
+  const seen = new Set<string>()
+  for (const item of list) {
+    const key = item.name.trim().toLowerCase()
+    if (!seen.has(key)) {
+      seen.add(key)
+      result.push(item)
+    }
+  }
+  return result
+}
+
 /**
  * Mendeteksi tingkatan kelas dari id, nama, atau objek kelas
  */
@@ -66,6 +79,9 @@ export function getClassGradeLevel(classIdOrNameOrObj: any): number {
 
 /**
  * Mengambil daftar mata pelajaran yang aktif untuk guru dan kelas terpilih
+ * Otomatis mendahulukan mapel sesuai aturan kelas / jadwal:
+ * - Kelas 7: KKA (Koding dan Kecerdasan Artifisial)
+ * - Kelas 9: Informatika
  */
 export function getAvailableSubjectsForClass(classIdOrNameOrObj?: any): TeachingSubject[] {
   try {
@@ -79,38 +95,100 @@ export function getAvailableSubjectsForClass(classIdOrNameOrObj?: any): Teaching
       return []
     }
 
+    let allSubs: TeachingSubject[] = []
+
     if (subjects.value.length > 0) {
       const userSubsLower = userSubs.map(s => s.toLowerCase())
       const matched = subjects.value.filter(s => userSubsLower.includes(s.name.trim().toLowerCase()))
       if (matched.length > 0) {
-        return matched
+        allSubs = deduplicateSubjects(matched)
       }
     }
 
-    return userSubs.map((subName, idx) => ({
-      id: `sub-user-${idx + 1}`,
-      code: subName.replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase() || 'MAPEL',
-      name: subName,
-      kkm: 75,
-      kktp: 75
-    }))
+    if (allSubs.length === 0) {
+      const mapped = userSubs.map((subName, idx) => ({
+        id: `sub-user-${idx + 1}`,
+        code: subName.replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase() || 'MAPEL',
+        name: subName,
+        kkm: 75,
+        kktp: 75
+      }))
+      allSubs = deduplicateSubjects(mapped)
+    }
+
+    // Jika parameter kelas diberikan, atur urutan prioritas mapel sesuai jadwal mengajar:
+    if (classIdOrNameOrObj) {
+      const grade = getClassGradeLevel(classIdOrNameOrObj)
+      if (grade === 7) {
+        const kka = allSubs.find(s => {
+          const n = s.name.toLowerCase()
+          return n.includes('kka') || n.includes('koding') || n.includes('kecerdasan')
+        })
+        if (kka) {
+          const others = allSubs.filter(s => s.id !== kka.id)
+          return [kka, ...others]
+        }
+      } else if (grade === 9) {
+        const inf = allSubs.find(s => {
+          const n = s.name.toLowerCase()
+          return (n.includes('informatika') || n === 'inf') && !n.includes('kka')
+        })
+        if (inf) {
+          const others = allSubs.filter(s => s.id !== inf.id)
+          return [inf, ...others]
+        }
+      }
+    }
+
+    return allSubs
   } catch {}
 
   return []
 }
 
 /**
- * Mengambil mata pelajaran yang diampu guru
+ * Mengambil mata pelajaran yang diampu guru untuk kelas tertentu (Auto-Select):
+ * - Semua Kelas 7 otomatis KKA (Koding dan Kecerdasan Artifisial)
+ * - Semua Kelas 9 otomatis Informatika
  */
 export function getSubjectForClass(classIdOrNameOrObj: any): TeachingSubject {
   const available = getAvailableSubjectsForClass(classIdOrNameOrObj)
-  return available[0] || {
-    id: '',
-    code: '',
-    name: 'Mata Pelajaran',
-    kkm: 75,
-    kktp: 75
+  if (available.length === 0) {
+    return {
+      id: '',
+      code: '',
+      name: 'Mata Pelajaran',
+      kkm: 75,
+      kktp: 75
+    }
   }
+
+  if (available.length === 1) {
+    return available[0]
+  }
+
+  const grade = getClassGradeLevel(classIdOrNameOrObj)
+
+  // Otomatisasi jadwal mengajar:
+  // Kelas 7 -> KKA
+  if (grade === 7) {
+    const kka = available.find(s => {
+      const n = s.name.toLowerCase()
+      return n.includes('kka') || n.includes('koding') || n.includes('kecerdasan')
+    })
+    if (kka) return kka
+  }
+
+  // Kelas 9 -> Informatika
+  if (grade === 9) {
+    const inf = available.find(s => {
+      const n = s.name.toLowerCase()
+      return (n.includes('informatika') || n === 'inf') && !n.includes('kka')
+    })
+    if (inf) return inf
+  }
+
+  return available[0]
 }
 
 export function getSubjectIdForClass(classIdOrNameOrObj: any): string {
@@ -123,10 +201,33 @@ export function getSubjectNameForClass(classIdOrNameOrObj: any): string {
 
 /**
  * Memfilter daftar kelas berdasarkan mata pelajaran
- * Semua rombel kelas yang dibuat guru dapat digunakan untuk mata pelajaran guru
+ * - KKA -> Rombel Kelas 7 (VII A, VII B, dst.)
+ * - Informatika -> Rombel Kelas 9 (IX A, IX B, dst.)
  */
 export function filterClassroomsBySubject(classroomsList: ClassroomOption[], subjectIdOrName?: string): ClassroomOption[] {
-  if (!subjectIdOrName) return classroomsList
+  if (!subjectIdOrName || !classroomsList || classroomsList.length === 0) {
+    return classroomsList || []
+  }
+
+  let subName = String(subjectIdOrName).toLowerCase()
+  const foundSub = subjects.value.find(s => s.id === subjectIdOrName)
+  if (foundSub) {
+    subName = foundSub.name.toLowerCase()
+  }
+
+  const isKka = subName.includes('kka') || subName.includes('koding') || subName.includes('kecerdasan')
+  const isInf = (subName.includes('informatika') || subName === 'inf') && !isKka
+
+  if (isKka) {
+    const class7 = classroomsList.filter(c => getClassGradeLevel(c) === 7)
+    return class7.length > 0 ? class7 : classroomsList
+  }
+
+  if (isInf) {
+    const class9 = classroomsList.filter(c => getClassGradeLevel(c) === 9)
+    return class9.length > 0 ? class9 : classroomsList
+  }
+
   return classroomsList
 }
 
@@ -155,7 +256,7 @@ export async function fetchSubjects(force = false): Promise<TeachingSubject[]> {
   try {
     const res = await api.get('/subjects')
     if (res.data?.data && Array.isArray(res.data.data)) {
-      subjects.value = res.data.data
+      subjects.value = deduplicateSubjects(res.data.data)
       subjectsLoaded.value = true
       return subjects.value
     }

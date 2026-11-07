@@ -1226,7 +1226,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import api from '@/services/api'
 import * as XLSX from 'xlsx'
@@ -1417,6 +1417,16 @@ async function onClassChange() {
   selectedSubjectId.value = getSubjectIdForClass(selectedClassId.value)
   await Promise.all([fetchGrades(), fetchClassStudents(), fetchOfflineAssessments()])
 }
+
+watch(selectedClassId, async (newClassId) => {
+  if (newClassId) {
+    const autoSubId = getSubjectIdForClass(newClassId)
+    if (autoSubId && selectedSubjectId.value !== autoSubId) {
+      selectedSubjectId.value = autoSubId
+      await onClassChange()
+    }
+  }
+})
 
 onMounted(async () => {
   try {

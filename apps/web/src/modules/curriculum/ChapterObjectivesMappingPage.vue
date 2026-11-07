@@ -770,7 +770,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import api from '@/services/api'
 import { useClassrooms } from '@/composables/useClassrooms'
@@ -878,6 +878,16 @@ async function onClassChange() {
   selectedSubjectId.value = getSubjectIdForClass(selectedClassId.value)
   await onSubjectOrClassChange()
 }
+
+watch(selectedClassId, async (newClassId) => {
+  if (newClassId) {
+    const autoSubId = getSubjectIdForClass(newClassId)
+    if (autoSubId && selectedSubjectId.value !== autoSubId) {
+      selectedSubjectId.value = autoSubId
+      await onSubjectOrClassChange()
+    }
+  }
+})
 
 async function onSubjectChange() {
   const validClasses = filterClassroomsBySubject(classrooms.value, selectedSubjectId.value)

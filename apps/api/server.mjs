@@ -2504,7 +2504,18 @@ const server = http.createServer(async (req, res) => {
         }
         if (changed) saveDb()
 
-        return sendJson(res, 200, { status: 'success', data: teacherSubjects })
+        // Pastikan tidak ada duplikasi nama mapel
+        const uniqueSubjects = []
+        const seenNames = new Set()
+        for (const s of teacherSubjects) {
+          const key = s.name.trim().toLowerCase()
+          if (!seenNames.has(key)) {
+            seenNames.add(key)
+            uniqueSubjects.push(s)
+          }
+        }
+
+        return sendJson(res, 200, { status: 'success', data: uniqueSubjects })
       }
 
       // Untuk admin atau siswa, ambil mata pelajaran di sekolah
