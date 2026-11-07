@@ -107,8 +107,8 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-surface-100">
-              <tr v-for="(sub, idx) in assignment.submissions || []" :key="sub.id" class="hover:bg-surface-50/50">
-                <td class="py-3 px-4 text-center text-surface-400 font-semibold">{{ idx + 1 }}</td>
+              <tr v-for="(sub, idx) in submissionsList" :key="sub.id || idx" class="hover:bg-surface-50/50">
+                <td class="py-3 px-4 text-center text-surface-400 font-semibold">{{ Number(idx) + 1 }}</td>
                 <td class="py-3 px-4 font-semibold text-surface-900">
                   {{ sub.studentName || sub.student_name }}
                   <span class="block text-[10px] text-surface-400 font-normal">NIS: {{ sub.nis || sub.student_nis }}</span>
@@ -155,7 +155,7 @@
                   </button>
                 </td>
               </tr>
-              <tr v-if="!assignment.submissions || assignment.submissions.length === 0">
+              <tr v-if="submissionsList.length === 0">
                 <td colspan="7" class="py-12 text-center text-surface-400">
                   <div class="flex flex-col items-center justify-center gap-2">
                     <div class="text-3xl">📥</div>
@@ -434,10 +434,33 @@ import {
   getAvailableSubjectsForClass
 } from '@/composables/useClassrooms'
 
+interface SubmissionItem {
+  id: string
+  studentName?: string
+  student_name?: string
+  nis?: string
+  student_nis?: string
+  submittedAt?: string
+  submitted_at?: string
+  isLate?: boolean
+  submission_text?: string
+  file_url?: string
+  fileName?: string
+  score?: number | null
+  feedback?: string
+}
+
 const route = useRoute()
 const { classrooms, fetchClassrooms, formatClassLabel } = useClassrooms()
 const loading = ref(false)
 const assignment = ref<any>(null)
+
+const submissionsList = computed<SubmissionItem[]>(() => {
+  if (!assignment.value || !Array.isArray(assignment.value.submissions)) {
+    return []
+  }
+  return assignment.value.submissions
+})
 
 const selectedSub = ref<any>(null)
 const gradingForm = ref({
@@ -457,7 +480,7 @@ const importForm = ref({
 })
 
 const gradedSubmissions = computed(() => {
-  return (assignment.value?.submissions || []).filter((s: any) => s.score !== null && s.score !== undefined)
+  return submissionsList.value.filter((s: SubmissionItem) => s.score !== null && s.score !== undefined)
 })
 
 function openImportModal() {
@@ -552,7 +575,7 @@ function handlePreviewOrDownload(sub: any) {
 
 function exportSubmissions() {
   if (!assignment.value) return
-  const subs = assignment.value.submissions || []
+  const subs = submissionsList.value
   if (subs.length === 0) {
     alert('Belum ada data pengumpulan tugas untuk diunduh.')
     return
