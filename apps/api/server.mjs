@@ -2358,8 +2358,8 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/v1/teachers' && req.method === 'POST') {
-      if (!isTeacherRequest(req)) {
-        return sendJson(res, 403, { status: 'error', message: 'Hanya admin/guru yang berwenang menambah akun guru.' })
+      if (!isPlatformAdmin(req)) {
+        return sendJson(res, 403, { status: 'error', message: 'Pembuatan akun guru baru hanya dapat dilakukan oleh Administrator Platform / Pengembang.' })
       }
       const currentSchoolId = getReqSchoolId(req)
       const body = await parseBody(req)
