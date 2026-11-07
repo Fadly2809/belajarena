@@ -1345,17 +1345,36 @@ const server = http.createServer(async (req, res) => {
       db.users.push(newUser)
 
       // Inisialisasi mata pelajaran yang diampu guru jika diisi
-      if (subjectName) {
+      let subjectsList = []
+      if (Array.isArray(body.subjects)) {
+        subjectsList = body.subjects.map(s => String(s).trim()).filter(Boolean)
+      } else if (typeof body.subjects === 'string' && body.subjects.trim()) {
+        subjectsList = body.subjects.split(',').map(s => s.trim()).filter(Boolean)
+      } else if (subjectName) {
+        subjectsList = subjectName.split(',').map(s => s.trim()).filter(Boolean)
+      }
+      const finalSubjectStr = subjectsList.join(', ') || subjectName
+
+      // Simpan subject dan subjects ke user
+      newUser.subject = finalSubjectStr
+      newUser.subjects = subjectsList
+
+      if (subjectsList.length > 0) {
         db.subjects = db.subjects || []
-        const code = subjectName.replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase() || 'MAPEL'
-        db.subjects.push({
-          id: `sub-${schoolId}-1`,
-          name: subjectName,
-          code: code,
-          school_id: schoolId,
-          kktp: 75,
-          kkm: 75,
-          created_at: new Date().toISOString()
+        subjectsList.forEach((sub, sIdx) => {
+          const exists = db.subjects.some(existing => existing.school_id === schoolId && existing.name.toLowerCase() === sub.toLowerCase())
+          if (!exists) {
+            const code = sub.replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase() || 'MAPEL'
+            db.subjects.push({
+              id: `sub-${schoolId}-${sIdx + 1}`,
+              name: sub,
+              code: code,
+              school_id: schoolId,
+              kktp: 75,
+              kkm: 75,
+              created_at: new Date().toISOString()
+            })
+          }
         })
       }
 
@@ -2042,6 +2061,7 @@ const server = http.createServer(async (req, res) => {
           roles: u.roles || [u.role || 'teacher'],
           nip: u.nip || '-',
           subject: u.subject || '-',
+          subjects: u.subjects || (u.subject && u.subject !== '-' ? u.subject.split(', ') : []),
           school_id: u.school_id || null,
           school_name: sch ? sch.name : 'Belum Ditentukan',
           is_active: u.is_active !== false,
@@ -2069,6 +2089,16 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 400, { status: 'error', message: 'Alamat email ini sudah terdaftar.' })
       }
 
+      let subjectsList = []
+      if (Array.isArray(body.subjects)) {
+        subjectsList = body.subjects.map(s => String(s).trim()).filter(Boolean)
+      } else if (typeof body.subjects === 'string' && body.subjects.trim()) {
+        subjectsList = body.subjects.split(',').map(s => s.trim()).filter(Boolean)
+      } else if (body.subject) {
+        subjectsList = String(body.subject).split(',').map(s => s.trim()).filter(Boolean)
+      }
+      const finalSubjectStr = subjectsList.join(', ') || String(body.subject || '').trim()
+
       const newUserId = `usr-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 4)}`
       const passwordHash = bcrypt.hashSync(rawPassword, 10)
       const newUser = {
@@ -2082,11 +2112,32 @@ const server = http.createServer(async (req, res) => {
         permissions: ['teacher.view', 'teacher.grade', 'teacher.manage'],
         school_id: body.school_id || null,
         nip: (body.nip || '').trim(),
-        subject: (body.subject || '').trim(),
+        subject: finalSubjectStr,
+        subjects: subjectsList,
         is_active: true,
         created_at: new Date().toISOString()
       }
       db.users.push(newUser)
+
+      if (body.school_id && subjectsList.length > 0) {
+        db.subjects = db.subjects || []
+        subjectsList.forEach((sub, sIdx) => {
+          const exists = db.subjects.some(existing => existing.school_id === body.school_id && existing.name.toLowerCase() === sub.toLowerCase())
+          if (!exists) {
+            const code = sub.replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase() || 'MAPEL'
+            db.subjects.push({
+              id: `sub-${body.school_id}-${Date.now().toString(36)}-${sIdx + 1}`,
+              name: sub,
+              code: code,
+              school_id: body.school_id,
+              kktp: 75,
+              kkm: 75,
+              created_at: new Date().toISOString()
+            })
+          }
+        })
+      }
+
       saveDb()
 
       const { password: _, ...safeUser } = newUser
@@ -2316,6 +2367,16 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 400, { status: 'error', message: 'Email sudah terdaftar untuk akun lain.' })
       }
 
+      let subjectsList = []
+      if (Array.isArray(body.subjects)) {
+        subjectsList = body.subjects.map(s => String(s).trim()).filter(Boolean)
+      } else if (typeof body.subjects === 'string' && body.subjects.trim()) {
+        subjectsList = body.subjects.split(',').map(s => s.trim()).filter(Boolean)
+      } else if (body.subject) {
+        subjectsList = String(body.subject).split(',').map(s => s.trim()).filter(Boolean)
+      }
+      const finalSubjectStr = subjectsList.join(', ') || (body.subject || body.mapel || 'Semua Mapel').trim()
+
       const newTeacher = {
         id: `usr-t-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`,
         name,
@@ -2327,12 +2388,34 @@ const server = http.createServer(async (req, res) => {
         permissions: ['teacher.view', 'teacher.grade', 'teacher.manage'],
         school_id: currentSchoolId,
         nip: (body.nip || '').trim(),
-        subject: (body.subject || body.mapel || 'Semua Mapel').trim(),
+        subject: finalSubjectStr,
+        subjects: subjectsList,
         phone: (body.phone || '').trim(),
         created_at: new Date().toISOString()
       }
 
       db.users.push(newTeacher)
+
+      // Sinkronkan mapel baru guru ini ke db.subjects sekolah jika belum terdaftar
+      if (subjectsList.length > 0 && currentSchoolId) {
+        db.subjects = db.subjects || []
+        subjectsList.forEach((sub, sIdx) => {
+          const exists = db.subjects.some(existing => existing.school_id === currentSchoolId && existing.name.toLowerCase() === sub.toLowerCase())
+          if (!exists) {
+            const code = sub.replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase() || 'MAPEL'
+            db.subjects.push({
+              id: `sub-${currentSchoolId}-${Date.now().toString(36)}-${sIdx + 1}`,
+              name: sub,
+              code: code,
+              school_id: currentSchoolId,
+              kktp: 75,
+              kkm: 75,
+              created_at: new Date().toISOString()
+            })
+          }
+        })
+      }
+
       saveDb()
       const { password: _, ...safe } = newTeacher
       return sendJson(res, 201, { status: 'success', message: 'Akun guru baru berhasil ditambahkan.', data: safe })

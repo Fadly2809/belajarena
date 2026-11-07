@@ -176,9 +176,15 @@
               </td>
               <td class="py-3 px-3 font-mono text-slate-700">{{ t.email }}</td>
               <td class="py-3 px-3">
-                <span class="px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 font-semibold text-[11px]">
-                  {{ t.subject || 'Semua Mapel' }}
-                </span>
+                <div class="flex flex-wrap gap-1">
+                  <span
+                    v-for="sub in (t.subjects?.length ? t.subjects : (t.subject ? t.subject.split(', ') : ['Semua Mapel']))"
+                    :key="sub"
+                    class="px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 font-semibold text-[11px]"
+                  >
+                    {{ sub }}
+                  </span>
+                </div>
               </td>
               <td class="py-3 px-3 text-right">
                 <button
@@ -215,21 +221,72 @@
           <button @click="showAddTeacherModal = false" class="text-slate-400 hover:text-slate-600 text-sm">✕</button>
         </div>
 
-        <form @submit.prevent="handleAddTeacher" class="space-y-3 text-xs">
+        <form @submit.prevent="handleAddTeacher" class="space-y-3.5 text-xs">
           <div>
             <label class="block font-semibold text-slate-700 mb-1">Nama Lengkap Guru <span class="text-red-500">*</span></label>
-            <input v-model="newTeacherForm.name" type="text" required class="input text-xs" placeholder="Contoh: Siti Rahmawati, S.Pd." />
+            <input v-model="newTeacherForm.name" type="text" required class="input text-xs font-semibold" placeholder="Contoh: Siti Rahmawati, S.Pd." />
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block font-semibold text-slate-700 mb-1">NIP (Opsional)</label>
-              <input v-model="newTeacherForm.nip" type="text" class="input text-xs font-mono" placeholder="1990xxxxxxxx" />
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">NIP (Opsional)</label>
+            <input v-model="newTeacherForm.nip" type="text" class="input text-xs font-mono" placeholder="1990xxxxxxxx" />
+          </div>
+
+          <!-- Pemilihan Mata Pelajaran (Dropdown Multi-Mapel) -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="block font-semibold text-slate-700">
+                Mata Pelajaran yang Diampu <span class="text-red-500">*</span>
+              </label>
+              <button
+                type="button"
+                @click="addTeacherSubjectSlot"
+                class="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[11px] transition flex items-center gap-1 shadow-xs cursor-pointer"
+              >
+                <span>+ Tambah Mapel</span>
+              </button>
             </div>
-            <div>
-              <label class="block font-semibold text-slate-700 mb-1">Mata Pelajaran</label>
-              <input v-model="newTeacherForm.subject" type="text" class="input text-xs" placeholder="Misal: Matematika" />
+
+            <div class="space-y-2">
+              <div
+                v-for="(slot, idx) in teacherSubjectSlots"
+                :key="idx"
+                class="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5"
+              >
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] font-bold text-slate-400 w-5 text-center">#{{ idx + 1 }}</span>
+                  <select
+                    v-model="slot.selected"
+                    required
+                    class="input text-xs flex-1 bg-white font-medium"
+                  >
+                    <option value="" disabled>-- Pilih Mata Pelajaran --</option>
+                    <option v-for="std in STANDARD_SUBJECTS" :key="std" :value="std">{{ std }}</option>
+                    <option value="__CUSTOM__">Lainnya (Ketik Manual)...</option>
+                  </select>
+                  <button
+                    v-if="teacherSubjectSlots.length > 1"
+                    type="button"
+                    @click="removeTeacherSubjectSlot(idx)"
+                    class="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-100 rounded-lg transition shrink-0 cursor-pointer"
+                    title="Hapus pilihan mapel ini"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div v-if="slot.selected === '__CUSTOM__'" class="pl-7">
+                  <input
+                    v-model="slot.custom"
+                    type="text"
+                    required
+                    class="input text-xs bg-white"
+                    placeholder="Ketik nama mata pelajaran kustom/muatan lokal..."
+                  />
+                </div>
+              </div>
             </div>
+            <p class="text-[10px] text-slate-500">Pilih dari dropdown atau klik <strong>+ Tambah Mapel</strong> jika guru mengampu lebih dari 1 mata pelajaran.</p>
           </div>
 
           <div>
@@ -279,6 +336,38 @@ const teachersList = ref<any[]>([])
 const loadingTeachers = ref(false)
 const showAddTeacherModal = ref(false)
 const isAddingTeacher = ref(false)
+
+const STANDARD_SUBJECTS = [
+  'Matematika',
+  'Informatika',
+  'Koding dan Kecerdasan Artifisial (KKA)',
+  'Ilmu Pengetahuan Alam (IPA)',
+  'Ilmu Pengetahuan Sosial (IPS)',
+  'Bahasa Indonesia',
+  'Bahasa Inggris',
+  'Pendidikan Pancasila (PPKn)',
+  'Pendidikan Agama & Budi Pekerti',
+  'PJOK',
+  'Seni Budaya',
+  'Prakarya',
+  'Bimbingan dan Konseling (BK)',
+  'Bahasa Daerah / Muatan Lokal'
+]
+
+const teacherSubjectSlots = ref<Array<{ selected: string; custom: string }>>([
+  { selected: 'Matematika', custom: '' }
+])
+
+function addTeacherSubjectSlot() {
+  teacherSubjectSlots.value.push({ selected: '', custom: '' })
+}
+
+function removeTeacherSubjectSlot(index: number) {
+  if (teacherSubjectSlots.value.length > 1) {
+    teacherSubjectSlots.value.splice(index, 1)
+  }
+}
+
 const newTeacherForm = ref({
   name: '',
   nip: '',
@@ -340,9 +429,24 @@ async function fetchTeachersList() {
 
 async function handleAddTeacher() {
   if (!newTeacherForm.value.name.trim() || !newTeacherForm.value.email.trim()) return
+
+  const resolvedSubjects = teacherSubjectSlots.value
+    .map(s => (s.selected === '__CUSTOM__' ? s.custom.trim() : s.selected.trim()))
+    .filter(Boolean)
+
+  if (resolvedSubjects.length === 0) {
+    alert('Silakan tentukan minimal 1 mata pelajaran yang diampu guru.')
+    return
+  }
+
   isAddingTeacher.value = true
   try {
-    const res = await api.post('/teachers', newTeacherForm.value)
+    const payload = {
+      ...newTeacherForm.value,
+      subject: resolvedSubjects.join(', '),
+      subjects: resolvedSubjects
+    }
+    const res = await api.post('/teachers', payload)
     if (res.data?.data) {
       successMsg.value = `Akun guru "${newTeacherForm.value.name}" berhasil didaftarkan!`
       showAddTeacherModal.value = false
@@ -353,6 +457,7 @@ async function handleAddTeacher() {
         email: '',
         password: 'password123'
       }
+      teacherSubjectSlots.value = [{ selected: 'Matematika', custom: '' }]
       await fetchTeachersList()
     }
   } catch (err: any) {

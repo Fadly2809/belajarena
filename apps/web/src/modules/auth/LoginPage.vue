@@ -273,26 +273,71 @@
             />
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block font-semibold text-slate-700 mb-1">NIP / NUPTK (Opsional)</label>
-              <input
-                v-model="regTeacherForm.nip"
-                type="text"
-                class="input text-xs font-mono"
-                placeholder="1989xxxxxxxx"
-              />
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">NIP / NUPTK (Opsional)</label>
+            <input
+              v-model="regTeacherForm.nip"
+              type="text"
+              class="input text-xs font-mono"
+              placeholder="1989xxxxxxxx"
+            />
+          </div>
+
+          <!-- Pemilihan Mata Pelajaran (Dropdown Multi-Mapel) -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="block font-semibold text-slate-700">
+                Mata Pelajaran yang Diampu <span class="text-red-500">*</span>
+              </label>
+              <button
+                type="button"
+                @click="addRegSubjectSlot"
+                class="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[11px] transition flex items-center gap-1 shadow-xs cursor-pointer"
+              >
+                <span>+ Tambah Mapel</span>
+              </button>
             </div>
-            <div>
-              <label class="block font-semibold text-slate-700 mb-1">Mata Pelajaran yang Diampu <span class="text-red-500">*</span></label>
-              <input
-                v-model="regTeacherForm.subject"
-                type="text"
-                required
-                class="input text-xs font-semibold"
-                placeholder="Misal: Matematika / Informatika"
-              />
+
+            <div class="space-y-2">
+              <div
+                v-for="(slot, idx) in regSubjectSlots"
+                :key="idx"
+                class="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5"
+              >
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] font-bold text-slate-400 w-5 text-center">#{{ idx + 1 }}</span>
+                  <select
+                    v-model="slot.selected"
+                    required
+                    class="input text-xs flex-1 bg-white font-medium"
+                  >
+                    <option value="" disabled>-- Pilih Mata Pelajaran --</option>
+                    <option v-for="std in STANDARD_SUBJECTS" :key="std" :value="std">{{ std }}</option>
+                    <option value="__CUSTOM__">Lainnya (Ketik Manual)...</option>
+                  </select>
+                  <button
+                    v-if="regSubjectSlots.length > 1"
+                    type="button"
+                    @click="removeRegSubjectSlot(idx)"
+                    class="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-100 rounded-lg transition shrink-0 cursor-pointer"
+                    title="Hapus mata pelajaran ini"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div v-if="slot.selected === '__CUSTOM__'" class="pl-7">
+                  <input
+                    v-model="slot.custom"
+                    type="text"
+                    required
+                    class="input text-xs bg-white"
+                    placeholder="Ketik nama mata pelajaran kustom/muatan lokal..."
+                  />
+                </div>
+              </div>
             </div>
+            <p class="text-[10px] text-slate-500">Pilih dari menu dropdown atau klik <strong>+ Tambah Mapel</strong> bila Anda mengampu lebih dari 1 mata pelajaran.</p>
           </div>
 
           <div>
@@ -395,6 +440,38 @@ const errorMessage = ref('')
 const showRegisterModal = ref(false)
 const registerLoading = ref(false)
 const registerError = ref('')
+
+const STANDARD_SUBJECTS = [
+  'Matematika',
+  'Informatika',
+  'Koding dan Kecerdasan Artifisial (KKA)',
+  'Ilmu Pengetahuan Alam (IPA)',
+  'Ilmu Pengetahuan Sosial (IPS)',
+  'Bahasa Indonesia',
+  'Bahasa Inggris',
+  'Pendidikan Pancasila (PPKn)',
+  'Pendidikan Agama & Budi Pekerti',
+  'PJOK',
+  'Seni Budaya',
+  'Prakarya',
+  'Bimbingan dan Konseling (BK)',
+  'Bahasa Daerah / Muatan Lokal'
+]
+
+const regSubjectSlots = ref<Array<{ selected: string; custom: string }>>([
+  { selected: 'Matematika', custom: '' }
+])
+
+function addRegSubjectSlot() {
+  regSubjectSlots.value.push({ selected: '', custom: '' })
+}
+
+function removeRegSubjectSlot(index: number) {
+  if (regSubjectSlots.value.length > 1) {
+    regSubjectSlots.value.splice(index, 1)
+  }
+}
+
 const regTeacherForm = reactive({
   teacher_name: '',
   nip: '',
@@ -408,6 +485,7 @@ const regTeacherForm = reactive({
 
 function openRegisterModal() {
   registerError.value = ''
+  regSubjectSlots.value = [{ selected: 'Matematika', custom: '' }]
   showRegisterModal.value = true
 }
 
@@ -416,6 +494,16 @@ async function handleRegisterTeacherSubmit() {
     registerError.value = 'Nama guru, nama sekolah tempat mengajar, email, dan kata sandi wajib diisi.'
     return
   }
+
+  const resolvedSubjects = regSubjectSlots.value
+    .map(s => (s.selected === '__CUSTOM__' ? s.custom.trim() : s.selected.trim()))
+    .filter(Boolean)
+
+  if (resolvedSubjects.length === 0) {
+    registerError.value = 'Silakan tentukan minimal 1 mata pelajaran yang Anda ampu.'
+    return
+  }
+
   registerLoading.value = true
   registerError.value = ''
 
@@ -423,7 +511,8 @@ async function handleRegisterTeacherSubmit() {
     teacher_name: regTeacherForm.teacher_name,
     nip: regTeacherForm.nip,
     school_name: regTeacherForm.school_name,
-    subject: regTeacherForm.subject,
+    subject: resolvedSubjects.join(', '),
+    subjects: resolvedSubjects,
     city: regTeacherForm.city,
     province: regTeacherForm.province,
     email: regTeacherForm.email,

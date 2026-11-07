@@ -142,6 +142,7 @@ export const useAuthStore = defineStore('auth', () => {
     school_name?: string
     nip?: string
     subject?: string
+    subjects?: string[]
     city?: string
     province?: string
     email: string
